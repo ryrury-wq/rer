@@ -160,7 +160,6 @@ from templates import render_template
 # Запуск приложения
 def run():
     with app.app_context():
-        clear_old_history()
         remove_expired()
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
 
