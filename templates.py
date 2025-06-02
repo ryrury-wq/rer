@@ -38,104 +38,167 @@ scan_html = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Сканирование и справочник</title>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <title>Сканирование</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        #camera-container {
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .camera-container {
+            position: relative;
             width: 100%;
-            height: 20vh; /* 1/5 экрана */
-            background: #000;
+            height: 20vh;
+            overflow: hidden;
+            border: 3px solid #ccc;
+            margin-bottom: 20px;
+            box-sizing: border-box;
         }
-        #reader {
+        video {
             width: 100%;
             height: 100%;
+            object-fit: cover;
         }
-        #manual-form {
+        .overlay {
+            position: absolute;
+            top: 3cm;
+            left: 1cm;
+            right: 1cm;
+            bottom: 0;
+            border: 2px dashed red;
+            pointer-events: none;
+        }
+        .notification {
             padding: 10px;
-            background: #f8f8f8;
+            color: #fff;
+            margin: 10px 0;
+            display: none;
         }
-        input[type="text"] {
-            padding: 8px;
-            width: 70%;
-            font-size: 1em;
+        .success { background: #4caf50; }
+        .error { background: #f44336; }
+        .product-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
         }
-        button {
-            padding: 8px 15px;
-            font-size: 1em;
+        .product-item {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
         }
-        #product-list {
-            padding: 10px;
-        }
-        .product {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
+        .product-item:hover {
+            background: #f0f0f0;
         }
     </style>
 </head>
 <body>
+    <h1>Сканирование товара</h1>
 
-<div id="camera-container">
-    <div id="reader"></div>
-</div>
+    <div class="camera-container">
+        <video id="video" autoplay></video>
+        <div class="overlay"></div>
+    </div>
 
-<div id="manual-form">
-    <form method="POST" id="scan-form">
-        <input type="text" name="barcode" id="barcode-input" placeholder="Введите штрихкод вручную" required>
-        <button type="submit">Добавить</button>
+    <div class="notification" id="notification"></div>
+
+    <form method="POST">
+        <label>Штрих-код:</label><br>
+        <input type="text" name="barcode" id="barcode" required autofocus><br><br>
+
+        <label>Наименование:</label><br>
+        <input type="text" id="name" name="name" required><br><br>
+
+        <label>Дата изготовления:</label><br>
+        <input type="date" name="manufacture_date" required><br><br>
+
+        <label>Срок годности:</label><br>
+        <input type="number" name="duration_value" required>
+        <select name="duration_unit">
+            <option value="days">дней</option>
+            <option value="months">месяцев</option>
+            <option value="hours">часов</option>
+        </select><br><br>
+
+        <button type="submit">Сохранить</button>
     </form>
-</div>
 
-<div id="product-list">
-    <h2>Справочник товаров</h2>
-    {% for item in items %}
-        <div class="product">
-            <div>{{ item['name'] }}</div>
-            <div>{{ item['barcode'] }}</div>
-        </div>
-    {% else %}
-        <p>Нет добавленных товаров</p>
-    {% endfor %}
-</div>
+    <h2>Справочник позиций</h2>
+    <div class="product-list" id="productList"></div>
 
-<script>
-    function onScanSuccess(decodedText, decodedResult) {
-        // Поместить штрихкод и отправить форму
-        document.getElementById('barcode-input').value = decodedText;
-        document.getElementById('scan-form').submit();
-    }
+    <audio id="successSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+    <audio id="errorSound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
 
-    function onScanError(errorMessage) {
-        // Можно логировать ошибки при необходимости
-    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const barcodeInput = document.getElementById('barcode');
+        const nameInput = document.getElementById('name');
+        const notification = document.getElementById('notification');
+        const successSound = document.getElementById('successSound');
+        const errorSound = document.getElementById('errorSound');
+        const productList = document.getElementById('productList');
 
-    const html5QrCode = new Html5Qrcode("reader");
-
-    Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length) {
-            let cameraId = devices[0].id;
-            html5QrCode.start(
-                cameraId,
-                {
-                    fps: 10,
-                    qrbox: { width: 300, height: 80 }, // Только горизонтальная зона
-                },
-                onScanSuccess,
-                onScanError
-            );
+        function showNotification(message, type) {
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => notification.style.display = 'none', 3000);
         }
-    }).catch(err => {
-        console.error("Ошибка получения камеры:", err);
-    });
-</script>
 
+        Quagga.init({
+            inputStream: {
+                name: 'Live',
+                type: 'LiveStream',
+                target: video,
+                constraints: {
+                    facingMode: 'environment'
+                },
+            },
+            decoder: {
+                readers: ['ean_reader', 'code_128_reader']
+            },
+        }, function(err) {
+            if (err) { console.log(err); return; }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(function(data) {
+            const code = data.codeResult.code;
+            barcodeInput.value = code;
+            fetch(`/get-product-name?barcode=${code}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.found) {
+                        nameInput.value = data.name;
+                        showNotification("Товар найден: " + data.name, 'success');
+                        successSound.play();
+                    } else {
+                        nameInput.value = '';
+                        showNotification("Товар не найден", 'error');
+                        errorSound.play();
+                    }
+                });
+            Quagga.stop();
+        });
+
+        function loadProducts() {
+            fetch('/get-all-products')
+                .then(res => res.json())
+                .then(data => {
+                    const sorted = data.products.sort((a, b) => a.name.localeCompare(b.name));
+                    productList.innerHTML = '';
+                    for (const p of sorted) {
+                        const item = document.createElement('div');
+                        item.className = 'product-item';
+                        item.textContent = `${p.name} (${p.barcode})`;
+                        item.onclick = () => {
+                            barcodeInput.value = p.barcode;
+                            nameInput.value = p.name;
+                        };
+                        productList.appendChild(item);
+                    }
+                });
+        }
+
+        loadProducts();
+    </script>
 </body>
 </html>
 '''
