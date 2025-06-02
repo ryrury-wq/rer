@@ -90,3 +90,79 @@ def get_product_name():
         return jsonify({'found': True, 'name': result['name']})
     else:
         return jsonify({'found': False})
+        
+@app.route('/new_product', methods=['GET', 'POST'])
+def new_product():
+    barcode = request.args.get('barcode')
+    if request.method == 'POST':
+        name = request.form['name']
+        barcode = request.form['barcode']
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("INSERT INTO products (barcode, name) VALUES (?, ?)", (barcode, name))
+        db.commit()
+        return redirect(url_for('add_batch', barcode=barcode))
+    return render_template('new_product.html', barcode=barcode)
+
+@app.route('/add_batch', methods=['GET', 'POST'])
+def add_batch():
+    barcode = request.args.get('barcode')
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, name FROM products WHERE barcode = ?", (barcode,))
+    product = cursor.fetchone()
+    
+    if not product:
+        return "Товар не найден", 404
+    
+    if request.method == 'POST':
+        expiration_date = request.form['expiration_date']
+        cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (?, ?)", (product['id'], expiration_date))
+        db.commit()
+        return redirect(url_for('index'))
+    
+    return render_template('add_batch.html', product_name=product['name'])
+
+@app.route('/history')
+def history():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM history ORDER BY removed_date DESC")
+    history_items = cursor.fetchall()
+    return render_template('history.html', history_items=history_items)
+
+def remove_expired():
+    db = get_db()
+    cursor = db.cursor()
+    today = datetime.now().strftime('%Y-%m-%d')
+    cursor.execute('''
+        SELECT b.id, p.barcode, p.name, b.expiration_date
+        FROM batches b
+        JOIN products p ON b.product_id = p.id
+        WHERE b.expiration_date < ?
+    ''', (today,))
+    expired = cursor.fetchall()
+    
+    for item in expired:
+        cursor.execute("INSERT INTO history (barcode, product_name, expiration_date) VALUES (?, ?, ?)",
+                       (item['barcode'], item['name'], item['expiration_date']))
+        cursor.execute("DELETE FROM batches WHERE id = ?", (item['id'],))
+    db.commit()
+
+
+# Остальные маршруты (scan, new_product, add_batch, history) остаются без изменений
+# ... [код остальных маршрутов из предыдущей версии] ...
+
+# Импорт шаблонов
+from templates import render_template
+
+# Запуск приложения
+def run():
+    with app.app_context():
+        init_db()
+        clear_old_history()
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+
+if __name__ == '__main__':
+    run()
+
