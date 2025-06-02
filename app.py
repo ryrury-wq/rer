@@ -195,18 +195,11 @@ def remove_expired():
 from templates import render_template
 
 # Запуск приложения
-if __name__ == '__main__':
-    # Создаем БД при первом запуске
-    if not os.path.exists(DATABASE):
-        print(f"Файл базы данных не найден, создаю новый: {DATABASE}")
-        open(DATABASE, 'a').close()  # Создаем пустой файл
-
-# Инициализация в контексте приложения
+def run():
     with app.app_context():
         init_db()
         clear_old_history()
-    
-    # Запуск сервера
-    print("\nСервер запущен!")
-    print(f"Доступ по адресу: http://192.168.31.109:5000")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+
+if __name__ == '__main__':
+    run()
