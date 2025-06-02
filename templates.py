@@ -88,6 +88,16 @@ scan_html = '''
         }
     </style>
 </head>
+<video id="preview" autoplay></video>
+<script>
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { exact: "environment" } } // Задняя камера
+  })
+  .then(stream => {
+    document.getElementById('preview').srcObject = stream;
+  })
+  .catch(console.error);
+</script>
 <body>
     <h1>Сканирование товара</h1>
 
