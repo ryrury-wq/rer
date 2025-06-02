@@ -3,7 +3,8 @@ import os
 import sqlite3
 from datetime import datetime, timedelta
 from flask import Flask, request, redirect, url_for, g, jsonify
-from templates import render_template
+from flask import render_template
+
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -63,9 +64,9 @@ def scan():
             elif duration_unit == 'months':
                 expiry_date = mfg_date + timedelta(days=duration_value * 30)
             elif duration_unit == 'hours':
-                expiry_date = mfg_date + timedelta(hours=duration_value)
-                expiry_date = mfg_date + timedelta(days=expiry_date.hour // 24)
-                expiry_date = expiry_date.replace(hour=0)
+                expiry_datetime = datetime.strptime(manufacture_date, "%Y-%m-%d") + timedelta(hours=duration_value)
+                expiry_date = expiry_datetime.date()
+
 
             cursor.execute('''
                 INSERT INTO batches (product_id, expiration_date, added_date)
@@ -159,8 +160,8 @@ from templates import render_template
 # Запуск приложения
 def run():
     with app.app_context():
-        init_db()
         clear_old_history()
+        remove_expired()
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == '__main__':
