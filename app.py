@@ -1,10 +1,8 @@
-# Обновим app.py для расчета срока годности и загрузки наименования из справочника
+
 import os
 import sqlite3
 from datetime import datetime, timedelta
-from flask import Flask, request, redirect, url_for, g, jsonify
-from flask import render_template
-
+from flask import Flask, request, redirect, url_for, g, jsonify, render_template
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -64,9 +62,9 @@ def scan():
             elif duration_unit == 'months':
                 expiry_date = mfg_date + timedelta(days=duration_value * 30)
             elif duration_unit == 'hours':
-                expiry_datetime = datetime.strptime(manufacture_date, "%Y-%m-%d") + timedelta(hours=duration_value)
-                expiry_date = expiry_datetime.date()
-
+                expiry_date = mfg_date + timedelta(hours=duration_value)
+                expiry_date = mfg_date + timedelta(days=expiry_date.hour // 24)
+                expiry_date = expiry_date.replace(hour=0)
 
             cursor.execute('''
                 INSERT INTO batches (product_id, expiration_date, added_date)
@@ -91,7 +89,7 @@ def get_product_name():
         return jsonify({'found': True, 'name': result['name']})
     else:
         return jsonify({'found': False})
-        
+
 @app.route('/new_product', methods=['GET', 'POST'])
 def new_product():
     barcode = request.args.get('barcode')
@@ -112,16 +110,16 @@ def add_batch():
     cursor = db.cursor()
     cursor.execute("SELECT id, name FROM products WHERE barcode = ?", (barcode,))
     product = cursor.fetchone()
-    
+
     if not product:
         return "Товар не найден", 404
-    
+
     if request.method == 'POST':
         expiration_date = request.form['expiration_date']
         cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (?, ?)", (product['id'], expiration_date))
         db.commit()
         return redirect(url_for('index'))
-    
+
     return render_template('add_batch.html', product_name=product['name'])
 
 @app.route('/history')
@@ -143,21 +141,13 @@ def remove_expired():
         WHERE b.expiration_date < ?
     ''', (today,))
     expired = cursor.fetchall()
-    
+
     for item in expired:
         cursor.execute("INSERT INTO history (barcode, product_name, expiration_date) VALUES (?, ?, ?)",
                        (item['barcode'], item['name'], item['expiration_date']))
         cursor.execute("DELETE FROM batches WHERE id = ?", (item['id'],))
     db.commit()
 
-
-# Остальные маршруты (scan, new_product, add_batch, history) остаются без изменений
-# ... [код остальных маршрутов из предыдущей версии] ...
-
-# Импорт шаблонов
-from templates import render_template
-
-# Запуск приложения
 def run():
     with app.app_context():
         remove_expired()
@@ -165,4 +155,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
