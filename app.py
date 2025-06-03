@@ -100,7 +100,7 @@ def scan():
         # ... логика сохранения в БД
         return redirect(url_for('index'))
 
-    return """
+    
 return """
 <!DOCTYPE html>
 <html lang="ru">
@@ -195,8 +195,6 @@ return """
 </html>
 """
 
-
-"""
 
 
 
