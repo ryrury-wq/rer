@@ -99,101 +99,100 @@ def scan():
         duration_unit = request.form['duration_unit']
         # ... логика сохранения в БД
         return redirect(url_for('index'))
-
-    
+        
 return """
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>Сканировать штрихкод</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 1em;
-      margin: 0;
-      background: #f9f9f9;
-    }
-
-    .scanner-container {
-      position: relative;
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    video {
-      width: 100%;
-      height: auto;
-      border-radius: 10px;
-    }
-
-    .overlay {
-      position: absolute;
-      top: 30%;
-      left: 10%;
-      width: 80%;
-      height: 20%;
-      border: 2px dashed red;
-      border-radius: 8px;
-      pointer-events: none;
-    }
-
-    form {
-      margin-top: 20px;
-      margin-left: 1.5cm;
-      margin-right: 1.5cm;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      font-size: 1.2em;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      margin-bottom: 10px;
-      background: #fff;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #28a745;
-      color: white;
-      font-size: 1.1em;
-      border: none;
-      border-radius: 4px;
-    }
-  </style>
-</head>
-<body>
-  <div class="scanner-container">
-    <video id="video" autoplay playsinline></video>
-    <div class="overlay"></div>
-  </div>
-
-  <form method="POST">
-    <input type="text" name="barcode" id="barcode" readonly placeholder="Ожидание сканирования..." required>
-    <button type="submit">Сохранить</button>
-  </form>
-
-  <script type="module">
-    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
-
-    const codeReader = new BrowserMultiFormatReader();
-    const video = document.getElementById('video');
-    const barcodeInput = document.getElementById('barcode');
-
-    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-      if (result) {
-        barcodeInput.value = result.getText();
-        codeReader.reset();
+  <!DOCTYPE html>
+  <html lang="ru">
+  <head>
+    <meta charset="UTF-8">
+    <title>Сканировать штрихкод</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 1em;
+        margin: 0;
+        background: #f9f9f9;
       }
-    });
-  </script>
-</body>
-</html>
-"""
+
+      .scanner-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      video {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+      }
+
+      .overlay {
+        position: absolute;
+        top: 30%;
+        left: 10%;
+        width: 80%;
+        height: 20%;
+        border: 2px dashed red;
+        border-radius: 8px;
+        pointer-events: none;
+      }
+
+      form {
+        margin-top: 20px;
+        margin-left: 1.5cm;
+        margin-right: 1.5cm;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        font-size: 1.2em;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        background: #fff;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        background-color: #28a745;
+        color: white;
+        font-size: 1.1em;
+        border: none;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scanner-container">
+      <video id="video" autoplay playsinline></video>
+      <div class="overlay"></div>
+    </div>
+
+    <form method="POST">
+      <input type="text" name="barcode" id="barcode" readonly placeholder="Ожидание сканирования..." required>
+      <button type="submit">Сохранить</button>
+    </form>
+
+    <script type="module">
+      import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
+
+      const codeReader = new BrowserMultiFormatReader();
+      const video = document.getElementById('video');
+      const barcodeInput = document.getElementById('barcode');
+
+      codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+        if (result) {
+          barcodeInput.value = result.getText();
+          codeReader.reset();
+        }
+      });
+    </script>
+  </body>
+  </html>
+  """
 
 @app.route('/get-product-name', methods=['GET'])
 def get_product_name():
