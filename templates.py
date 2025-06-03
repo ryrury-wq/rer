@@ -143,71 +143,63 @@ scan_html = '''
         }
 
         // Запуск камеры через Quagga
-        Quagga.init({
-            inputStream: {
-                name: 'Live',
-                type: 'LiveStream',
-                target: video,  // сюда выводим видео
-                constraints: {
-                    facingMode: 'environment'
-                },
-            },
-            decoder: {
-                readers: ['ean_reader', 'code_128_reader']
-            },
-        }, function(err) {
-            if (err) { 
-                console.log(err); 
-                showNotification('Ошибка инициализации камеры', 'error');
-                return; 
-            }
-            Quagga.start();
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Сканирование штрихкода</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+      #reader {
+        width: 100%;
+        max-width: 400px;
+        margin: auto;
+        padding-top: 20px;
+      }
+      </style>
+    </head>
+  <body>
+    <h2>Сканируйте штрихкод</h2>
+    <div id="reader"></div>
+    <p>Результат: <span id="result">ожидание...</span></p>
+
+    <script>
+      function onScanSuccess(decodedText, decodedResult) {
+        document.getElementById('result').textContent = decodedText;
+
+        // Отправить результат на сервер (Flask)
+        fetch('/barcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barcode: decodedText })
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert("Сервер принял: " + data.status);
         });
 
-        Quagga.onDetected(function(data) {
-            const code = data.codeResult.code;
-            barcodeInput.value = code;
-            fetch(`/get-product-name?barcode=${code}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.found) {
-                        nameInput.value = data.name;
-                        showNotification("Товар найден: " + data.name, 'success');
-                        successSound.play();
-                    } else {
-                        nameInput.value = '';
-                        showNotification("Товар не найден", 'error');
-                        errorSound.play();
-                    }
-                });
-            Quagga.stop();
-        });
+        html5QrcodeScanner.clear(); // Остановить сканирование
+      }
 
-        function loadProducts() {
-            fetch('/get-all-products')
-                .then(res => res.json())
-                .then(data => {
-                    const sorted = data.products.sort((a, b) => a.name.localeCompare(b.name));
-                    productList.innerHTML = '';
-                    for (const p of sorted) {
-                        const item = document.createElement('div');
-                        item.className = 'product-item';
-                        item.textContent = `${p.name} (${p.barcode})`;
-                        item.onclick = () => {
-                            barcodeInput.value = p.barcode;
-                            nameInput.value = p.name;
-                        };
-                        productList.appendChild(item);
-                    }
-                });
+      const html5QrcodeScanner = new Html5Qrcode("reader");
+
+      Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length) {
+          let backCamera = cameras.find(c => c.label.toLowerCase().includes('back')) || cameras[cameras.length - 1];
+          html5QrcodeScanner.start(
+            backCamera.id,
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            onScanSuccess
+          );
         }
-
-        loadProducts();
+      }).catch(err => {
+        console.error("Ошибка камеры: ", err);
+      });
     </script>
+  </body>
 </body>
 </html>
 
-
+'''
 
 # Новый товар
 new_product_html = '''
