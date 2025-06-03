@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 
 # === НАСТРОЙКИ ===
 SQLITE_PATH = "expiry.db"  # Локальный файл
-POSTGRES_URL = "postgresql://user:pass@host:port/dbname"  # <-- ВСТАВЬ СЮДА URL с Render
+POSTGRES_URL = "postgresql://database1_3dwh_user:veUvcmdmm0uMmPSPCMcapQZgoZ5ZFKeH@dpg-d0vevve3jp1c73e4b1b0-a/database1_3dwh"  # <-- ВСТАВЬ СЮДА URL с Render
 
 # === ЧТЕНИЕ SQLite ===
 conn = sqlite3.connect(SQLITE_PATH)
