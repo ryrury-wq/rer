@@ -2,11 +2,13 @@ import os
 import sqlite3
 from datetime import datetime, timedelta
 from flask import Flask, request, redirect, url_for, g, jsonify, render_template_string
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE = os.path.join(BASE_DIR, 'expiry.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+db = SQLAlchemy(app)
 # Подключение к существующей БД
 def get_db():
     db = getattr(g, '_database', None)
