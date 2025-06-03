@@ -101,17 +101,24 @@ def scan():
         return redirect(url_for('index'))
 
     return """
+return """
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Сканирование штрихкода</title>
+  <title>Сканировать штрихкод</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 1em; }
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+      margin: 0;
+      background: #f9f9f9;
+    }
+
     .scanner-container {
       position: relative;
       width: 100%;
-      max-width: 400px;
+      max-width: 600px;
       margin: 0 auto;
     }
 
@@ -128,54 +135,45 @@ def scan():
       width: 80%;
       height: 20%;
       border: 2px dashed red;
-      box-sizing: border-box;
-      pointer-events: none;
       border-radius: 8px;
+      pointer-events: none;
     }
 
     form {
       margin-top: 20px;
-      text-align: left;
-      max-width: 400px;
-      margin: 20px auto;
+      margin-left: 1.5cm;
+      margin-right: 1.5cm;
     }
 
-    label, input, select, button {
-      display: block;
+    input[type="text"] {
       width: 100%;
+      padding: 12px;
+      font-size: 1.2em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
       margin-bottom: 10px;
-      font-size: 1em;
+      background: #fff;
     }
 
     button {
-      background-color: #4CAF50;
+      width: 100%;
+      padding: 12px;
+      background-color: #28a745;
       color: white;
-      padding: 10px;
+      font-size: 1.1em;
       border: none;
       border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <h1>Сканирование штрихкода</h1>
-
   <div class="scanner-container">
     <video id="video" autoplay playsinline></video>
     <div class="overlay"></div>
   </div>
 
   <form method="POST">
-    <input type="hidden" name="barcode" id="barcode">
-    <label>Название товара: <input type="text" name="name" required></label>
-    <label>Дата производства: <input type="date" name="manufacture_date" required></label>
-    <label>Срок годности:
-      <input type="number" name="duration_value" required>
-      <select name="duration_unit">
-        <option value="days">дней</option>
-        <option value="months">месяцев</option>
-        <option value="hours">часов</option>
-      </select>
-    </label>
+    <input type="text" name="barcode" id="barcode" readonly placeholder="Ожидание сканирования..." required>
     <button type="submit">Сохранить</button>
   </form>
 
@@ -190,12 +188,13 @@ def scan():
       if (result) {
         barcodeInput.value = result.getText();
         codeReader.reset();
-        alert("Штрихкод: " + result.getText());
       }
     });
   </script>
 </body>
 </html>
+"""
+
 
 """
 
