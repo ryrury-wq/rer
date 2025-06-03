@@ -107,28 +107,81 @@ def scan():
   <meta charset="UTF-8">
   <title>Сканирование штрихкода</title>
   <style>
-    video, canvas { width: 100%; max-width: 400px; height: auto; }
-    form { margin-top: 20px; }
+    body { font-family: sans-serif; text-align: center; padding: 1em; }
+    .scanner-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 30%;
+      left: 10%;
+      width: 80%;
+      height: 20%;
+      border: 2px dashed red;
+      box-sizing: border-box;
+      pointer-events: none;
+      border-radius: 8px;
+    }
+
+    form {
+      margin-top: 20px;
+      text-align: left;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+
+    label, input, select, button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      font-size: 1em;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
   <h1>Сканирование штрихкода</h1>
-  <video id="video" autoplay playsinline></video>
+
+  <div class="scanner-container">
+    <video id="video" autoplay playsinline></video>
+    <div class="overlay"></div>
+  </div>
+
   <form method="POST">
     <input type="hidden" name="barcode" id="barcode">
-    <label>Название товара: <input type="text" name="name" required></label><br>
-    <label>Дата производства: <input type="date" name="manufacture_date" required></label><br>
-    <label>Срок годности: <input type="number" name="duration_value" required></label>
-    <select name="duration_unit">
-      <option value="days">дней</option>
-      <option value="months">месяцев</option>
-      <option value="hours">часов</option>
-    </select><br>
+    <label>Название товара: <input type="text" name="name" required></label>
+    <label>Дата производства: <input type="date" name="manufacture_date" required></label>
+    <label>Срок годности:
+      <input type="number" name="duration_value" required>
+      <select name="duration_unit">
+        <option value="days">дней</option>
+        <option value="months">месяцев</option>
+        <option value="hours">часов</option>
+      </select>
+    </label>
     <button type="submit">Сохранить</button>
   </form>
 
   <script type="module">
     import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
+
     const codeReader = new BrowserMultiFormatReader();
     const video = document.getElementById('video');
     const barcodeInput = document.getElementById('barcode');
@@ -143,6 +196,7 @@ def scan():
   </script>
 </body>
 </html>
+
 """
 
 
