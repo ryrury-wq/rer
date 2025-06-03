@@ -91,6 +91,14 @@ def index():
     
     return render_template('index.html', items=items, today=today.strftime('%Y-%m-%d'))
 
+@app.route('/import', methods=['GET', 'POST'])
+def import():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM history ORDER BY removed_date DESC")
+    history_items = cursor.fetchall()
+    return render_template('import.html', history_items=history_items)
+
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
