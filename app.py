@@ -92,49 +92,60 @@ def index():
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
-        barcode = request.form['barcode'].strip()
-        name = request.form.get('name', '').strip()
+        barcode = request.form['barcode']
+        name = request.form['name']
         manufacture_date = request.form['manufacture_date']
         duration_value = int(request.form['duration_value'])
         duration_unit = request.form['duration_unit']
+        # ... логика сохранения в БД
+        return redirect(url_for('index'))
 
-        try:
-            db = get_db()
-            cursor = db.cursor()
-            
-            # Проверяем существование товара
-            cursor.execute('SELECT id, name FROM products WHERE barcode = ?', (barcode,))
-            product = cursor.fetchone()
-            
-            # Если товар не найден - создаем новый
-            if not product:
-                cursor.execute('INSERT INTO products (barcode, name) VALUES (?, ?)', (barcode, name))
-                product_id = cursor.lastrowid
-            else:
-                product_id = product['id']
-            
-            # Рассчитываем срок годности
-            mfg_date = datetime.strptime(manufacture_date, "%Y-%m-%d")
-            if duration_unit == 'days':
-                expiry_date = mfg_date + timedelta(days=duration_value)
-            elif duration_unit == 'months':
-                expiry_date = mfg_date + timedelta(days=duration_value * 30)
-            elif duration_unit == 'hours':
-                expiry_date = mfg_date + timedelta(hours=duration_value)
-                expiry_date = expiry_date.replace(hour=0, minute=0, second=0)
-            
-            # Добавляем партию
-            cursor.execute('''
-                INSERT INTO batches (product_id, expiration_date, added_date)
-                VALUES (?, ?, ?)
-            ''', (product_id, expiry_date.strftime("%Y-%m-%d"), manufacture_date))
-            db.commit()
-            return redirect(url_for('index'))
+    return """
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Сканирование штрихкода</title>
+  <style>
+    video, canvas { width: 100%; max-width: 400px; height: auto; }
+    form { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Сканирование штрихкода</h1>
+  <video id="video" autoplay playsinline></video>
+  <form method="POST">
+    <input type="hidden" name="barcode" id="barcode">
+    <label>Название товара: <input type="text" name="name" required></label><br>
+    <label>Дата производства: <input type="date" name="manufacture_date" required></label><br>
+    <label>Срок годности: <input type="number" name="duration_value" required></label>
+    <select name="duration_unit">
+      <option value="days">дней</option>
+      <option value="months">месяцев</option>
+      <option value="hours">часов</option>
+    </select><br>
+    <button type="submit">Сохранить</button>
+  </form>
 
-        except Exception as e:
-            return f"Ошибка при добавлении: {str(e)}"
+  <script type="module">
+    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
+    const codeReader = new BrowserMultiFormatReader();
+    const video = document.getElementById('video');
+    const barcodeInput = document.getElementById('barcode');
 
-    return render_template('/scan')
+    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+      if (result) {
+        barcodeInput.value = result.getText();
+        codeReader.reset();
+        alert("Штрихкод: " + result.getText());
+      }
+    });
+  </script>
+</body>
+</html>
+"""
+
+
 
 @app.route('/get-product-name', methods=['GET'])
 def get_product_name():
