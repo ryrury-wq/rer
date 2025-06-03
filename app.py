@@ -195,9 +195,6 @@ return """
 </html>
 """
 
-
-
-
 @app.route('/get-product-name', methods=['GET'])
 def get_product_name():
     barcode = request.args.get('barcode')
