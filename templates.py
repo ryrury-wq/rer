@@ -88,21 +88,11 @@ scan_html = '''
         }
     </style>
 </head>
-<video id="preview" autoplay></video>
-<script>
-  navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { exact: "environment" } } // Задняя камера
-  })
-  .then(stream => {
-    document.getElementById('preview').srcObject = stream;
-  })
-  .catch(console.error);
-</script>
 <body>
     <h1>Сканирование товара</h1>
 
     <div class="camera-container">
-        <video id="video" autoplay></video>
+        <video id="video" autoplay playsinline></video>
         <div class="overlay"></div>
     </div>
 
@@ -152,11 +142,12 @@ scan_html = '''
             setTimeout(() => notification.style.display = 'none', 3000);
         }
 
+        // Запуск камеры через Quagga
         Quagga.init({
             inputStream: {
                 name: 'Live',
                 type: 'LiveStream',
-                target: video,
+                target: video,  // сюда выводим видео
                 constraints: {
                     facingMode: 'environment'
                 },
@@ -165,7 +156,11 @@ scan_html = '''
                 readers: ['ean_reader', 'code_128_reader']
             },
         }, function(err) {
-            if (err) { console.log(err); return; }
+            if (err) { 
+                console.log(err); 
+                showNotification('Ошибка инициализации камеры', 'error');
+                return; 
+            }
             Quagga.start();
         });
 
@@ -209,27 +204,9 @@ scan_html = '''
 
         loadProducts();
     </script>
-<video id="video" autoplay playsinline style="width: 100%; height: auto;"></video>
-<canvas id="canvas" style="display:none;"></canvas>
-
-<script>
-navigator.mediaDevices.getUserMedia({
-  video: { facingMode: { ideal: "environment" } },  // или exact
-  audio: false
-})
-.then(function(stream) {
-  const video = document.getElementById('video');
-  video.srcObject = stream;
-  video.play();
-})
-.catch(function(err) {
-  console.error("Ошибка доступа к камере: ", err);
-});
-</script>
-
 </body>
 </html>
-'''
+
 
 
 # Новый товар
