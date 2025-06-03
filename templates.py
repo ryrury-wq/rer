@@ -209,6 +209,24 @@ scan_html = '''
 
         loadProducts();
     </script>
+<video id="video" autoplay playsinline style="width: 100%; height: auto;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: { ideal: "environment" } },  // или exact
+  audio: false
+})
+.then(function(stream) {
+  const video = document.getElementById('video');
+  video.srcObject = stream;
+  video.play();
+})
+.catch(function(err) {
+  console.error("Ошибка доступа к камере: ", err);
+});
+</script>
+
 </body>
 </html>
 '''
