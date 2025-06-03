@@ -134,7 +134,7 @@ def scan():
         except Exception as e:
             return f"Ошибка при добавлении: {str(e)}"
 
-    return render_template('scan.html')
+    return render_template('/scan')
 
 @app.route('/get-product-name', methods=['GET'])
 def get_product_name():
