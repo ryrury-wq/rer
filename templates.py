@@ -115,6 +115,7 @@ scan_html = '''
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
+            height: 100vh;
         }
         .scanner-container { 
             position: relative; 
@@ -125,11 +126,13 @@ scan_html = '''
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: black; /* Фон на случай если камера не загрузится */
         }
         video { 
             width: 100%; 
             height: 100%; 
             object-fit: cover;
+            transform: scaleX(-1); /* Зеркальное отображение для фронтальной камеры */
         }
         .overlay { 
             position: absolute; 
@@ -147,6 +150,8 @@ scan_html = '''
             width: 90%;
             max-width: 400px;
             margin-top: 10px; 
+            flex-grow: 1;
+            overflow-y: auto;
         }
         input[type="text"], input[type="date"], input[type="number"], select {
             width: 100%; 
@@ -181,6 +186,11 @@ scan_html = '''
             font-size: 1.5em;
             margin: 5px 0 10px;
         }
+        .camera-error {
+            color: red;
+            text-align: center;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
@@ -191,16 +201,114 @@ scan_html = '''
     </div>
 
     <div class="scanner-container">
-        <video id="video" autoplay playsinline></video>
+        <video id="video" autoplay playsinline muted></video>
         <div class="overlay"></div>
+        <div id="camera-error" class="camera-error" style="display: none;">
+            Ошибка доступа к камере. Проверьте разрешения.
+        </div>
     </div>
 
     <form method="POST">
-        <!-- Форма без изменений -->
+        <div class="form-group">
+            <label for="barcode">Штрих-код:</label>
+            <input type="text" name="barcode" id="barcode" readonly placeholder="Ожидание сканирования..." required>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Наименование:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="manufacture_date">Дата изготовления:</label>
+            <input type="date" name="manufacture_date" required>
+        </div>
+
+        <div class="form-group">
+            <label>Срок годности:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" name="duration_value" required style="flex: 2;">
+                <select name="duration_unit" style="flex: 1;">
+                    <option value="days">дней</option>
+                    <option value="months">месяцев</option>
+                    <option value="years">лет</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit">Сохранить</button>
     </form>
 
     <script type="module">
-        // Скрипт без изменений
+        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
+
+        const codeReader = new BrowserMultiFormatReader();
+        const video = document.getElementById('video');
+        const barcodeInput = document.getElementById('barcode');
+        const cameraError = document.getElementById('camera-error');
+        
+        // Параметры для камеры
+        const constraints = {
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: "environment" // Используем заднюю камеру
+            }
+        };
+
+        // Функция для запуска камеры
+        async function startCamera() {
+            try {
+                // Получаем доступ к камере
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                
+                // Обработка изменения размеров видео
+                video.addEventListener('loadedmetadata', () => {
+                    video.play().catch(err => {
+                        console.error("Ошибка воспроизведения видео:", err);
+                        showCameraError();
+                    });
+                });
+                
+                // Запускаем сканер штрих-кодов
+                codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+                    if (result) {
+                        barcodeInput.value = result.getText();
+                        
+                        // Проверка наличия товара в базе
+                        fetch(`/get-product-name?barcode=${result.getText()}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.found) {
+                                    document.getElementById('name').value = data.name;
+                                }
+                            });
+                        
+                        codeReader.reset();
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        console.error(err);
+                    }
+                });
+            } catch (err) {
+                console.error("Ошибка доступа к камере:", err);
+                showCameraError();
+            }
+        }
+        
+        function showCameraError() {
+            cameraError.style.display = 'block';
+            video.style.display = 'none';
+        }
+
+        // Проверяем поддержку медиаустройств
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showCameraError();
+            cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
+        } else {
+            startCamera();
+        }
     </script>
 </body>
 </html>
