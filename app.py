@@ -61,7 +61,7 @@ def index():
     today = datetime.now().date()
     
     cursor.execute('''
-        SELECT p.name, p.barcode, b.expiration_date, b.added_date
+        SELECT b.id, p.name, p.barcode, b.expiration_date, b.added_date
         FROM batches b
         JOIN products p ON p.id = b.product_id
         ORDER BY b.expiration_date ASC
@@ -79,18 +79,30 @@ def index():
         removal_date = exp_date + timedelta(days=30)
         days_until_removal = max(0, (removal_date - today).days)
         
+        # Определение статуса срока годности
+        status = "normal"
+        if days_since_expiry > 0:
+            status = "expired"
+        elif days_until_expiry == 0:
+            status = "expired"
+        elif days_until_expiry == 1:
+            status = "warning"
+        elif days_until_expiry <= 7:
+            status = "soon"
+        
         items.append({
+            'id': row['id'],
             'name': row['name'],
             'barcode': row['barcode'],
             'expiration_date': row['expiration_date'],
             'days_since_expiry': days_since_expiry,
             'days_until_removal': days_until_removal,
             'removal_date': removal_date.strftime('%Y-%m-%d'),
-            'days_until_expiry': days_until_expiry
+            'days_until_expiry': days_until_expiry,
+            'status': status
         })
     
     return render_template('index.html', items=items)
-
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
@@ -195,6 +207,70 @@ def history():
     cursor.execute("SELECT * FROM history ORDER BY removed_date DESC")
     history_items = cursor.fetchall()
     return render_template('history.html', history_items=history_items)
+
+@app.route('/move_to_history', methods=['POST'])
+def move_to_history():
+    batch_id = request.form['batch_id']
+    db = get_db()
+    cursor = db.cursor()
+    today = datetime.now().date().strftime('%Y-%m-%d')
+    
+    # Получаем информацию о товаре
+    cursor.execute('''
+        SELECT p.barcode, p.name, b.expiration_date
+        FROM batches b
+        JOIN products p ON b.product_id = p.id
+        WHERE b.id = ?
+    ''', (batch_id,))
+    item = cursor.fetchone()
+    
+    if item:
+        # Проверяем, нет ли уже такой записи в истории
+        cursor.execute("SELECT id FROM history WHERE barcode = ? AND expiration_date = ?",
+                     (item['barcode'], item['expiration_date']))
+        if not cursor.fetchone():
+            # Добавляем в историю
+            cursor.execute("INSERT INTO history (barcode, product_name, expiration_date, removed_date) VALUES (?, ?, ?, ?)",
+                          (item['barcode'], item['name'], item['expiration_date'], today))
+        
+        # Удаляем из активных
+        cursor.execute("DELETE FROM batches WHERE id = ?", (batch_id,))
+        db.commit()
+    
+    return redirect(url_for('index'))
+
+@app.route('/restore_from_history', methods=['POST'])
+def restore_from_history():
+    history_id = request.form['history_id']
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Получаем информацию из истории
+    cursor.execute("SELECT * FROM history WHERE id = ?", (history_id,))
+    item = cursor.fetchone()
+    
+    if item:
+        # Проверяем существование товара
+        cursor.execute("SELECT id FROM products WHERE barcode = ?", (item['barcode'],))
+        product = cursor.fetchone()
+        
+        if not product:
+            # Если товара нет, создаем новый
+            cursor.execute("INSERT INTO products (barcode, name) VALUES (?, ?)", 
+                          (item['barcode'], item['product_name']))
+            product_id = cursor.lastrowid
+        else:
+            product_id = product['id']
+        
+        # Добавляем обратно в активные
+        cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (?, ?)", 
+                      (product_id, item['expiration_date']))
+        
+        # Удаляем из истории
+        cursor.execute("DELETE FROM history WHERE id = ?", (history_id,))
+        db.commit()
+    
+    return redirect(url_for('history'))
 
 def run_app():
     with app.app_context():
