@@ -132,7 +132,7 @@ scan_html = '''
             width: 100%; 
             height: 100%; 
             object-fit: cover;
-            transform: scaleX(-1);
+            /* Убрано зеркальное отображение */
         }
         .overlay { 
             position: absolute; 
@@ -150,8 +150,7 @@ scan_html = '''
             width: 90%;
             max-width: 400px;
             margin-top: 10px; 
-            flex-grow: 1;
-            overflow-y: auto;
+            /* Убрана прокрутка формы */
         }
         input[type="text"], input[type="date"], input[type="number"], select {
             width: 100%; 
@@ -202,6 +201,7 @@ scan_html = '''
             border-radius: 4px;
             border: 1px solid #ccc;
             cursor: pointer;
+            color: black; /* Черный текст для кнопок */
         }
     </style>
 </head>
@@ -291,6 +291,13 @@ scan_html = '''
                 
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = currentStream;
+                
+                // Для фронтальной камеры применяем зеркальное отображение
+                if (facingMode === 'user') {
+                    video.style.transform = 'scaleX(-1)';
+                } else {
+                    video.style.transform = 'none';
+                }
                 
                 // Запускаем сканер
                 startScanner();
