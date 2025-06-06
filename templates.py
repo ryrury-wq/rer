@@ -100,7 +100,7 @@ index_html = '''
 
 scan_html = '''
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -121,7 +121,7 @@ scan_html = '''
             position: relative; 
             width: 90%; 
             max-width: 400px;
-            height: 300px; /* Увеличена высота */
+            height: 200px;
             margin: 0 auto 15px;
             border-radius: 10px;
             overflow: hidden;
@@ -173,6 +173,12 @@ scan_html = '''
         }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .scanner-instruction {
+            text-align: center;
+            margin: 10px 0 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
         .scan-tips {
             text-align: center;
             margin: 5px 0;
@@ -214,21 +220,21 @@ scan_html = '''
             color: #0066cc;
             text-decoration: none;
         }
-        .inactive-overlay {
-            display: none;
-        }
     </style>
 </head>
 <body>
     <h1>Сканирование товара</h1>
     
+    <div class="scanner-instruction">
+        Поместите штрих-код в рамку
+    </div>
     <div class="scan-tips">
         Для штрих-кодов на экране: уменьшите яркость и увеличьте масштаб
     </div>
 
     <div class="scanner-container">
         <video id="video" autoplay playsinline muted></video>
-        <div class="overlay" id="overlay"></div>
+        <div class="overlay"></div>
         <div id="camera-error" class="camera-error" style="display: none;">
             Ошибка доступа к камере. Проверьте разрешения.
         </div>
@@ -238,7 +244,6 @@ scan_html = '''
         <button id="restart-btn" class="camera-btn">Перезапустить</button>
         <button id="switch-btn" class="camera-btn">Камера</button>
         <button id="torch-btn" class="camera-btn">Фонарик</button>
-        <button id="show-camera-btn" class="camera-btn" style="display:none;">Показать камеру</button>
     </div>
 
     <div class="manual-input">
@@ -248,7 +253,34 @@ scan_html = '''
     <audio id="beep" class="beep" src="https://assets.mixkit.co/sfx/preview/mixkit-electronic-retail-scanner-beep-1083.mp3" preload="auto"></audio>
 
     <form method="POST" id="scanner-form">
-        <!-- Поля формы остаются без изменений -->
+        <div class="form-group">
+            <label for="barcode">Штрих-код:</label>
+            <input type="text" name="barcode" id="barcode" placeholder="Отсканируйте или введите вручную" required>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Наименование:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="manufacture_date">Дата изготовления:</label>
+            <input type="date" name="manufacture_date" required>
+        </div>
+
+        <div class="form-group">
+            <label>Срок годности:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" name="duration_value" required style="flex: 2;">
+                <select name="duration_unit" style="flex: 1;">
+                    <option value="days">дней</option>
+                    <option value="months">месяцев</option>
+                    <option value="years">лет</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit">Сохранить</button>
     </form>
 
     <script type="module">
@@ -264,8 +296,6 @@ scan_html = '''
         const beepSound = document.getElementById('beep');
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
-        const overlay = document.getElementById('overlay');
-        const showCameraBtn = document.getElementById('show-camera-btn');
         
         let currentStream = null;
         let usingFrontCamera = false;
@@ -273,9 +303,8 @@ scan_html = '''
         let torchOn = false;
         let lastScanTime = 0;
         const SCAN_COOLDOWN = 2000;
-        const INACTIVITY_TIMEOUT = 5000; // 5 секунд бездействия
-        let inactivityTimer = null;
         
+        // Функция для остановки текущего потока
         function stopCurrentStream() {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => {
@@ -290,6 +319,7 @@ scan_html = '''
             }
         }
         
+        // Функция для запуска камеры
         async function startCamera(facingMode = 'environment') {
             try {
                 stopCurrentStream();
@@ -297,8 +327,8 @@ scan_html = '''
                 const constraints = {
                     video: {
                         facingMode: facingMode,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
+                        width: { ideal: 1920 }, // Максимальное разрешение
+                        height: { ideal: 1080 },
                         focusMode: 'continuous'
                     }
                 };
@@ -313,12 +343,9 @@ scan_html = '''
                 }
                 
                 startScanner();
-                resetInactivityTimer();
                 
                 cameraError.style.display = 'none';
                 video.style.display = 'block';
-                overlay.style.display = 'block';
-                showCameraBtn.style.display = 'none';
                 
                 checkTorchSupport();
             } catch (err) {
@@ -327,23 +354,7 @@ scan_html = '''
             }
         }
         
-        function hideCamera() {
-            stopScanner();
-            stopCurrentStream();
-            video.style.display = 'none';
-            overlay.style.display = 'none';
-            showCameraBtn.style.display = 'block';
-        }
-        
-        function resetInactivityTimer() {
-            clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => {
-                if (scannerActive) {
-                    hideCamera();
-                }
-            }, INACTIVITY_TIMEOUT);
-        }
-        
+        // Проверка поддержки фонарика
         function checkTorchSupport() {
             if (currentStream) {
                 const track = currentStream.getVideoTracks()[0];
@@ -355,6 +366,7 @@ scan_html = '''
             torchBtn.style.display = 'none';
         }
         
+        // Переключение фонарика
         async function toggleTorch() {
             if (!currentStream) return;
             
@@ -372,44 +384,82 @@ scan_html = '''
             }
         }
         
+        // Функция для запуска сканера с обработкой штрих-кодов на экране
         function startScanner() {
             if (!scannerActive) return;
             
-            codeReader.decodeFromVideoElement(video, (result, err) => {
-                const now = Date.now();
-                
-                if (now - lastScanTime < SCAN_COOLDOWN) {
-                    if (scannerActive) startScanner();
-                    return;
-                }
-                
-                if (result) {
-                    lastScanTime = now;
-                    resetInactivityTimer();
+            // Используем более медленный интервал для сканирования экранов
+            setTimeout(() => {
+                codeReader.decodeFromVideoElement(video, (result, err) => {
+                    const now = Date.now();
                     
-                    if (beepSound) {
-                        beepSound.currentTime = 0;
-                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
+                    if (now - lastScanTime < SCAN_COOLDOWN) {
+                        if (scannerActive) startScanner();
+                        return;
                     }
                     
-                    barcodeInput.value = result.text;
-                    document.getElementById('name').focus();
+                    if (result) {
+                        lastScanTime = now;
+                        
+                        if (beepSound) {
+                            beepSound.currentTime = 0;
+                            beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
+                        }
+                        
+                        barcodeInput.value = result.text;
+                        document.getElementById('name').focus();
+                        
+                        fetch(`/get-product-name?barcode=${result.text}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.found) {
+                                    document.getElementById('name').value = data.name;
+                                }
+                            });
+                    }
                     
-                    fetch(`/get-product-name?barcode=${result.text}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.found) {
-                                document.getElementById('name').value = data.name;
-                            }
-                        });
-                }
-                
-                if (err && !err.message.includes('NotFoundException')) {
-                    console.error(err);
-                }
-            });
+                    if (err) {
+                        // Специальная обработка для штрих-кодов на экране
+                        if (err.message.includes('NotFoundException')) {
+                            // Пробуем изменить настройки для экранных штрих-кодов
+                            adjustForScreenBarcodes();
+                        }
+                        console.error(err);
+                    }
+                    
+                    if (scannerActive) {
+                        startScanner();
+                    }
+                });
+            }, 1000); // Увеличиваем интервал до 1 секунды для экранных штрих-кодов
         }
         
+        // Регулировка параметров для сканирования штрих-кодов на экране
+        function adjustForScreenBarcodes() {
+            // Попробуем уменьшить разрешение
+            if (currentStream) {
+                const track = currentStream.getVideoTracks()[0];
+                if (track) {
+                    try {
+                        track.applyConstraints({
+                            width: { ideal: 800 },
+                            height: { ideal: 600 }
+                        });
+                    } catch (e) {
+                        console.log("Не удалось изменить разрешение", e);
+                    }
+                }
+            }
+            
+            // Обновляем подсказки
+            document.querySelector('.scan-tips').innerHTML = 
+                "Для штрих-кодов на экране: <br>" + 
+                "1. Уменьшите яркость экрана <br>" +
+                "2. Увеличьте масштаб штрих-кода <br>" +
+                "3. Держите камеру под углом 45 градусов";
+        }
+        
+        // Функция для остановки сканера
         function stopScanner() {
             scannerActive = false;
             codeReader.reset();
@@ -420,18 +470,21 @@ scan_html = '''
             video.style.display = 'none';
         }
         
-        // Обработчики событий
+        // Переключение камеры
         switchBtn.addEventListener('click', () => {
             usingFrontCamera = !usingFrontCamera;
             startCamera(usingFrontCamera ? 'user' : 'environment');
         });
         
+        // Перезапуск камеры
         restartBtn.addEventListener('click', () => {
             startCamera(usingFrontCamera ? 'user' : 'environment');
         });
         
+        // Управление фонариком
         torchBtn.addEventListener('click', toggleTorch);
         
+        // Ручной ввод штрих-кода
         manualInputLink.addEventListener('click', (e) => {
             e.preventDefault();
             barcodeInput.removeAttribute('readonly');
@@ -439,8 +492,11 @@ scan_html = '''
             barcodeInput.placeholder = "Введите штрих-код вручную";
         });
         
-        showCameraBtn.addEventListener('click', () => {
-            startCamera(usingFrontCamera ? 'user' : 'environment');
+        // Автоматический поиск камеры при фокусе на поле ввода
+        barcodeInput.addEventListener('focus', () => {
+            if (!barcodeInput.value) {
+                startCamera();
+            }
         });
         
         // Проверяем поддержку медиаустройств
@@ -452,6 +508,13 @@ scan_html = '''
         } else {
             startCamera();
         }
+        
+        // Советы по сканированию экранных штрих-кодов
+        setTimeout(() => {
+            if (!barcodeInput.value) {
+                adjustForScreenBarcodes();
+            }
+        }, 3000);
         
         // Отправка формы
         scannerForm.addEventListener('submit', (e) => {
