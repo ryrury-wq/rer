@@ -27,7 +27,7 @@ index_html = '''
             Годен до: {{ item.expiration_date }}<br>
             
             {% if item.days_since_expiry > 0 %}
-                Просрочено дней назад: {{ item.days_since_expiry }}
+                Просрочено на : {{ item.days_since_expiry }} дня(дней)
                 <br>Удаление через: {{ item.days_until_removal }} дней
             {% else %}
                 До истечения: {{ item.days_until_expiry }} дней
