@@ -8,9 +8,40 @@ index_html = '''
     <title>Контроль сроков</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .item { padding: 10px; border-bottom: 1px solid #eee; }
+        .items-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .item { 
+            padding: 10px; 
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-info { flex-grow: 1; }
+        .move-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #999;
+            background: white;
+            cursor: pointer;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .move-btn:hover {
+            background-color: #f0f0f0;
+        }
         .expired { background-color: #ffdddd; }
+        .warning { background-color: #ffcc99; } /* Оранжевый для 1 дня */
         .soon { background-color: #ffffcc; }
+        .normal { background-color: white; }
     </style>
 </head>
 <body>
@@ -18,25 +49,30 @@ index_html = '''
     <a href="/scan">Сканировать новый товар</a> | 
     <a href="/history">История</a>
     <hr>
-    {% for item in items %}
-        <div class="item 
-            {% if item.days_since_expiry > 0 %}expired
-            {% elif item.days_until_expiry <= 7 %}soon
-            {% endif %}">
-            <strong>{{ item.name }}</strong> ({{ item.barcode }})<br>
-            Годен до: {{ item.expiration_date }}<br>
-            
-            {% if item.days_since_expiry > 0 %}
-                Просрочено на : {{ item.days_since_expiry }} дня(дней)
-                <br>Удаление через: {{ item.days_until_removal }} дней
-            {% else %}
-                До истечения: {{ item.days_until_expiry }} дней
-                <br>Удаление через: {{ item.days_until_removal }} дней ({{ item.removal_date }})
-            {% endif %}
-        </div>
-    {% else %}
-        <p>Нет товаров с истекающим сроком</p>
-    {% endfor %}
+    <div class="items-container">
+        {% for item in items %}
+            <div class="item {{ item.status }}">
+                <div class="item-info">
+                    <strong>{{ item.name }}</strong> ({{ item.barcode }})<br>
+                    Годен до: {{ item.expiration_date }}<br>
+                    
+                    {% if item.days_since_expiry > 0 %}
+                        Просрочено на : {{ item.days_since_expiry }} дня(дней)
+                        <br>Удаление через: {{ item.days_until_removal }} дней
+                    {% else %}
+                        До истечения: {{ item.days_until_expiry }} дней
+                        <br>Удаление через: {{ item.days_until_removal }} дней ({{ item.removal_date }})
+                    {% endif %}
+                </div>
+                <form action="/move_to_history" method="POST" style="display: inline;">
+                    <input type="hidden" name="batch_id" value="{{ item.id }}">
+                    <button type="submit" class="move-btn" title="Переместить в историю">→</button>
+                </form>
+            </div>
+        {% else %}
+            <p>Нет товаров с истекающим сроком</p>
+        {% endfor %}
+    </div>
 </body>
 </html>
 '''
@@ -184,28 +220,65 @@ history_html = '''
     <title>История</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        ul { list-style-type: none; padding: 0; }
-        li { padding: 8px; border-bottom: 1px solid #eee; }
+        .items-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        li { 
+            padding: 8px; 
+            border-bottom: 1px solid #eee; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-info { flex-grow: 1; }
+        .restore-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #999;
+            background: white;
+            cursor: pointer;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .restore-btn:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
     <h1>История списанных товаров</h1>
     <a href="/">На главную</a>
     <hr>
-    <ul>
-        {% for item in history_items %}
-            <li>
-                <strong>{{ item['product_name'] }}</strong> ({{ item['barcode'] }})<br>
-                Срок годности: {{ item['expiration_date'] }}<br>
-                Удален: {{ item['removed_date'] }}
-            </li>
-        {% else %}
-            <li>История пуста</li>
-        {% endfor %}
-    </ul>
+    <div class="items-container">
+        <ul>
+            {% for item in history_items %}
+                <li>
+                    <div class="item-info">
+                        <strong>{{ item['product_name'] }}</strong> ({{ item['barcode'] }})<br>
+                        Срок годности: {{ item['expiration_date'] }}<br>
+                        Удален: {{ item['removed_date'] }}
+                    </div>
+                    <form action="/restore_from_history" method="POST" style="display: inline;">
+                        <input type="hidden" name="history_id" value="{{ item['id'] }}">
+                        <button type="submit" class="restore-btn" title="Восстановить">←</button>
+                    </form>
+                </li>
+            {% else %}
+                <li>История пуста</li>
+            {% endfor %}
+        </ul>
+    </div>
 </body>
 </html>
 '''
+
 
 templates = {
     'index.html': index_html,
