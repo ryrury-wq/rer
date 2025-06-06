@@ -279,6 +279,7 @@ scan_html = '''
         let currentStream = null;
         let torchOn = false;
         let lastScanTime = 0;
+        let scannerActive = true; // Добавлена отсутствующая переменная
         const SCAN_COOLDOWN = 2000;
         
         // Функция для остановки текущего потока
@@ -296,24 +297,26 @@ scan_html = '''
             }
         }
         
-        // Функция для запуска камеры
+        // Функция для запуска камеры (упрощенные ограничения)
         async function startCamera() {
             try {
                 stopCurrentStream();
                 
+                // Упрощенные ограничения для лучшей совместимости
                 const constraints = {
                     video: {
                         facingMode: 'environment',
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 },
-                        focusMode: 'continuous'
+                        // Убраны требования к разрешению и фокусировке
                     }
                 };
                 
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
-                video.style.transform = 'none';
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints)
+                    .catch(err => {
+                        console.error("Ошибка getUserMedia:", err);
+                        throw err;
+                    });
                 
+                video.srcObject = currentStream;
                 startScanner();
                 
                 cameraError.style.display = 'none';
@@ -322,8 +325,26 @@ scan_html = '''
                 checkTorchSupport();
             } catch (err) {
                 console.error("Ошибка доступа к камере:", err);
-                showCameraError();
+                showCameraError(err);
             }
+        }
+        
+        // Показ ошибки с деталями
+        function showCameraError(err) {
+            cameraError.style.display = 'block';
+            video.style.display = 'none';
+            
+            let errorMessage = "Ошибка доступа к камере: ";
+            
+            if (err.name === "NotAllowedError") {
+                errorMessage += "Разрешение не предоставлено. Пожалуйста, разрешите доступ к камере в настройках браузера.";
+            } else if (err.name === "NotFoundError" || err.name === "OverconstrainedError") {
+                errorMessage += "Камера не найдена или не поддерживает требуемые параметры.";
+            } else {
+                errorMessage += err.message;
+            }
+            
+            cameraError.innerHTML = errorMessage;
         }
         
         // Проверка поддержки фонарика
@@ -360,55 +381,48 @@ scan_html = '''
         function startScanner() {
             if (!scannerActive) return;
             
-            setTimeout(() => {
-                codeReader.decodeFromVideoElement(video, (result, err) => {
-                    const now = Date.now();
+            codeReader.decodeFromVideoElement(video, (result, err) => {
+                const now = Date.now();
+                
+                if (now - lastScanTime < SCAN_COOLDOWN) {
+                    if (scannerActive) startScanner();
+                    return;
+                }
+                
+                if (result) {
+                    lastScanTime = now;
                     
-                    if (now - lastScanTime < SCAN_COOLDOWN) {
-                        if (scannerActive) startScanner();
-                        return;
+                    if (beepSound) {
+                        beepSound.currentTime = 0;
+                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
                     }
                     
-                    if (result) {
-                        lastScanTime = now;
-                        
-                        if (beepSound) {
-                            beepSound.currentTime = 0;
-                            beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
-                        }
-                        
-                        barcodeInput.value = result.text;
-                        document.getElementById('name').focus();
-                        
-                        fetch(`/get-product-name?barcode=${result.text}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.found) {
-                                    document.getElementById('name').value = data.name;
-                                }
-                            });
-                    }
+                    barcodeInput.value = result.text;
+                    document.getElementById('name').focus();
                     
-                    if (err) {
-                        console.error(err);
-                    }
-                    
-                    if (scannerActive) {
-                        startScanner();
-                    }
-                });
-            }, 100);
+                    fetch(`/get-product-name?barcode=${result.text}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.found) {
+                                document.getElementById('name').value = data.name;
+                            }
+                        });
+                }
+                
+                if (err && !err.message.includes('NotFoundException')) {
+                    console.error(err);
+                }
+                
+                if (scannerActive) {
+                    startScanner();
+                }
+            });
         }
         
         // Функция для остановки сканера
         function stopScanner() {
             scannerActive = false;
             codeReader.reset();
-        }
-        
-        function showCameraError() {
-            cameraError.style.display = 'block';
-            video.style.display = 'none';
         }
         
         // Перезапуск камеры
@@ -436,8 +450,10 @@ scan_html = '''
         
         // Проверяем поддержку медиаустройств
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showCameraError();
-            cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
+            showCameraError({ 
+                name: "NotSupportedError", 
+                message: "Ваш браузер не поддерживает доступ к камере" 
+            });
             barcodeInput.removeAttribute('readonly');
             barcodeInput.placeholder = "Введите штрих-код вручную";
         } else {
