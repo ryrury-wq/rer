@@ -250,7 +250,6 @@ scan_html = '''
             video: {
                 width: { ideal: 640 },
                 height: { ideal: 480 },
-                facingMode: "environment" // Используем заднюю камеру
             }
         };
 
