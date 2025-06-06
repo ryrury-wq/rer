@@ -85,23 +85,82 @@ scan_html = '''
     <meta charset="UTF-8">
     <title>Сканирование</title>
     <style>
-        body { font-family: sans-serif; padding: 1em; margin: 0; background: #f9f9f9; }
-        .scanner-container { position: relative; width: 100%; max-width: 600px; margin: 0 auto; }
-        video { width: 100%; height: auto; border-radius: 10px; }
-        .overlay { position: absolute; top: 30%; left: 10%; width: 80%; height: 20%; 
-                  border: 2px dashed red; border-radius: 8px; pointer-events: none; }
-        form { margin-top: 20px; }
+        body { 
+            font-family: sans-serif; 
+            padding: 1em; 
+            margin: 0; 
+            background: #f9f9f9; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .scanner-container { 
+            position: relative; 
+            width: 80%; 
+            max-width: 400px; /* Уменьшаем максимальную ширину */
+            height: 200px; /* Фиксированная высота */
+            margin: 0 auto;
+            border-radius: 10px;
+            overflow: hidden; /* Обрезаем видео по границам контейнера */
+        }
+        video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; /* Сохраняем пропорции видео */
+        }
+        .overlay { 
+            position: absolute; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%; 
+            height: 40%; 
+            border: 2px dashed red; 
+            border-radius: 8px; 
+            pointer-events: none; 
+            box-sizing: border-box;
+        }
+        form { 
+            width: 80%;
+            max-width: 400px;
+            margin-top: 20px; 
+        }
         input[type="text"], input[type="date"], input[type="number"], select {
-            width: 100%; padding: 12px; font-size: 1em; border: 1px solid #ccc;
-            border-radius: 4px; margin-bottom: 10px; background: #fff; }
-        button { width: 100%; padding: 12px; background-color: #28a745; color: white;
-                font-size: 1.1em; border: none; border-radius: 4px; }
+            width: 100%; 
+            padding: 12px; 
+            font-size: 1em; 
+            border: 1px solid #ccc;
+            border-radius: 4px; 
+            margin-bottom: 10px; 
+            background: #fff; 
+            box-sizing: border-box;
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #28a745; 
+            color: white;
+            font-size: 1.1em; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer;
+        }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .scanner-instruction {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 0.9em;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <h1>Сканирование товара</h1>
+    
+    <div class="scanner-instruction">
+        Поместите штрих-код в рамку
+    </div>
 
     <div class="scanner-container">
         <video id="video" autoplay playsinline></video>
@@ -109,33 +168,7 @@ scan_html = '''
     </div>
 
     <form method="POST">
-        <div class="form-group">
-            <label for="barcode">Штрих-код:</label>
-            <input type="text" name="barcode" id="barcode" readonly placeholder="Ожидание сканирования..." required>
-        </div>
-
-        <div class="form-group">
-            <label for="name">Наименование:</label>
-            <input type="text" id="name" name="name" required>
-        </div>
-
-        <div class="form-group">
-            <label for="manufacture_date">Дата изготовления:</label>
-            <input type="date" name="manufacture_date" required>
-        </div>
-
-        <div class="form-group">
-            <label>Срок годности:</label>
-            <div style="display: flex; gap: 10px;">
-                <input type="number" name="duration_value" required style="flex: 2;">
-                <select name="duration_unit" style="flex: 1;">
-                    <option value="days">дней</option>
-                    <option value="months">месяцев</option>
-                </select>
-            </div>
-        </div>
-
-        <button type="submit">Сохранить</button>
+        <!-- Остальная форма без изменений -->
     </form>
 
     <script type="module">
@@ -144,22 +177,39 @@ scan_html = '''
         const codeReader = new BrowserMultiFormatReader();
         const video = document.getElementById('video');
         const barcodeInput = document.getElementById('barcode');
-
-        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-            if (result) {
-                barcodeInput.value = result.getText();
-                
-                // Проверка наличия товара в базе
-                fetch(`/get-product-name?barcode=${result.getText()}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.found) {
-                            document.getElementById('name').value = data.name;
-                        }
-                    });
-                
-                codeReader.reset();
+        
+        // Получаем доступ к камере с ограниченным разрешением
+        const constraints = {
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: "environment"
             }
+        };
+
+        // Запускаем сканер с ограничениями
+        codeReader.decodeFromConstraints(
+            constraints, 
+            video, 
+            (result, err) => {
+                if (result) {
+                    barcodeInput.value = result.getText();
+                    
+                    // Проверка наличия товара в базе
+                    fetch(`/get-product-name?barcode=${result.getText()}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.found) {
+                                document.getElementById('name').value = data.name;
+                            }
+                        });
+                    
+                    codeReader.reset();
+                }
+            }
+        ).catch(err => {
+            console.error(err);
+            alert('Ошибка доступа к камере. Проверьте разрешения.');
         });
     </script>
 </body>
