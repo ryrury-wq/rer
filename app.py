@@ -70,20 +70,26 @@ def index():
     items = []
     for row in cursor.fetchall():
         exp_date = datetime.strptime(row['expiration_date'], "%Y-%m-%d").date()
-        days_since_expiry = (today - exp_date).days
-        removal_date = exp_date + timedelta(days=30)
-        days_until_removal = (removal_date - today).days if removal_date > today else 0
+        days_until_expiry = (exp_date - today).days
         
-        items.append((
-            row['name'], 
-            row['barcode'], 
-            row['expiration_date'],
-            days_since_expiry,
-            days_until_removal,
-            removal_date.strftime('%Y-%m-%d')
-        ))
+        # Правильный расчёт дней просрочки
+        days_since_expiry = max(0, (today - exp_date).days)
+        
+        # Правильный расчёт дней до удаления
+        removal_date = exp_date + timedelta(days=30)
+        days_until_removal = max(0, (removal_date - today).days)
+        
+        items.append({
+            'name': row['name'],
+            'barcode': row['barcode'],
+            'expiration_date': row['expiration_date'],
+            'days_since_expiry': days_since_expiry,
+            'days_until_removal': days_until_removal,
+            'removal_date': removal_date.strftime('%Y-%m-%d'),
+            'days_until_expiry': days_until_expiry
+        })
     
-    return render_template('index.html', items=items, today=today.strftime('%Y-%m-%d'))
+    return render_template('index.html', items=items)
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
