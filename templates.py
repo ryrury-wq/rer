@@ -132,7 +132,6 @@ scan_html = '''
             width: 100%; 
             height: 100%; 
             object-fit: cover;
-            /* Убрано зеркальное отображение */
         }
         .overlay { 
             position: absolute; 
@@ -140,7 +139,7 @@ scan_html = '''
             left: 50%;
             transform: translate(-50%, -50%);
             width: 90%; 
-            height: 40%; 
+            height: 60%; /* Увеличена высота области сканирования */
             border: 2px dashed red; 
             border-radius: 8px; 
             pointer-events: none; 
@@ -150,7 +149,6 @@ scan_html = '''
             width: 90%;
             max-width: 400px;
             margin-top: 10px; 
-            /* Убрана прокрутка формы */
         }
         input[type="text"], input[type="date"], input[type="number"], select {
             width: 100%; 
@@ -181,6 +179,12 @@ scan_html = '''
             font-size: 0.9em;
             color: #666;
         }
+        .scan-tips {
+            text-align: center;
+            margin: 5px 0;
+            font-size: 0.8em;
+            color: #888;
+        }
         h1 {
             font-size: 1.5em;
             margin: 5px 0 10px;
@@ -194,6 +198,8 @@ scan_html = '''
             margin-top: 10px;
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .camera-btn {
             padding: 8px 15px;
@@ -201,7 +207,10 @@ scan_html = '''
             border-radius: 4px;
             border: 1px solid #ccc;
             cursor: pointer;
-            color: black; /* Черный текст для кнопок */
+            color: black;
+        }
+        .beep {
+            display: none;
         }
     </style>
 </head>
@@ -210,6 +219,9 @@ scan_html = '''
     
     <div class="scanner-instruction">
         Поместите штрих-код в рамку
+    </div>
+    <div class="scan-tips">
+        Держите устройство устойчиво на расстоянии 15-30 см от штрих-кода
     </div>
 
     <div class="scanner-container">
@@ -221,9 +233,12 @@ scan_html = '''
     </div>
 
     <div class="camera-controls">
-        <button id="restart-btn" class="camera-btn">Перезапустить камеру</button>
-        <button id="switch-btn" class="camera-btn">Переключить камеру</button>
+        <button id="restart-btn" class="camera-btn">Перезапустить</button>
+        <button id="switch-btn" class="camera-btn">Камера</button>
+        <button id="torch-btn" class="camera-btn">Фонарик</button>
     </div>
+
+    <audio id="beep" class="beep" src="https://assets.mixkit.co/sfx/preview/mixkit-electronic-retail-scanner-beep-1083.mp3" preload="auto"></audio>
 
     <form method="POST">
         <div class="form-group">
@@ -265,16 +280,28 @@ scan_html = '''
         const cameraError = document.getElementById('camera-error');
         const restartBtn = document.getElementById('restart-btn');
         const switchBtn = document.getElementById('switch-btn');
+        const torchBtn = document.getElementById('torch-btn');
+        const beepSound = document.getElementById('beep');
         
         let currentStream = null;
         let usingFrontCamera = false;
         let scannerActive = true;
+        let torchOn = false;
+        let lastScanTime = 0;
+        const SCAN_COOLDOWN = 2000; // 2 секунды между сканированиями
         
         // Функция для остановки текущего потока
         function stopCurrentStream() {
             if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+                currentStream.getTracks().forEach(track => {
+                    if (track.kind === 'video' && torchOn) {
+                        track.applyConstraints({ advanced: [{ torch: false }] });
+                    }
+                    track.stop();
+                });
                 currentStream = null;
+                torchOn = false;
+                torchBtn.textContent = 'Фонарик';
             }
         }
         
@@ -285,7 +312,10 @@ scan_html = '''
                 
                 const constraints = {
                     video: {
-                        facingMode: facingMode
+                        facingMode: facingMode,
+                        width: { ideal: 1280 }, // Более высокое разрешение
+                        height: { ideal: 720 },
+                        focusMode: 'continuous' // Непрерывная фокусировка
                     }
                 };
                 
@@ -304,9 +334,42 @@ scan_html = '''
                 
                 cameraError.style.display = 'none';
                 video.style.display = 'block';
+                
+                // Проверяем поддержку фонарика
+                checkTorchSupport();
             } catch (err) {
                 console.error("Ошибка доступа к камере:", err);
                 showCameraError();
+            }
+        }
+        
+        // Проверка поддержки фонарика
+        function checkTorchSupport() {
+            if (currentStream) {
+                const track = currentStream.getVideoTracks()[0];
+                if (track && track.getCapabilities().torch) {
+                    torchBtn.style.display = 'block';
+                    return;
+                }
+            }
+            torchBtn.style.display = 'none';
+        }
+        
+        // Переключение фонарика
+        async function toggleTorch() {
+            if (!currentStream) return;
+            
+            const track = currentStream.getVideoTracks()[0];
+            if (!track || !track.getCapabilities().torch) return;
+            
+            try {
+                await track.applyConstraints({
+                    advanced: [{ torch: !torchOn }]
+                });
+                torchOn = !torchOn;
+                torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
+            } catch (err) {
+                console.error("Ошибка переключения фонарика:", err);
             }
         }
         
@@ -315,8 +378,27 @@ scan_html = '''
             if (!scannerActive) return;
             
             codeReader.decodeFromVideoElement(video, (result, err) => {
+                const now = Date.now();
+                
+                // Защита от повторных сканирований
+                if (now - lastScanTime < SCAN_COOLDOWN) {
+                    if (scannerActive) requestAnimationFrame(() => startScanner());
+                    return;
+                }
+                
                 if (result) {
+                    lastScanTime = now;
+                    
+                    // Звуковой сигнал
+                    if (beepSound) {
+                        beepSound.currentTime = 0;
+                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
+                    }
+                    
                     barcodeInput.value = result.text;
+                    
+                    // Автоматический фокус на следующее поле
+                    document.getElementById('name').focus();
                     
                     // Проверка наличия товара в базе
                     fetch(`/get-product-name?barcode=${result.text}`)
@@ -361,6 +443,9 @@ scan_html = '''
             startCamera(usingFrontCamera ? 'user' : 'environment');
         });
         
+        // Управление фонариком
+        torchBtn.addEventListener('click', toggleTorch);
+        
         // Проверяем поддержку медиаустройств
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showCameraError();
@@ -374,6 +459,14 @@ scan_html = '''
             stopScanner();
             stopCurrentStream();
         });
+        
+        // Советы по сканированию
+        setTimeout(() => {
+            if (!barcodeInput.value) {
+                document.querySelector('.scan-tips').textContent = 
+                    "Если сканирование не работает, попробуйте поднести штрих-код ближе или дальше";
+            }
+        }, 5000);
     </script>
 </body>
 </html>
