@@ -126,11 +126,13 @@ scan_html = '''
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: black;
         }
         video { 
             width: 100%; 
             height: 100%; 
             object-fit: cover;
+            transform: scaleX(-1);
         }
         .overlay { 
             position: absolute; 
@@ -189,6 +191,18 @@ scan_html = '''
             text-align: center;
             padding: 10px;
         }
+        .camera-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .camera-btn {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -204,6 +218,11 @@ scan_html = '''
         <div id="camera-error" class="camera-error" style="display: none;">
             Ошибка доступа к камере. Проверьте разрешения.
         </div>
+    </div>
+
+    <div class="camera-controls">
+        <button id="restart-btn" class="camera-btn">Перезапустить камеру</button>
+        <button id="switch-btn" class="camera-btn">Переключить камеру</button>
     </div>
 
     <form method="POST">
@@ -244,62 +263,97 @@ scan_html = '''
         const video = document.getElementById('video');
         const barcodeInput = document.getElementById('barcode');
         const cameraError = document.getElementById('camera-error');
+        const restartBtn = document.getElementById('restart-btn');
+        const switchBtn = document.getElementById('switch-btn');
         
-        // Параметры для камеры
-        const constraints = {
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: "environment"
+        let currentStream = null;
+        let usingFrontCamera = false;
+        let scannerActive = true;
+        
+        // Функция для остановки текущего потока
+        function stopCurrentStream() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
             }
-        };
-
+        }
+        
         // Функция для запуска камеры
-        async function startCamera() {
+        async function startCamera(facingMode = 'environment') {
             try {
-                // Получаем доступ к камере
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = stream;
+                stopCurrentStream();
                 
-                // Обработка изменения размеров видео
-                video.addEventListener('loadedmetadata', () => {
-                    video.play().catch(err => {
-                        console.error("Ошибка воспроизведения видео:", err);
-                        showCameraError();
-                    });
-                });
+                const constraints = {
+                    video: {
+                        facingMode: facingMode
+                    }
+                };
                 
-                // Запускаем сканер штрих-кодов
-                codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-                    if (result) {
-                        barcodeInput.value = result.getText();
-                        
-                        // Проверка наличия товара в базе
-                        fetch(`/get-product-name?barcode=${result.getText()}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.found) {
-                                    document.getElementById('name').value = data.name;
-                                }
-                            });
-                        
-                        codeReader.reset();
-                    }
-                    if (err && !(err instanceof ZXing.NotFoundException)) {
-                        console.error(err);
-                    }
-                });
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+                
+                // Запускаем сканер
+                startScanner();
+                
+                cameraError.style.display = 'none';
+                video.style.display = 'block';
             } catch (err) {
                 console.error("Ошибка доступа к камере:", err);
                 showCameraError();
             }
         }
         
+        // Функция для запуска сканера
+        function startScanner() {
+            if (!scannerActive) return;
+            
+            codeReader.decodeFromVideoElement(video, (result, err) => {
+                if (result) {
+                    barcodeInput.value = result.text;
+                    
+                    // Проверка наличия товара в базе
+                    fetch(`/get-product-name?barcode=${result.text}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.found) {
+                                document.getElementById('name').value = data.name;
+                            }
+                        });
+                }
+                
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error(err);
+                }
+                
+                // Рекурсивно продолжаем сканирование
+                if (scannerActive) {
+                    requestAnimationFrame(() => startScanner());
+                }
+            });
+        }
+        
+        // Функция для остановки сканера
+        function stopScanner() {
+            scannerActive = false;
+            codeReader.reset();
+        }
+        
         function showCameraError() {
             cameraError.style.display = 'block';
             video.style.display = 'none';
         }
-
+        
+        // Переключение камеры
+        switchBtn.addEventListener('click', () => {
+            usingFrontCamera = !usingFrontCamera;
+            startCamera(usingFrontCamera ? 'user' : 'environment');
+        });
+        
+        // Перезапуск камеры
+        restartBtn.addEventListener('click', () => {
+            startCamera(usingFrontCamera ? 'user' : 'environment');
+        });
+        
         // Проверяем поддержку медиаустройств
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showCameraError();
@@ -307,6 +361,12 @@ scan_html = '''
         } else {
             startCamera();
         }
+        
+        // Остановка сканера при уходе со страницы
+        window.addEventListener('beforeunload', () => {
+            stopScanner();
+            stopCurrentStream();
+        });
     </script>
 </body>
 </html>
