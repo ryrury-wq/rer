@@ -126,7 +126,6 @@ scan_html = '''
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            background: black; /* Фон на случай если камера не загрузится */
         }
         video { 
             width: 100%; 
