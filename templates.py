@@ -100,13 +100,12 @@ index_html = '''
 
 scan_html = '''
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Сканирование</title>
     <style>
-        /* Оптимизированные стили */
         body { 
             font-family: sans-serif; 
             padding: 10px; 
@@ -116,7 +115,7 @@ scan_html = '''
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
-            min-height: 100vh;
+            height: 100vh;
         }
         .scanner-container { 
             position: relative; 
@@ -133,7 +132,6 @@ scan_html = '''
             width: 100%; 
             height: 100%; 
             object-fit: cover;
-            transform: none !important; /* Убрано зеркальное отражение */
         }
         .overlay { 
             position: absolute; 
@@ -152,7 +150,60 @@ scan_html = '''
             max-width: 400px;
             margin-top: 10px; 
         }
-        /* Остальные стили без изменений */
+        input[type="text"], input[type="date"], input[type="number"], select {
+            width: 100%; 
+            padding: 12px; 
+            font-size: 1em; 
+            border: 1px solid #ccc;
+            border-radius: 4px; 
+            margin-bottom: 10px; 
+            background: #fff; 
+            box-sizing: border-box;
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #28a745; 
+            color: white;
+            font-size: 1.1em; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .camera-error {
+            color: red;
+            text-align: center;
+            padding: 10px;
+        }
+        .camera-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .camera-btn {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            color: black;
+        }
+        .beep {
+            display: none;
+        }
+        .manual-input {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .manual-input a {
+            color: #0066cc;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
@@ -179,12 +230,38 @@ scan_html = '''
     <audio id="beep" class="beep" src="https://assets.mixkit.co/sfx/preview/mixkit-electronic-retail-scanner-beep-1083.mp3" preload="auto"></audio>
 
     <form method="POST" id="scanner-form">
-        <!-- Поля формы без изменений -->
+        <div class="form-group">
+            <label for="barcode">Штрих-код:</label>
+            <input type="text" name="barcode" id="barcode" placeholder="Отсканируйте или введите вручную" required>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Наименование:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="manufacture_date">Дата изготовления:</label>
+            <input type="date" name="manufacture_date" required>
+        </div>
+
+        <div class="form-group">
+            <label>Срок годности:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" name="duration_value" required style="flex: 2;">
+                <select name="duration_unit" style="flex: 1;">
+                    <option value="days">дней</option>
+                    <option value="months">месяцев</option>
+                    <option value="years">лет</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit">Сохранить</button>
     </form>
 
-    <!-- Исправленная версия ZXing -->
     <script type="module">
-        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.0/+esm';
+        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
 
         const codeReader = new BrowserMultiFormatReader();
         const video = document.getElementById('video');
@@ -202,13 +279,11 @@ scan_html = '''
         let scannerActive = true;
         let torchOn = false;
         let lastScanTime = 0;
-        let isProcessing = false; // Флаг для контроля обработки
-        const SCAN_COOLDOWN = 1000; // Увеличенное время между сканированиями
+        const SCAN_COOLDOWN = 2000;
         
-        // Оптимизированные функции работы с камерой
+        // Функция для остановки текущего потока
         function stopCurrentStream() {
             if (currentStream) {
-                scannerActive = false;
                 currentStream.getTracks().forEach(track => {
                     if (track.kind === 'video' && torchOn) {
                         track.applyConstraints({ advanced: [{ torch: false }] });
@@ -221,17 +296,16 @@ scan_html = '''
             }
         }
         
+        // Функция для запуска камеры
         async function startCamera(facingMode = 'environment') {
             try {
                 stopCurrentStream();
-                scannerActive = true;
                 
                 const constraints = {
                     video: {
                         facingMode: facingMode,
-                        width: { ideal: 1280 }, // Снижено разрешение
-                        height: { ideal: 720 },
-                        frameRate: { ideal: 15, max: 30 }, // Ограничение FPS
+                        width: { ideal: 1920 }, // Максимальное разрешение
+                        height: { ideal: 1080 },
                         focusMode: 'continuous'
                     }
                 };
@@ -239,97 +313,152 @@ scan_html = '''
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = currentStream;
                 
+                if (facingMode === 'user') {
+                    video.style.transform = 'scaleX(-1)';
+                } else {
+                    video.style.transform = 'none';
+                }
+                
+                startScanner();
+                
                 cameraError.style.display = 'none';
                 video.style.display = 'block';
                 
                 checkTorchSupport();
-                startScanner();
             } catch (err) {
                 console.error("Ошибка доступа к камере:", err);
                 showCameraError();
             }
         }
         
-        // Оптимизированное сканирование
+        // Проверка поддержки фонарика
+        function checkTorchSupport() {
+            if (currentStream) {
+                const track = currentStream.getVideoTracks()[0];
+                if (track && track.getCapabilities().torch) {
+                    torchBtn.style.display = 'block';
+                    return;
+                }
+            }
+            torchBtn.style.display = 'none';
+        }
+        
+        // Переключение фонарика
+        async function toggleTorch() {
+            if (!currentStream) return;
+            
+            const track = currentStream.getVideoTracks()[0];
+            if (!track || !track.getCapabilities().torch) return;
+            
+            try {
+                await track.applyConstraints({
+                    advanced: [{ torch: !torchOn }]
+                });
+                torchOn = !torchOn;
+                torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
+            } catch (err) {
+                console.error("Ошибка переключения фонарика:", err);
+            }
+        }
+        
+        // Функция для запуска сканера
         function startScanner() {
-            if (!scannerActive || isProcessing) return;
+            if (!scannerActive) return;
             
-            isProcessing = true;
-            
-            requestAnimationFrame(async () => {
-                try {
-                    const result = await codeReader.decodeFromVideoElement(video);
+            setTimeout(() => {
+                codeReader.decodeFromVideoElement(video, (result, err) => {
+                    const now = Date.now();
+                    
+                    if (now - lastScanTime < SCAN_COOLDOWN) {
+                        if (scannerActive) startScanner();
+                        return;
+                    }
                     
                     if (result) {
-                        const now = Date.now();
-                        if (now - lastScanTime > SCAN_COOLDOWN) {
-                            handleScanResult(result);
-                            lastScanTime = now;
+                        lastScanTime = now;
+                        
+                        if (beepSound) {
+                            beepSound.currentTime = 0;
+                            beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
                         }
+                        
+                        barcodeInput.value = result.text;
+                        document.getElementById('name').focus();
+                        
+                        fetch(`/get-product-name?barcode=${result.text}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.found) {
+                                    document.getElementById('name').value = data.name;
+                                }
+                            });
                     }
-                } catch (err) {
-                    // Игнорируем ошибки NotFoundException
-                    if (!err.message.includes('NotFoundException')) {
-                        console.error(err);
-                    }
-                } finally {
-                    isProcessing = false;
+                    
                     if (scannerActive) {
-                        setTimeout(startScanner, 100); // Задержка между кадрами
-                    }
-                }
-            });
-        }
-        
-        function handleScanResult(result) {
-            if (beepSound) {
-                beepSound.currentTime = 0;
-                beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
-            }
-            
-            barcodeInput.value = result.text;
-            
-            // Убрана автоматическая фокусировка на поле имени
-            fetch(`/get-product-name?barcode=${result.text}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.found) {
-                        document.getElementById('name').value = data.name;
+                        startScanner();
                     }
                 });
+            }, 1000);
         }
         
-        // Исправленная отправка формы
-        scannerForm.addEventListener('submit', (e) => {
-            const requiredFields = scannerForm.querySelectorAll('[required]');
-            let isValid = true;
-            
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    isValid = false;
-                    field.style.borderColor = 'red';
-                } else {
-                    field.style.borderColor = '';
-                }
-            });
-            
-            if (!isValid) {
-                e.preventDefault();
-                alert("Пожалуйста, заполните все обязательные поля");
+        // Функция для остановки сканера
+        function stopScanner() {
+            scannerActive = false;
+            codeReader.reset();
+        }
+        
+        function showCameraError() {
+            cameraError.style.display = 'block';
+            video.style.display = 'none';
+        }
+        
+        // Переключение камеры
+        switchBtn.addEventListener('click', () => {
+            usingFrontCamera = !usingFrontCamera;
+            startCamera(usingFrontCamera ? 'user' : 'environment');
+        });
+        
+        // Перезапуск камеры
+        restartBtn.addEventListener('click', () => {
+            startCamera(usingFrontCamera ? 'user' : 'environment');
+        });
+        
+        // Управление фонариком
+        torchBtn.addEventListener('click', toggleTorch);
+        
+        // Ручной ввод штрих-кода
+        manualInputLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            barcodeInput.removeAttribute('readonly');
+            barcodeInput.focus();
+            barcodeInput.placeholder = "Введите штрих-код вручную";
+        });
+        
+        // Автоматический поиск камеры при фокусе на поле ввода
+        barcodeInput.addEventListener('focus', () => {
+            if (!barcodeInput.value) {
+                startCamera();
             }
         });
         
-        // Инициализация
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            startCamera();
-        } else {
+        // Проверяем поддержку медиаустройств
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showCameraError();
             cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
             barcodeInput.removeAttribute('readonly');
             barcodeInput.placeholder = "Введите штрих-код вручную";
+        } else {
+            startCamera();
         }
-
-        // Остальные обработчики без изменений
+        
+        // Отправка формы
+        scannerForm.addEventListener('submit', (e) => {
+            if (!barcodeInput.value) {
+                e.preventDefault();
+                alert("Пожалуйста, введите или отсканируйте штрих-код");
+                barcodeInput.focus();
+            }
+        });
     </script>
 </body>
 </html>
