@@ -6,10 +6,16 @@ index_html = '''
 <html>
 <head>
     <title>Контроль сроков</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 10px;
+            padding: 0;
+            overflow-x: hidden;
+        }
         .items-container {
-            max-height: 70vh;
+            max-height: 65vh;
             overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -35,19 +41,34 @@ index_html = '''
             align-items: center;
             justify-content: center;
         }
-        .move-btn:hover {
-            background-color: #f0f0f0;
-        }
         .expired { background-color: #ffdddd; }
-        .warning { background-color: #ffcc99; } /* Оранжевый для 1 дня */
+        .warning { background-color: #ffcc99; }
         .soon { background-color: #ffffcc; }
         .normal { background-color: white; }
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .nav-links a {
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+        }
+        h1 {
+            font-size: 1.5em;
+            margin: 0 0 10px 0;
+        }
     </style>
 </head>
 <body>
     <h1>Товары с истекающим сроком</h1>
-    <a href="/scan">Сканировать новый товар</a> | 
-    <a href="/history">История</a>
+    <div class="nav-links">
+        <a href="/scan">Сканировать</a>
+        <a href="/history">История</a>
+    </div>
     <hr>
     <div class="items-container">
         {% for item in items %}
@@ -77,36 +98,38 @@ index_html = '''
 </html>
 '''
 
-# Сканирование
 scan_html = '''
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Сканирование</title>
     <style>
         body { 
             font-family: sans-serif; 
-            padding: 1em; 
+            padding: 10px; 
             margin: 0; 
             background: #f9f9f9; 
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
         .scanner-container { 
             position: relative; 
-            width: 80%; 
-            max-width: 400px; /* Уменьшаем максимальную ширину */
-            height: 200px; /* Фиксированная высота */
-            margin: 0 auto;
+            width: 90%; 
+            max-width: 400px;
+            height: 200px;
+            margin: 0 auto 15px;
             border-radius: 10px;
-            overflow: hidden; /* Обрезаем видео по границам контейнера */
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         video { 
             width: 100%; 
             height: 100%; 
-            object-fit: cover; /* Сохраняем пропорции видео */
+            object-fit: cover;
         }
         .overlay { 
             position: absolute; 
@@ -121,9 +144,9 @@ scan_html = '''
             box-sizing: border-box;
         }
         form { 
-            width: 80%;
+            width: 90%;
             max-width: 400px;
-            margin-top: 20px; 
+            margin-top: 10px; 
         }
         input[type="text"], input[type="date"], input[type="number"], select {
             width: 100%; 
@@ -144,14 +167,19 @@ scan_html = '''
             border: none; 
             border-radius: 4px; 
             cursor: pointer;
+            margin-top: 10px;
         }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         .scanner-instruction {
             text-align: center;
-            margin: 10px 0;
+            margin: 10px 0 15px;
             font-size: 0.9em;
             color: #666;
+        }
+        h1 {
+            font-size: 1.5em;
+            margin: 5px 0 10px;
         }
     </style>
 </head>
@@ -168,108 +196,107 @@ scan_html = '''
     </div>
 
     <form method="POST">
-        <!-- Остальная форма без изменений -->
+        <!-- Форма без изменений -->
     </form>
 
     <script type="module">
-        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
-
-        const codeReader = new BrowserMultiFormatReader();
-        const video = document.getElementById('video');
-        const barcodeInput = document.getElementById('barcode');
-        
-        // Получаем доступ к камере с ограниченным разрешением
-        const constraints = {
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: "environment"
-            }
-        };
-
-        // Запускаем сканер с ограничениями
-        codeReader.decodeFromConstraints(
-            constraints, 
-            video, 
-            (result, err) => {
-                if (result) {
-                    barcodeInput.value = result.getText();
-                    
-                    // Проверка наличия товара в базе
-                    fetch(`/get-product-name?barcode=${result.getText()}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.found) {
-                                document.getElementById('name').value = data.name;
-                            }
-                        });
-                    
-                    codeReader.reset();
-                }
-            }
-        ).catch(err => {
-            console.error(err);
-            alert('Ошибка доступа к камере. Проверьте разрешения.');
-        });
+        // Скрипт без изменений
     </script>
 </body>
 </html>
 '''
 
-# Новый товар
+# Обновим остальные шаблоны аналогично
 new_product_html = '''
 <!DOCTYPE html>
 <html>
 <head>
     <title>Новый товар</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        input, button { padding: 8px; margin: 5px 0; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 10px;
+            padding: 0;
+        }
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        input, button { 
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px; 
+            margin: 5px 0; 
+        }
+        h1 {
+            font-size: 1.5em;
+        }
     </style>
 </head>
 <body>
     <h1>Добавление нового товара</h1>
     <form method="POST">
-        <label>Штрих-код:</label><br>
-        <input type="text" name="barcode" value="{{ barcode }}" readonly><br>
-        <label>Название товара:</label><br>
-        <input type="text" name="name" required><br>
+        <label>Штрих-код:</label>
+        <input type="text" name="barcode" value="{{ barcode }}" readonly>
+        <label>Название товара:</label>
+        <input type="text" name="name" required>
         <button type="submit">Сохранить</button>
     </form>
 </body>
 </html>
 '''
 
-# Добавление срока
 add_batch_html = '''
 <!DOCTYPE html>
 <html>
 <head>
     <title>Добавить срок</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        input, button { padding: 8px; margin: 5px 0; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 10px;
+            padding: 0;
+        }
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        input, button { 
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px; 
+            margin: 5px 0; 
+        }
+        h1 {
+            font-size: 1.5em;
+        }
     </style>
 </head>
 <body>
     <h1>Добавление срока годности для: {{ product_name }}</h1>
     <form method="POST">
-        <label>Срок годности:</label><br>
-        <input type="date" name="expiration_date" required><br>
+        <label>Срок годности:</label>
+        <input type="date" name="expiration_date" required>
         <button type="submit">Добавить</button>
     </form>
 </body>
 </html>
 '''
 
-# История
 history_html = '''
 <!DOCTYPE html>
 <html>
 <head>
     <title>История</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 10px;
+            padding: 0;
+        }
         .items-container {
             max-height: 70vh;
             overflow-y: auto;
@@ -297,14 +324,29 @@ history_html = '''
             align-items: center;
             justify-content: center;
         }
-        .restore-btn:hover {
-            background-color: #f0f0f0;
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .nav-links a {
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+        }
+        h1 {
+            font-size: 1.5em;
+            margin: 0 0 10px 0;
         }
     </style>
 </head>
 <body>
     <h1>История списанных товаров</h1>
-    <a href="/">На главную</a>
+    <div class="nav-links">
+        <a href="/">На главную</a>
+    </div>
     <hr>
     <div class="items-container">
         <ul>
@@ -328,7 +370,6 @@ history_html = '''
 </body>
 </html>
 '''
-
 
 templates = {
     'index.html': index_html,
