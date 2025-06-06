@@ -131,7 +131,6 @@ scan_html = '''
             width: 100%; 
             height: 100%; 
             object-fit: cover;
-            transform: scaleX(-1); /* Зеркальное отображение для фронтальной камеры */
         }
         .overlay { 
             position: absolute; 
