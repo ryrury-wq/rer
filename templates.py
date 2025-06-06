@@ -173,22 +173,6 @@ scan_html = '''
         }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .scanner-instruction {
-            text-align: center;
-            margin: 10px 0 15px;
-            font-size: 0.9em;
-            color: #666;
-        }
-        .scan-tips {
-            text-align: center;
-            margin: 5px 0;
-            font-size: 0.8em;
-            color: #888;
-        }
-        h1 {
-            font-size: 1.5em;
-            margin: 5px 0 10px;
-        }
         .camera-error {
             color: red;
             text-align: center;
@@ -224,13 +208,6 @@ scan_html = '''
 </head>
 <body>
     <h1>Сканирование товара</h1>
-    
-    <div class="scanner-instruction">
-        Поместите штрих-код в рамку
-    </div>
-    <div class="scan-tips">
-        Для штрих-кодов на экране: уменьшите яркость и увеличьте масштаб
-    </div>
 
     <div class="scanner-container">
         <video id="video" autoplay playsinline muted></video>
@@ -384,11 +361,10 @@ scan_html = '''
             }
         }
         
-        // Функция для запуска сканера с обработкой штрих-кодов на экране
+        // Функция для запуска сканера
         function startScanner() {
             if (!scannerActive) return;
             
-            // Используем более медленный интервал для сканирования экранов
             setTimeout(() => {
                 codeReader.decodeFromVideoElement(video, (result, err) => {
                     const now = Date.now();
@@ -418,45 +394,11 @@ scan_html = '''
                             });
                     }
                     
-                    if (err) {
-                        // Специальная обработка для штрих-кодов на экране
-                        if (err.message.includes('NotFoundException')) {
-                            // Пробуем изменить настройки для экранных штрих-кодов
-                            adjustForScreenBarcodes();
-                        }
-                        console.error(err);
-                    }
-                    
                     if (scannerActive) {
                         startScanner();
                     }
                 });
-            }, 1000); // Увеличиваем интервал до 1 секунды для экранных штрих-кодов
-        }
-        
-        // Регулировка параметров для сканирования штрих-кодов на экране
-        function adjustForScreenBarcodes() {
-            // Попробуем уменьшить разрешение
-            if (currentStream) {
-                const track = currentStream.getVideoTracks()[0];
-                if (track) {
-                    try {
-                        track.applyConstraints({
-                            width: { ideal: 800 },
-                            height: { ideal: 600 }
-                        });
-                    } catch (e) {
-                        console.log("Не удалось изменить разрешение", e);
-                    }
-                }
-            }
-            
-            // Обновляем подсказки
-            document.querySelector('.scan-tips').innerHTML = 
-                "Для штрих-кодов на экране: <br>" + 
-                "1. Уменьшите яркость экрана <br>" +
-                "2. Увеличьте масштаб штрих-кода <br>" +
-                "3. Держите камеру под углом 45 градусов";
+            }, 1000);
         }
         
         // Функция для остановки сканера
@@ -508,13 +450,6 @@ scan_html = '''
         } else {
             startCamera();
         }
-        
-        // Советы по сканированию экранных штрих-кодов
-        setTimeout(() => {
-            if (!barcodeInput.value) {
-                adjustForScreenBarcodes();
-            }
-        }, 3000);
         
         // Отправка формы
         scannerForm.addEventListener('submit', (e) => {
