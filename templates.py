@@ -11,6 +11,7 @@ index_html = '''
         .item { padding: 10px; border-bottom: 1px solid #eee; }
         .expired { background-color: #ffdddd; }
         .soon { background-color: #ffffcc; }
+        .to-remove { background-color: #ffcccc; }
     </style>
 </head>
 <body>
@@ -20,11 +21,19 @@ index_html = '''
     <hr>
     {% for item in items %}
         {% set exp_date = item[2] %}
+        {% set days_since_expiry = item[3] %}
+        {% set days_until_removal = item[4] %}
         <div class="item 
-            {% if exp_date < today %}expired
-            {% elif exp_date == today %}soon
+            {% if days_since_expiry > 0 %}expired
+            {% elif days_until_removal <= 7 %}soon
             {% endif %}">
-            {{ item[1] }} ({{ item[0] }}) - Годен до: {{ exp_date }}
+            <strong>{{ item[0] }}</strong> ({{ item[1] }})<br>
+            Годен до: {{ item[2] }}<br>
+            {% if days_since_expiry > 0 %}
+                Просрочено дней назад: {{ days_since_expiry }}
+            {% else %}
+                Удалить через: {{ days_until_removal }} дней ({{ item[5] }})
+            {% endif %}
         </div>
     {% else %}
         <p>Нет товаров с истекающим сроком</p>
@@ -36,169 +45,90 @@ index_html = '''
 # Сканирование
 scan_html = '''
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
     <title>Сканирование</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .camera-container {
-            position: relative;
-            width: 100%;
-            height: 20vh;
-            overflow: hidden;
-            border: 3px solid #ccc;
-            margin-bottom: 20px;
-            box-sizing: border-box;
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .overlay {
-            position: absolute;
-            top: 3cm;
-            left: 1cm;
-            right: 1cm;
-            bottom: 0;
-            border: 2px dashed red;
-            pointer-events: none;
-        }
-        .notification {
-            padding: 10px;
-            color: #fff;
-            margin: 10px 0;
-            display: none;
-        }
-        .success { background: #4caf50; }
-        .error { background: #f44336; }
-        .product-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-        }
-        .product-item {
-            padding: 5px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-        }
-        .product-item:hover {
-            background: #f0f0f0;
-        }
+        body { font-family: sans-serif; padding: 1em; margin: 0; background: #f9f9f9; }
+        .scanner-container { position: relative; width: 100%; max-width: 600px; margin: 0 auto; }
+        video { width: 100%; height: auto; border-radius: 10px; }
+        .overlay { position: absolute; top: 30%; left: 10%; width: 80%; height: 20%; 
+                  border: 2px dashed red; border-radius: 8px; pointer-events: none; }
+        form { margin-top: 20px; }
+        input[type="text"], input[type="date"], input[type="number"], select {
+            width: 100%; padding: 12px; font-size: 1em; border: 1px solid #ccc;
+            border-radius: 4px; margin-bottom: 10px; background: #fff; }
+        button { width: 100%; padding: 12px; background-color: #28a745; color: white;
+                font-size: 1.1em; border: none; border-radius: 4px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
     <h1>Сканирование товара</h1>
 
-    <div class="camera-container">
+    <div class="scanner-container">
         <video id="video" autoplay playsinline></video>
         <div class="overlay"></div>
     </div>
 
-    <div class="notification" id="notification"></div>
-
     <form method="POST">
-        <label>Штрих-код:</label><br>
-        <input type="text" name="barcode" id="barcode" required autofocus><br><br>
+        <div class="form-group">
+            <label for="barcode">Штрих-код:</label>
+            <input type="text" name="barcode" id="barcode" readonly placeholder="Ожидание сканирования..." required>
+        </div>
 
-        <label>Наименование:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
+        <div class="form-group">
+            <label for="name">Наименование:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
 
-        <label>Дата изготовления:</label><br>
-        <input type="date" name="manufacture_date" required><br><br>
+        <div class="form-group">
+            <label for="manufacture_date">Дата изготовления:</label>
+            <input type="date" name="manufacture_date" required>
+        </div>
 
-        <label>Срок годности:</label><br>
-        <input type="number" name="duration_value" required>
-        <select name="duration_unit">
-            <option value="days">дней</option>
-            <option value="months">месяцев</option>
-            <option value="hours">часов</option>
-        </select><br><br>
+        <div class="form-group">
+            <label>Срок годности:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" name="duration_value" required style="flex: 2;">
+                <select name="duration_unit" style="flex: 1;">
+                    <option value="days">дней</option>
+                    <option value="months">месяцев</option>
+                </select>
+            </div>
+        </div>
 
         <button type="submit">Сохранить</button>
     </form>
 
-    <h2>Справочник позиций</h2>
-    <div class="product-list" id="productList"></div>
+    <script type="module">
+        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
 
-    <audio id="successSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-    <audio id="errorSound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <script>
+        const codeReader = new BrowserMultiFormatReader();
         const video = document.getElementById('video');
         const barcodeInput = document.getElementById('barcode');
-        const nameInput = document.getElementById('name');
-        const notification = document.getElementById('notification');
-        const successSound = document.getElementById('successSound');
-        const errorSound = document.getElementById('errorSound');
-        const productList = document.getElementById('productList');
 
-        function showNotification(message, type) {
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            notification.style.display = 'block';
-            setTimeout(() => notification.style.display = 'none', 3000);
-        }
-
-        // Запуск камеры через Quagga
-
-  <head>
-    <meta charset="UTF-8">
-    <title>Сканирование штрихкода</title>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <style>
-      #reader {
-        width: 100%;
-        max-width: 400px;
-        margin: auto;
-        padding-top: 20px;
-      }
-      </style>
-    </head>
-  <body>
-    <h2>Сканируйте штрихкод</h2>
-    <div id="reader"></div>
-    <p>Результат: <span id="result">ожидание...</span></p>
-
-    <script>
-      function onScanSuccess(decodedText, decodedResult) {
-        document.getElementById('result').textContent = decodedText;
-
-        // Отправить результат на сервер (Flask)
-        fetch('/barcode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ barcode: decodedText })
-        })
-        .then(response => response.json())
-        .then(data => {
-          alert("Сервер принял: " + data.status);
+        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+            if (result) {
+                barcodeInput.value = result.getText();
+                
+                // Проверка наличия товара в базе
+                fetch(`/get-product-name?barcode=${result.getText()}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.found) {
+                            document.getElementById('name').value = data.name;
+                        }
+                    });
+                
+                codeReader.reset();
+            }
         });
-
-        html5QrcodeScanner.clear(); // Остановить сканирование
-      }
-
-      const html5QrcodeScanner = new Html5Qrcode("reader");
-
-      Html5Qrcode.getCameras().then(cameras => {
-        if (cameras && cameras.length) {
-          let backCamera = cameras.find(c => c.label.toLowerCase().includes('back')) || cameras[cameras.length - 1];
-          html5QrcodeScanner.start(
-            backCamera.id,
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            onScanSuccess
-          );
-        }
-      }).catch(err => {
-        console.error("Ошибка камеры: ", err);
-      });
     </script>
-  </body>
 </body>
 </html>
-
 '''
 
 # Новый товар
@@ -207,12 +137,18 @@ new_product_html = '''
 <html>
 <head>
     <title>Новый товар</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        input, button { padding: 8px; margin: 5px 0; }
+    </style>
 </head>
 <body>
     <h1>Добавление нового товара</h1>
     <form method="POST">
-        Штрих-код: <input type="text" name="barcode" value="{{ barcode }}" readonly><br>
-        Название товара: <input type="text" name="name" required><br>
+        <label>Штрих-код:</label><br>
+        <input type="text" name="barcode" value="{{ barcode }}" readonly><br>
+        <label>Название товара:</label><br>
+        <input type="text" name="name" required><br>
         <button type="submit">Сохранить</button>
     </form>
 </body>
@@ -225,11 +161,16 @@ add_batch_html = '''
 <html>
 <head>
     <title>Добавить срок</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        input, button { padding: 8px; margin: 5px 0; }
+    </style>
 </head>
 <body>
     <h1>Добавление срока годности для: {{ product_name }}</h1>
     <form method="POST">
-        Срок годности: <input type="date" name="expiration_date" required><br>
+        <label>Срок годности:</label><br>
+        <input type="date" name="expiration_date" required><br>
         <button type="submit">Добавить</button>
     </form>
 </body>
@@ -242,6 +183,11 @@ history_html = '''
 <html>
 <head>
     <title>История</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 8px; border-bottom: 1px solid #eee; }
+    </style>
 </head>
 <body>
     <h1>История списанных товаров</h1>
@@ -249,7 +195,13 @@ history_html = '''
     <hr>
     <ul>
         {% for item in history_items %}
-            <li>{{ item[2] }} ({{ item[1] }}) - Срок: {{ item[3] }} | Удален: {{ item[4] }}</li>
+            <li>
+                <strong>{{ item['product_name'] }}</strong> ({{ item['barcode'] }})<br>
+                Срок годности: {{ item['expiration_date'] }}<br>
+                Удален: {{ item['removed_date'] }}
+            </li>
+        {% else %}
+            <li>История пуста</li>
         {% endfor %}
     </ul>
 </body>
