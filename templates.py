@@ -11,7 +11,6 @@ index_html = '''
         .item { padding: 10px; border-bottom: 1px solid #eee; }
         .expired { background-color: #ffdddd; }
         .soon { background-color: #ffffcc; }
-        .to-remove { background-color: #ffcccc; }
     </style>
 </head>
 <body>
@@ -20,19 +19,19 @@ index_html = '''
     <a href="/history">История</a>
     <hr>
     {% for item in items %}
-        {% set exp_date = item[2] %}
-        {% set days_since_expiry = item[3] %}
-        {% set days_until_removal = item[4] %}
         <div class="item 
-            {% if days_since_expiry > 0 %}expired
-            {% elif days_until_removal <= 7 %}soon
+            {% if item.days_since_expiry > 0 %}expired
+            {% elif item.days_until_expiry <= 7 %}soon
             {% endif %}">
-            <strong>{{ item[0] }}</strong> ({{ item[1] }})<br>
-            Годен до: {{ item[2] }}<br>
-            {% if days_since_expiry > 0 %}
-                Просрочено дней назад: {{ days_since_expiry }}
+            <strong>{{ item.name }}</strong> ({{ item.barcode }})<br>
+            Годен до: {{ item.expiration_date }}<br>
+            
+            {% if item.days_since_expiry > 0 %}
+                Просрочено дней назад: {{ item.days_since_expiry }}
+                <br>Удаление через: {{ item.days_until_removal }} дней
             {% else %}
-                Удалить через: {{ days_until_removal }} дней ({{ item[5] }})
+                До истечения: {{ item.days_until_expiry }} дней
+                <br>Удаление через: {{ item.days_until_removal }} дней ({{ item.removal_date }})
             {% endif %}
         </div>
     {% else %}
