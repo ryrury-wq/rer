@@ -1,9 +1,4 @@
-services:
-  - type: web
-    name: expiry-tracker
-    env: python
-    buildCommand: |
-      pip install flask
-      pip install python-dotenv
-    startCommand: python app.py
-    autoDeploy: true
+buildCommand: |
+  pip install flask
+  pip install python-dotenv
+  pip install supabase
