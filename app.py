@@ -1,16 +1,11 @@
 import os
 import sqlite3
 from datetime import datetime, timedelta
-from flask import Flask, request, redirect, url_for, g, jsonify, send_from_directory
+from flask import Flask, request, redirect, url_for, g, jsonify
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE = os.path.join(BASE_DIR, 'expiry.db')
-STATIC_DIR = os.path.join(BASE_DIR, 'static')
-
-# Создаем папку для статики если ее нет
-if not os.path.exists(STATIC_DIR):
-    os.makedirs(STATIC_DIR)
 
 # Подключение к БД
 def get_db():
@@ -58,10 +53,6 @@ def remove_expired():
                           (item['barcode'], item['name'], item['expiration_date'], today.strftime('%Y-%m-%d')))
         cursor.execute("DELETE FROM batches WHERE id = ?", (item['id'],))
     db.commit()
-
-@app.route('/logo.png')
-def serve_logo():
-    return send_from_directory(STATIC_DIR, 'logo.png')
 
 @app.route('/')
 def index():
