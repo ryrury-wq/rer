@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # Инициализация Supabase
 supabase_url = os.environ.get("https://pjohxnvnfbfyjouspczz.supabase.co")
-supabase_key = os.environ.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqb2h4bnZuZmJmeWpvdXNwY3p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzMTg4MzMsImV4cCI6MjA2NDg5NDgzM30.XDqwTVj8KMqK0_nPOTZY_Q7pLi-3setI8TON-owkxY0")
+supabase_key = os.environ.get("123Rus#")
 supabase = create_client(supabase_url, supabase_key)
 
 # Очистка старых записей истории
