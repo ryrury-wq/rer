@@ -1145,5 +1145,5 @@ templates = {
     'history.html': history_html
 }
 
-def custom_render_template(template_name, **context):
+def render_template(template_name, **context):
     return render_template_string(templates[template_name], **context)
