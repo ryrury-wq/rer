@@ -1,13 +1,13 @@
 import os
 from datetime import datetime, timedelta
-from flask import Flask, request, redirect, url_for, jsonify
+from flask import Flask, request, redirect, url_for, jsonify, render_template  # Добавлен render_template
 from supabase import create_client
 
 app = Flask(__name__)
 
-# Инициализация Supabase
-supabase_url = os.environ.get("https://pjohxnvnfbfyjouspczz.supabase.co")
-supabase_key = os.environ.get("123Rus#")
+# Инициализация Supabase (исправлено получение переменных окружения)
+supabase_url = os.environ.get("SUPABASE_URL")
+supabase_key = os.environ.get("SUPABASE_KEY")
 supabase = create_client(supabase_url, supabase_key)
 
 # Очистка старых записей истории
@@ -240,9 +240,6 @@ def run_app():
     clear_old_history()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
-# Импорт шаблонов после объявления app
-from templates import render_template
 
 if __name__ == '__main__':
     run_app()
