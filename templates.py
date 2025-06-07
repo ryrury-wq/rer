@@ -203,6 +203,12 @@ scan_html = '''
             color: #0066cc;
             text-decoration: none;
         }
+        
+        /* Стиль для поля даты */
+        #manufacture_date {
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -240,7 +246,13 @@ scan_html = '''
 
         <div class="form-group">
             <label for="manufacture_date">Дата изготовления:</label>
-            <input type="date" name="manufacture_date" required>
+            <!-- Измененное поле для даты -->
+            <input type="text" 
+                   name="manufacture_date" 
+                   id="manufacture_date" 
+                   placeholder="мм.дд.гггг" 
+                   required
+                   maxlength="10">
         </div>
 
         <div class="form-group">
@@ -270,6 +282,7 @@ scan_html = '''
         const beepSound = document.getElementById('beep');
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
+        const dateInput = document.getElementById('manufacture_date'); // Новый элемент
         
         let currentStream = null;
         let scannerActive = true;
@@ -428,12 +441,36 @@ scan_html = '''
             startCamera();
         }
         
+        // Обработчик для автоматического форматирования даты
+        dateInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            // Автоматическая расстановка точек
+            if (value.length > 4) {
+                value = value.substring(0, 2) + '.' + value.substring(2, 4) + '.' + value.substring(4, 8);
+            } else if (value.length > 2) {
+                value = value.substring(0, 2) + '.' + value.substring(2, 4);
+            }
+            
+            e.target.value = value;
+        });
+        
         // Отправка формы
         scannerForm.addEventListener('submit', (e) => {
             if (!barcodeInput.value) {
                 e.preventDefault();
                 alert("Пожалуйста, введите или отсканируйте штрих-код");
                 barcodeInput.focus();
+                return;
+            }
+            
+            // Проверка формата даты
+            const dateRegex = /^\d{2}\.\d{2}\.\d{4}$/;
+            if (!dateRegex.test(dateInput.value)) {
+                e.preventDefault();
+                alert('Пожалуйста, введите дату в формате мм.дд.гггг');
+                dateInput.focus();
+                dateInput.select();
             }
         });
     </script>
