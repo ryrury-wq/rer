@@ -228,6 +228,7 @@ scan_html = '''
             font-size: 1.8em;
             letter-spacing: 0.5px;
             margin: 0;
+            color: white;
         }
         .container {
             flex: 1;
@@ -737,6 +738,7 @@ new_product_html = '''
             font-size: 1.8em;
             letter-spacing: 0.5px;
             margin: 0;
+            color: white;
         }
         .container {
             max-width: 500px;
@@ -860,6 +862,7 @@ add_batch_html = '''
             font-size: 1.8em;
             letter-spacing: 0.5px;
             margin: 0;
+            color: white;
         }
         .container {
             max-width: 500px;
@@ -988,6 +991,7 @@ history_html = '''
             font-size: 1.8em;
             letter-spacing: 0.5px;
             margin: 0;
+            color: white;
         }
         .container {
             max-width: 100%;
