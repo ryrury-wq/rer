@@ -1,13 +1,9 @@
 services:
   - type: web
-    name: expiry-control
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
-    envVars:
-      - key: SUPABASE_URL
-        value: https://pjohxnvnfbfyjouspczz.supabase.co
-      - key: SUPABASE_KEY
-        value: 123Rus#
-      - key: PYTHON_VERSION
-        value: 3.9.18
+    name: expiry-tracker
+    env: python
+    buildCommand: |
+      pip install flask
+      pip install python-dotenv
+    startCommand: python app.py
+    autoDeploy: true
