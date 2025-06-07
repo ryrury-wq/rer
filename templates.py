@@ -29,6 +29,7 @@ index_html = '''
             font-size: 1.8em;
             letter-spacing: 0.5px;
             margin: 0;
+            color: white;
         }
         .container {
             max-width: 100%;
