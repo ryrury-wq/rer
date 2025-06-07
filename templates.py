@@ -115,13 +115,12 @@ scan_html = '''
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
-            height: 100vh;
+            min-height: 100vh;
         }
         .scanner-container { 
             position: relative; 
-            width: 90%; 
-            max-width: 400px;
-            height: 200px;
+            width: 300px; /* Фиксированная ширина */
+            height: 200px; /* Фиксированная высота */
             margin: 0 auto 15px;
             border-radius: 10px;
             overflow: hidden;
@@ -219,7 +218,6 @@ scan_html = '''
 
     <div class="camera-controls">
         <button id="restart-btn" class="camera-btn">Перезапустить</button>
-        <button id="switch-btn" class="camera-btn">Камера</button>
         <button id="torch-btn" class="camera-btn">Фонарик</button>
     </div>
 
@@ -268,14 +266,12 @@ scan_html = '''
         const barcodeInput = document.getElementById('barcode');
         const cameraError = document.getElementById('camera-error');
         const restartBtn = document.getElementById('restart-btn');
-        const switchBtn = document.getElementById('switch-btn');
         const torchBtn = document.getElementById('torch-btn');
         const beepSound = document.getElementById('beep');
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
         
         let currentStream = null;
-        let usingFrontCamera = false;
         let scannerActive = true;
         let torchOn = false;
         let lastScanTime = 0;
@@ -297,15 +293,15 @@ scan_html = '''
         }
         
         // Функция для запуска камеры
-        async function startCamera(facingMode = 'environment') {
+        async function startCamera() {
             try {
                 stopCurrentStream();
                 
                 const constraints = {
                     video: {
-                        facingMode: facingMode,
-                        width: { ideal: 1920 }, // Максимальное разрешение
-                        height: { ideal: 1080 },
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
                         focusMode: 'continuous'
                     }
                 };
@@ -313,18 +309,11 @@ scan_html = '''
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = currentStream;
                 
-                if (facingMode === 'user') {
-                    video.style.transform = 'scaleX(-1)';
-                } else {
-                    video.style.transform = 'none';
-                }
-                
-                startScanner();
-                
                 cameraError.style.display = 'none';
                 video.style.display = 'block';
                 
                 checkTorchSupport();
+                startScanner();
             } catch (err) {
                 console.error("Ошибка доступа к камере:", err);
                 showCameraError();
@@ -333,14 +322,13 @@ scan_html = '''
         
         // Проверка поддержки фонарика
         function checkTorchSupport() {
+            torchBtn.style.display = 'none';
             if (currentStream) {
                 const track = currentStream.getVideoTracks()[0];
                 if (track && track.getCapabilities().torch) {
                     torchBtn.style.display = 'block';
-                    return;
                 }
             }
-            torchBtn.style.display = 'none';
         }
         
         // Переключение фонарика
@@ -365,40 +353,32 @@ scan_html = '''
         function startScanner() {
             if (!scannerActive) return;
             
-            setTimeout(() => {
-                codeReader.decodeFromVideoElement(video, (result, err) => {
-                    const now = Date.now();
+            codeReader.decodeFromVideoElement(video, (result, err) => {
+                if (!scannerActive) return;
+                
+                const now = Date.now();
+                if (now - lastScanTime < SCAN_COOLDOWN) return;
+                
+                if (result) {
+                    lastScanTime = now;
                     
-                    if (now - lastScanTime < SCAN_COOLDOWN) {
-                        if (scannerActive) startScanner();
-                        return;
+                    if (beepSound) {
+                        beepSound.currentTime = 0;
+                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
                     }
                     
-                    if (result) {
-                        lastScanTime = now;
-                        
-                        if (beepSound) {
-                            beepSound.currentTime = 0;
-                            beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
-                        }
-                        
-                        barcodeInput.value = result.text;
-                        document.getElementById('name').focus();
-                        
-                        fetch(`/get-product-name?barcode=${result.text}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.found) {
-                                    document.getElementById('name').value = data.name;
-                                }
-                            });
-                    }
+                    barcodeInput.value = result.text;
+                    document.getElementById('name').focus();
                     
-                    if (scannerActive) {
-                        startScanner();
-                    }
-                });
-            }, 1000);
+                    fetch(`/get-product-name?barcode=${result.text}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.found) {
+                                document.getElementById('name').value = data.name;
+                            }
+                        });
+                }
+            });
         }
         
         // Функция для остановки сканера
@@ -410,17 +390,13 @@ scan_html = '''
         function showCameraError() {
             cameraError.style.display = 'block';
             video.style.display = 'none';
+            barcodeInput.removeAttribute('readonly');
+            barcodeInput.placeholder = "Введите штрих-код вручную";
         }
-        
-        // Переключение камеры
-        switchBtn.addEventListener('click', () => {
-            usingFrontCamera = !usingFrontCamera;
-            startCamera(usingFrontCamera ? 'user' : 'environment');
-        });
         
         // Перезапуск камеры
         restartBtn.addEventListener('click', () => {
-            startCamera(usingFrontCamera ? 'user' : 'environment');
+            startCamera();
         });
         
         // Управление фонариком
@@ -434,10 +410,13 @@ scan_html = '''
             barcodeInput.placeholder = "Введите штрих-код вручную";
         });
         
-        // Автоматический поиск камеры при фокусе на поле ввода
-        barcodeInput.addEventListener('focus', () => {
-            if (!barcodeInput.value) {
-                startCamera();
+        // Обработка изменения видимости страницы
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopScanner();
+            } else {
+                scannerActive = true;
+                startScanner();
             }
         });
         
@@ -445,8 +424,6 @@ scan_html = '''
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showCameraError();
             cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
-            barcodeInput.removeAttribute('readonly');
-            barcodeInput.placeholder = "Введите штрих-код вручную";
         } else {
             startCamera();
         }
