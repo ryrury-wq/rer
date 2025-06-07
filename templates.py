@@ -205,7 +205,7 @@ scan_html = '''
         }
         
         /* Стиль для поля даты */
-        #manufacture_date {
+        #manufacture_date_display {
             font-family: monospace;
             letter-spacing: 1px;
         }
@@ -245,14 +245,17 @@ scan_html = '''
         </div>
 
         <div class="form-group">
-            <label for="manufacture_date">Дата изготовления:</label>
-            <!-- Измененное поле для даты -->
+            <label for="manufacture_date_display">Дата изготовления:</label>
+            <!-- Видимое поле для ввода пользователя -->
             <input type="text" 
-                   name="manufacture_date" 
-                   id="manufacture_date" 
+                   id="manufacture_date_display" 
                    placeholder="мм.дд.гггг" 
                    required
                    maxlength="10">
+            <!-- Скрытое поле для отправки на сервер -->
+            <input type="hidden" 
+                   name="manufacture_date" 
+                   id="manufacture_date">
         </div>
 
         <div class="form-group">
@@ -282,7 +285,8 @@ scan_html = '''
         const beepSound = document.getElementById('beep');
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
-        const dateInput = document.getElementById('manufacture_date'); // Новый элемент
+        const dateDisplay = document.getElementById('manufacture_date_display'); // Видимое поле
+        const dateInput = document.getElementById('manufacture_date'); // Скрытое поле
         
         let currentStream = null;
         let scannerActive = true;
@@ -442,10 +446,9 @@ scan_html = '''
         }
         
         // Обработчик для автоматического форматирования даты
-        dateInput.addEventListener('input', function(e) {
+        dateDisplay.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             
-            // Автоматическая расстановка точек
             if (value.length > 4) {
                 value = value.substring(0, 2) + '.' + value.substring(2, 4) + '.' + value.substring(4, 8);
             } else if (value.length > 2) {
@@ -454,6 +457,15 @@ scan_html = '''
             
             e.target.value = value;
         });
+
+        // Функция преобразования даты в ISO формат
+        function convertToISODate(dateString) {
+            const parts = dateString.split('.');
+            if (parts.length !== 3) return null;
+            
+            const [month, day, year] = parts;
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
         
         // Отправка формы
         scannerForm.addEventListener('submit', (e) => {
@@ -466,12 +478,26 @@ scan_html = '''
             
             // Проверка формата даты
             const dateRegex = /^\d{2}\.\d{2}\.\d{4}$/;
-            if (!dateRegex.test(dateInput.value)) {
+            if (!dateRegex.test(dateDisplay.value)) {
                 e.preventDefault();
                 alert('Пожалуйста, введите дату в формате мм.дд.гггг');
-                dateInput.focus();
-                dateInput.select();
+                dateDisplay.focus();
+                dateDisplay.select();
+                return;
             }
+            
+            // Преобразуем в ISO формат для сервера
+            const isoDate = convertToISODate(dateDisplay.value);
+            if (!isoDate) {
+                e.preventDefault();
+                alert('Неверный формат даты');
+                dateDisplay.focus();
+                dateDisplay.select();
+                return;
+            }
+            
+            // Записываем ISO дату в скрытое поле
+            dateInput.value = isoDate;
         });
     </script>
 </body>
