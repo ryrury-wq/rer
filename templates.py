@@ -106,6 +106,7 @@ scan_html = '''
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Сканирование</title>
     <style>
+        /* Стили остаются без изменений */
         body { 
             font-family: sans-serif; 
             padding: 10px; 
@@ -119,8 +120,8 @@ scan_html = '''
         }
         .scanner-container { 
             position: relative; 
-            width: 300px; /* Фиксированная ширина */
-            height: 200px; /* Фиксированная высота */
+            width: 300px;
+            height: 200px;
             margin: 0 auto 15px;
             border-radius: 10px;
             overflow: hidden;
@@ -203,6 +204,21 @@ scan_html = '''
             color: #0066cc;
             text-decoration: none;
         }
+        /* Новые стили для поля даты */
+        .date-input-group {
+            position: relative;
+        }
+        .date-input-group input {
+            padding-left: 40px; /* Место для иконки */
+        }
+        .date-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -239,8 +255,12 @@ scan_html = '''
         </div>
 
         <div class="form-group">
-            <label for="manufacture_date">Дата изготовления:</label>
-            <input type="date" name="manufacture_date" required>
+            <label for="manufacture_date_text">Дата изготовления (дд.мм.гггг):</label>
+            <div class="date-input-group">
+                <span class="date-icon">📅</span>
+                <input type="date" name="manufacture_date" id="manufacture_date" style="display: none">
+                <input type="text" id="manufacture_date_text" placeholder="дд.мм.гггг" required>
+            </div>
         </div>
 
         <div class="form-group">
@@ -435,6 +455,74 @@ scan_html = '''
                 alert("Пожалуйста, введите или отсканируйте штрих-код");
                 barcodeInput.focus();
             }
+        });
+    </script>
+
+    <!-- Скрипт для работы с датой -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateField = document.getElementById('manufacture_date');
+            const textField = document.getElementById('manufacture_date_text');
+            
+            // Автозаполнение точек и форматирование
+            textField.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.substr(0, 8);
+                
+                let formatted = '';
+                for (let i = 0; i < value.length; i++) {
+                    if (i === 2 || i === 4) formatted += '.';
+                    formatted += value[i];
+                }
+                e.target.value = formatted;
+                
+                // Обновление скрытого поля даты
+                if (formatted.length === 10) {
+                    const parts = formatted.split('.');
+                    if (parts.length === 3) {
+                        const [day, month, year] = parts;
+                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    }
+                }
+            });
+            
+            // Валидация формата даты
+            textField.addEventListener('blur', function() {
+                const value = textField.value;
+                if (value.length > 0 && value.length < 10) {
+                    alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
+                    textField.focus();
+                }
+            });
+            
+            // Обработка клавиш для удобства ввода
+            textField.addEventListener('keydown', function(e) {
+                // Разрешаем: backspace, delete, tab, escape, enter
+                if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
+                    // Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                    (e.keyCode === 65 && e.ctrlKey === true) || 
+                    (e.keyCode === 67 && e.ctrlKey === true) || 
+                    (e.keyCode === 86 && e.ctrlKey === true) || 
+                    (e.keyCode === 88 && e.ctrlKey === true) || 
+                    // Стрелки вправо/влево
+                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                    return;
+                }
+                
+                // Запрещаем все, кроме цифр
+                if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                }
+            });
+            
+            // Проверка даты перед отправкой формы
+            scannerForm.addEventListener('submit', function(e) {
+                if (!dateField.value) {
+                    e.preventDefault();
+                    alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
+                    textField.focus();
+                }
+            });
         });
     </script>
 </body>
