@@ -235,18 +235,18 @@ def history():
 
 @app.route('/move_to_history', methods=['POST'])
 def move_to_history():
-    batch_id = request.form['batch_id']
+    batch_id = int(request.form['batch_id'])  # Явное преобразование в int
     db = get_db()
     cursor = db.cursor()
     today = datetime.now().date().strftime('%Y-%m-%d')
     
     # Получаем информацию о товаре
     cursor.execute('''
-        SELECT p.barcode, p.name, b.expiration_date
-        FROM batches b
-        JOIN products p ON b.product_id = p.id
-        WHERE b.id = %s  # ИСПРАВЛЕНО: ? -> %s
-    ''', (batch_id,))
+    SELECT p.barcode, p.name, b.expiration_date
+    FROM batches b
+    JOIN products p ON b.product_id = p.id
+    WHERE b.id = %s
+''', (batch_id,)) 
     item = cursor.fetchone()
     
     if item:
