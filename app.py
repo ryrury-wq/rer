@@ -1,18 +1,20 @@
 import os
-import sqlite3
+import psycopg2
 from datetime import datetime, timedelta
 from flask import Flask, request, redirect, url_for, g, jsonify
+from psycopg2.extras import DictCursor
 
 app = Flask(__name__)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE = os.path.join(BASE_DIR, 'expiry.db')
 
-# Подключение к БД
+# Подключение к PostgreSQL
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
+        # Используем DATABASE_URL из переменных окружения Render
+        db = g._database = psycopg2.connect(
+            os.environ['DATABASE_URL'],
+            cursor_factory=DictCursor
+        )
     return db
 
 @app.teardown_appcontext
@@ -21,13 +23,48 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+# Инициализация БД
+def init_db():
+    with app.app_context():
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Создание таблиц
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS products (
+                id SERIAL PRIMARY KEY,
+                barcode TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS batches (
+                id SERIAL PRIMARY KEY,
+                product_id INTEGER REFERENCES products(id),
+                expiration_date TEXT NOT NULL,
+                added_date TEXT DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS history (
+                id SERIAL PRIMARY KEY,
+                barcode TEXT NOT NULL,
+                product_name TEXT NOT NULL,
+                expiration_date TEXT NOT NULL,
+                removed_date TEXT NOT NULL
+            )
+        ''')
+        db.commit()
+
 # Очистка старых записей истории
 def clear_old_history():
     with app.app_context():
         db = get_db()
         cursor = db.cursor()
         three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
-        cursor.execute("DELETE FROM history WHERE removed_date < ?", (three_months_ago,))
+        cursor.execute("DELETE FROM history WHERE removed_date < %s", (three_months_ago,))
         db.commit()
 
 # Удаление товаров через месяц после истечения срока
@@ -41,17 +78,24 @@ def remove_expired():
         SELECT b.id, p.barcode, p.name, b.expiration_date
         FROM batches b
         JOIN products p ON b.product_id = p.id
-        WHERE DATE(b.expiration_date) <= ?
+        WHERE b.expiration_date <= %s
     ''', (one_month_ago.strftime('%Y-%m-%d'),))
     expired = cursor.fetchall()
 
     for item in expired:
-        cursor.execute("SELECT id FROM history WHERE barcode = ? AND expiration_date = ?",
+        cursor.execute("SELECT id FROM history WHERE barcode = %s AND expiration_date = %s",
                       (item['barcode'], item['expiration_date']))
         if not cursor.fetchone():
-            cursor.execute("INSERT INTO history (barcode, product_name, expiration_date, removed_date) VALUES (?, ?, ?, ?)",
-                          (item['barcode'], item['name'], item['expiration_date'], today.strftime('%Y-%m-%d')))
-        cursor.execute("DELETE FROM batches WHERE id = ?", (item['id'],))
+            cursor.execute("""
+                INSERT INTO history (barcode, product_name, expiration_date, removed_date) 
+                VALUES (%s, %s, %s, %s)
+            """, (
+                item['barcode'],
+                item['name'],
+                item['expiration_date'],
+                today.strftime('%Y-%m-%d')
+            ))
+        cursor.execute("DELETE FROM batches WHERE id = %s", (item['id'],))
     db.commit()
 
 @app.route('/')
@@ -274,6 +318,7 @@ def restore_from_history():
 
 def run_app():
     with app.app_context():
+        init_db()  # Инициализация БД при запуске
         remove_expired()
         clear_old_history()
     port = int(os.environ.get("PORT", 5000))
