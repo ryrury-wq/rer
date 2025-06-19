@@ -150,44 +150,35 @@ def index():
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
-        barcode = request.form['barcode']
-        name = request.form['name']
-        manufacture_date = request.form['manufacture_date']
-        duration_value = int(request.form['duration_value'])
-        duration_unit = request.form['duration_unit']
-        
-        # Рассчет срока годности
-        m_date = datetime.strptime(manufacture_date, '%Y-%m-%d')
-        if duration_unit == 'days':
-            exp_date = m_date + timedelta(days=duration_value)
-        elif duration_unit == 'months':
-            exp_date = m_date + timedelta(days=duration_value*30)
-        elif duration_unit == 'hours':
-            exp_date = m_date + timedelta(hours=duration_value)
-        else:
-            exp_date = m_date + timedelta(days=30)
-        
-        exp_date_str = exp_date.strftime('%Y-%m-%d')
-        
-        # Сохранение в БД
-        db = get_db()
-        cursor = db.cursor()
-        
-        # Проверка существования товара
-        cursor.execute("SELECT id FROM products WHERE barcode = ?", (barcode,))
-        product = cursor.fetchone()
-        
-        if not product:
-            cursor.execute("INSERT INTO products (barcode, name) VALUES (?, ?)", (barcode, name))
-            product_id = cursor.lastrowid
-        else:
-            product_id = product['id']
-        
-        cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (?, ?)", 
-                      (product_id, exp_date_str))
-        db.commit()
-        
-        return redirect(url_for('index'))
+        try:
+            barcode = request.form['barcode']
+            name = request.form['name']
+            # ... остальной код ...
+
+            db = get_db()
+            cursor = db.cursor()
+            
+            # ИСПРАВЛЕННАЯ СТРОКА: замена ? на %s
+            cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
+            product = cursor.fetchone()
+            
+            if not product:
+                # ИСПРАВЛЕННАЯ СТРОКА: замена ? на %s
+                cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s)", (barcode, name))
+                product_id = cursor.lastrowid
+            else:
+                product_id = product['id']
+            
+            # ИСПРАВЛЕННАЯ СТРОКА: замена ? на %s
+            cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)", 
+                          (product_id, exp_date_str))
+            db.commit()
+            
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            app.logger.error(f"Scan POST Error: {str(e)}")
+            return f"Server Error: {str(e)}", 500
         
     return render_template('scan.html')
 
@@ -196,7 +187,7 @@ def get_product_name():
     barcode = request.args.get('barcode')
     db = get_db()
     cursor = db.cursor()
-    cursor.execute('SELECT name FROM products WHERE barcode = ?', (barcode,))
+    cursor.execute('SELECT name FROM products WHERE barcode = %s', (barcode,))
     result = cursor.fetchone()
     if result:
         return jsonify({'found': True, 'name': result['name']})
@@ -264,21 +255,21 @@ def move_to_history():
         SELECT p.barcode, p.name, b.expiration_date
         FROM batches b
         JOIN products p ON b.product_id = p.id
-        WHERE b.id = ?
+        WHERE b.id = %s  # ИСПРАВЛЕНО: ? -> %s
     ''', (batch_id,))
     item = cursor.fetchone()
     
     if item:
         # Проверяем, нет ли уже такой записи в истории
-        cursor.execute("SELECT id FROM history WHERE barcode = ? AND expiration_date = ?",
+        cursor.execute("SELECT id FROM history WHERE barcode = %s AND expiration_date = %s",
                      (item['barcode'], item['expiration_date']))
         if not cursor.fetchone():
             # Добавляем в историю
-            cursor.execute("INSERT INTO history (barcode, product_name, expiration_date, removed_date) VALUES (?, ?, ?, ?)",
+            cursor.execute("INSERT INTO history (barcode, product_name, expiration_date, removed_date) VALUES (%s, %s, %s, %s)",
                           (item['barcode'], item['name'], item['expiration_date'], today))
         
         # Удаляем из активных
-        cursor.execute("DELETE FROM batches WHERE id = ?", (batch_id,))
+        cursor.execute("DELETE FROM batches WHERE id = %s", (batch_id,))
         db.commit()
     
     return redirect(url_for('index'))
@@ -290,28 +281,28 @@ def restore_from_history():
     cursor = db.cursor()
     
     # Получаем информацию из истории
-    cursor.execute("SELECT * FROM history WHERE id = ?", (history_id,))
+    cursor.execute("SELECT * FROM history WHERE id = %s", (history_id,))
     item = cursor.fetchone()
     
     if item:
         # Проверяем существование товара
-        cursor.execute("SELECT id FROM products WHERE barcode = ?", (item['barcode'],))
+        cursor.execute("SELECT id FROM products WHERE barcode = %s", (item['barcode'],))
         product = cursor.fetchone()
         
         if not product:
             # Если товара нет, создаем новый
-            cursor.execute("INSERT INTO products (barcode, name) VALUES (?, ?)", 
+            cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s)", 
                           (item['barcode'], item['product_name']))
             product_id = cursor.lastrowid
         else:
             product_id = product['id']
         
         # Добавляем обратно в активные
-        cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (?, ?)", 
+        cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)", 
                       (product_id, item['expiration_date']))
         
         # Удаляем из истории
-        cursor.execute("DELETE FROM history WHERE id = ?", (history_id,))
+        cursor.execute("DELETE FROM history WHERE id = %s", (history_id,))
         db.commit()
     
     return redirect(url_for('history'))
