@@ -147,29 +147,78 @@ def index():
         })
     
     return render_template('index.html', items=items)
+
+@app.route('/db-structure')
+def db_structure():
+    try:
+        db = get_db()
+        cur = db.cursor()
+        
+        # Получить список таблиц
+        cur.execute("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+        """)
+        tables = [row[0] for row in cur.fetchall()]
+        
+        # Получить структуру каждой таблицы
+        structure = {}
+        for table in tables:
+            cur.execute(f"""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = '{table}'
+            """)
+            structure[table] = cur.fetchall()
+        
+        return jsonify({
+            "tables": tables,
+            "structure": structure
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
         try:
             barcode = request.form['barcode']
             name = request.form['name']
-            # ... остальной код ...
-
+            manufacture_date = request.form['manufacture_date']
+            duration_value = int(request.form['duration_value'])
+            duration_unit = request.form['duration_unit']
+            
+            # Рассчет срока годности
+            m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
+            if duration_unit == 'days':
+                exp_date = m_date + timedelta(days=duration_value)
+            elif duration_unit == 'months':
+                exp_date = m_date + timedelta(days=duration_value*30)
+            elif duration_unit == 'years':
+                exp_date = m_date + timedelta(days=duration_value*365)
+            elif duration_unit == 'hours':
+                exp_date = m_date + timedelta(hours=duration_value)
+            else:
+                exp_date = m_date + timedelta(days=30)
+            
+            # Конвертируем дату в строку в формате YYYY-MM-DD
+            exp_date_str = exp_date.strftime('%Y-%m-%d')
+            
+            # Сохранение в БД
             db = get_db()
             cursor = db.cursor()
             
-            # ИСПРАВЛЕННАЯ СТРОКА: замена ? на %s
+            # Проверка существования товара
             cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
             product = cursor.fetchone()
             
             if not product:
-                # ИСПРАВЛЕННАЯ СТРОКА: замена ? на %s
                 cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s)", (barcode, name))
                 product_id = cursor.lastrowid
             else:
                 product_id = product['id']
             
-            # ИСПРАВЛЕННАЯ СТРОКА: замена ? на %s
             cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)", 
                           (product_id, exp_date_str))
             db.commit()
