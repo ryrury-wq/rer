@@ -10,7 +10,6 @@ app = Flask(__name__)
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        # Используем DATABASE_URL из переменных окружения Render
         db = g._database = psycopg2.connect(
             os.environ['DATABASE_URL'],
             cursor_factory=DictCursor
@@ -28,8 +27,6 @@ def init_db():
     with app.app_context():
         db = get_db()
         cursor = db.cursor()
-        
-        # Создание таблиц
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS products (
                 id SERIAL PRIMARY KEY,
@@ -37,7 +34,6 @@ def init_db():
                 name TEXT NOT NULL
             )
         ''')
-        
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS batches (
                 id SERIAL PRIMARY KEY,
@@ -46,7 +42,6 @@ def init_db():
                 added_date TEXT DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')
             )
         ''')
-        
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS history (
                 id SERIAL PRIMARY KEY,
@@ -58,7 +53,6 @@ def init_db():
         ''')
         db.commit()
 
-# Очистка старых записей истории
 def clear_old_history():
     with app.app_context():
         db = get_db()
@@ -67,13 +61,12 @@ def clear_old_history():
         cursor.execute("DELETE FROM history WHERE removed_date < %s", (three_months_ago,))
         db.commit()
 
-# Удаление товаров через месяц после истечения срока
 def remove_expired():
     db = get_db()
     cursor = db.cursor()
     today = datetime.now().date()
     one_month_ago = today - timedelta(days=30)
-    
+
     cursor.execute('''
         SELECT b.id, p.barcode, p.name, b.expiration_date
         FROM batches b
@@ -84,17 +77,12 @@ def remove_expired():
 
     for item in expired:
         cursor.execute("SELECT id FROM history WHERE barcode = %s AND expiration_date = %s",
-                      (item['barcode'], item['expiration_date']))
+                       (item['barcode'], item['expiration_date']))
         if not cursor.fetchone():
             cursor.execute("""
                 INSERT INTO history (barcode, product_name, expiration_date, removed_date) 
                 VALUES (%s, %s, %s, %s)
-            """, (
-                item['barcode'],
-                item['name'],
-                item['expiration_date'],
-                today.strftime('%Y-%m-%d')
-            ))
+            """, (item['barcode'], item['name'], item['expiration_date'], today.strftime('%Y-%m-%d')))
         cursor.execute("DELETE FROM batches WHERE id = %s", (item['id'],))
     db.commit()
 
@@ -103,37 +91,28 @@ def index():
     db = get_db()
     cursor = db.cursor()
     today = datetime.now().date()
-    
+
     cursor.execute('''
         SELECT b.id, p.name, p.barcode, b.expiration_date, b.added_date
         FROM batches b
         JOIN products p ON p.id = b.product_id
         ORDER BY b.expiration_date ASC
     ''')
-    
+
     items = []
     for row in cursor.fetchall():
         exp_date = datetime.strptime(row['expiration_date'], "%Y-%m-%d").date()
         days_until_expiry = (exp_date - today).days
-        
-        # Правильный расчёт дней просрочки
         days_since_expiry = max(0, (today - exp_date).days)
-        
-        # Правильный расчёт дней до удаления
         removal_date = exp_date + timedelta(days=30)
         days_until_removal = max(0, (removal_date - today).days)
-        
-        # Определение статуса срока годности
         status = "normal"
-        if days_since_expiry > 0:
-            status = "expired"
-        elif days_until_expiry == 0:
+        if days_since_expiry > 0 or days_until_expiry == 0:
             status = "expired"
         elif days_until_expiry == 1:
             status = "warning"
         elif days_until_expiry <= 7:
             status = "soon"
-        
         items.append({
             'id': row['id'],
             'name': row['name'],
@@ -145,39 +124,7 @@ def index():
             'days_until_expiry': days_until_expiry,
             'status': status
         })
-    
     return render_template('index.html', items=items)
-
-@app.route('/db-structure')
-def db_structure():
-    try:
-        db = get_db()
-        cur = db.cursor()
-        
-        # Получить список таблиц
-        cur.execute("""
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public'
-        """)
-        tables = [row[0] for row in cur.fetchall()]
-        
-        # Получить структуру каждой таблицы
-        structure = {}
-        for table in tables:
-            cur.execute(f"""
-                SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = '{table}'
-            """)
-            structure[table] = cur.fetchall()
-        
-        return jsonify({
-            "tables": tables,
-            "structure": structure
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
@@ -188,47 +135,41 @@ def scan():
             manufacture_date = request.form['manufacture_date']
             duration_value = int(request.form['duration_value'])
             duration_unit = request.form['duration_unit']
-            
-            # Рассчет срока годности
+
             m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
             if duration_unit == 'days':
                 exp_date = m_date + timedelta(days=duration_value)
             elif duration_unit == 'months':
-                exp_date = m_date + timedelta(days=duration_value*30)
+                exp_date = m_date + timedelta(days=duration_value * 30)
             elif duration_unit == 'years':
-                exp_date = m_date + timedelta(days=duration_value*365)
+                exp_date = m_date + timedelta(days=duration_value * 365)
             elif duration_unit == 'hours':
                 exp_date = m_date + timedelta(hours=duration_value)
             else:
                 exp_date = m_date + timedelta(days=30)
-            
-            # Конвертируем дату в строку в формате YYYY-MM-DD
+
             exp_date_str = exp_date.strftime('%Y-%m-%d')
-            
-            # Сохранение в БД
+
             db = get_db()
             cursor = db.cursor()
-            
-            # Проверка существования товара
+
             cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
             product = cursor.fetchone()
-            
+
             if not product:
-                cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s)", (barcode, name))
-                product_id = cursor.lastrowid
+                cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", (barcode, name))
+                product_id = cursor.fetchone()['id']
             else:
                 product_id = product['id']
-            
-            cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)", 
-                          (product_id, exp_date_str))
+
+            cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)",
+                           (product_id, exp_date_str))
             db.commit()
-            
+
             return redirect(url_for('index'))
-            
         except Exception as e:
             app.logger.error(f"Scan POST Error: {str(e)}")
             return f"Server Error: {str(e)}", 500
-        
     return render_template('scan.html')
 
 @app.route('/get-product-name', methods=['GET'])
@@ -356,16 +297,15 @@ def restore_from_history():
     
     return redirect(url_for('history'))
 
+from templates import render_template
+
 def run_app():
     with app.app_context():
-        init_db()  # Инициализация БД при запуске
+        init_db()
         remove_expired()
         clear_old_history()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
-# Импорт шаблонов после объявления app
-from templates import render_template
 
 if __name__ == '__main__':
     run_app()
