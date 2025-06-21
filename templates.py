@@ -23,6 +23,7 @@ index_html = '''
             padding: 15px 20px;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
         }
         .logo {
             font-weight: 700;
@@ -31,12 +32,43 @@ index_html = '''
             margin: 0;
             color: white;
         }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
         .container {
             max-width: 100%;
             padding: 15px;
         }
+        .search-container {
+            position: relative;
+            margin: 15px 0;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 40px;
+            border-radius: 24px;
+            border: 1px solid #e0e0e0;
+            font-size: 1em;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
+        }
         .items-container {
-            max-height: 60vh;
+            max-height: 55vh;
             overflow-y: auto;
             border-radius: 8px;
             padding: 10px;
@@ -140,34 +172,27 @@ index_html = '''
         .warning-badge { background: #ffecb3; color: #ff8f00; }
         .soon-badge { background: #c8e6c9; color: #2e7d32; }
         .normal-badge { background: #e0e0e0; color: #424242; }
+        .no-items {
+            text-align: center;
+            padding: 30px;
+            color: #9e9e9e;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-    <a href="/" class="back-btn">←</a>
-    <h1 class="logo">Вкусвилл</h1>
-</div>
-
-<style>
-    .back-btn {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: white;
-        font-size: 24px;
-        text-decoration: none;
-        font-weight: bold;
-        z-index: 10;
-    }
-    
-    .header {
-        position: relative;
-    }
-</style>
+        <a href="/" class="back-btn">←</a>
+        <h1 class="logo">Вкусвилл</h1>
+    </div>
     
     <div class="container">
         <h1>Товары с истекающим сроком</h1>
+        
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или штрих-коду...">
+        </div>
         
         <div class="nav-links">
             <a href="/scan">Сканировать</a>
@@ -175,7 +200,7 @@ index_html = '''
             <a href="/assortment">Ассортимент</a>
         </div>
         
-        <div class="items-container">
+        <div class="items-container" id="items-container">
             {% for item in items %}
                 <div class="item {{ item.status }}">
                     <div class="item-info">
@@ -203,7 +228,7 @@ index_html = '''
                     </form>
                 </div>
             {% else %}
-                <div style="text-align:center; padding:30px; color:#757575">
+                <div class="no-items">
                     Нет товаров с истекающим сроком
                 </div>
             {% endfor %}
@@ -213,6 +238,44 @@ index_html = '''
     <div class="footer">
         Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-input');
+            const itemsContainer = document.getElementById('items-container');
+            const originalItems = itemsContainer.innerHTML;
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                
+                if (!searchTerm) {
+                    itemsContainer.innerHTML = originalItems;
+                    return;
+                }
+                
+                const items = itemsContainer.querySelectorAll('.item');
+                let hasVisibleItems = false;
+                let visibleItemsHTML = '';
+                
+                items.forEach(item => {
+                    const itemText = item.textContent.toLowerCase();
+                    if (itemText.includes(searchTerm)) {
+                        item.style.display = 'flex';
+                        hasVisibleItems = true;
+                        visibleItemsHTML += item.outerHTML;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                if (!hasVisibleItems) {
+                    itemsContainer.innerHTML = `<div class="no-items">
+                        Ничего не найдено по запросу: "${searchTerm}"
+                    </div>`;
+                }
+            });
+        });
+    </script>
 </body>
 </html>
 '''
@@ -1231,6 +1294,26 @@ history_html = '''
             max-width: 100%;
             padding: 20px 15px;
         }
+        .search-container {
+            position: relative;
+            margin: 15px 0;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 40px;
+            border-radius: 24px;
+            border: 1px solid #e0e0e0;
+            font-size: 1em;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
+        }
         .items-container {
             max-height: 65vh;
             overflow-y: auto;
@@ -1334,11 +1417,16 @@ history_html = '''
     <div class="container">
         <h1>История списанных товаров</h1>
         
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или штрих-коду...">
+        </div>
+        
         <div class="nav-links">
             <a href="/">На главную</a>
         </div>
         
-        <div class="items-container">
+        <div class="items-container" id="items-container">
             {% if history_items %}
                 {% for item in history_items %}
                     <div class="history-item">
@@ -1367,6 +1455,44 @@ history_html = '''
     <div class="footer">
         Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-input');
+            const itemsContainer = document.getElementById('items-container');
+            const originalItems = itemsContainer.innerHTML;
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                
+                if (!searchTerm) {
+                    itemsContainer.innerHTML = originalItems;
+                    return;
+                }
+                
+                const items = itemsContainer.querySelectorAll('.history-item');
+                let hasVisibleItems = false;
+                let visibleItemsHTML = '';
+                
+                items.forEach(item => {
+                    const itemText = item.textContent.toLowerCase();
+                    if (itemText.includes(searchTerm)) {
+                        item.style.display = 'flex';
+                        hasVisibleItems = true;
+                        visibleItemsHTML += item.outerHTML;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                if (!hasVisibleItems) {
+                    itemsContainer.innerHTML = `<div class="empty-history">
+                        Ничего не найдено по запросу: "${searchTerm}"
+                    </div>`;
+                }
+            });
+        });
+    </script>
 </body>
 </html>
 '''
@@ -1414,6 +1540,26 @@ assortment_html = '''
         .container {
             max-width: 100%;
             padding: 20px 15px;
+        }
+        .search-container {
+            position: relative;
+            margin: 15px 0;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 40px;
+            border-radius: 24px;
+            border: 1px solid #e0e0e0;
+            font-size: 1em;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
         }
         .items-container {
             max-height: 65vh;
@@ -1527,12 +1673,17 @@ assortment_html = '''
     <div class="container">
         <h1>Ассортимент товаров</h1>
         
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или штрих-коду...">
+        </div>
+        
         <div class="nav-links">
             <a href="/scan">Сканировать</a>
             <a href="/history">История</a>
         </div>
         
-        <div class="items-container">
+        <div class="items-container" id="items-container">
             {% if products %}
                 {% for product in products %}
                     <div class="product-item">
@@ -1559,6 +1710,44 @@ assortment_html = '''
     <div class="footer">
         Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-input');
+            const itemsContainer = document.getElementById('items-container');
+            const originalItems = itemsContainer.innerHTML;
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                
+                if (!searchTerm) {
+                    itemsContainer.innerHTML = originalItems;
+                    return;
+                }
+                
+                const items = itemsContainer.querySelectorAll('.product-item');
+                let hasVisibleItems = false;
+                let visibleItemsHTML = '';
+                
+                items.forEach(item => {
+                    const itemText = item.textContent.toLowerCase();
+                    if (itemText.includes(searchTerm)) {
+                        item.style.display = 'flex';
+                        hasVisibleItems = true;
+                        visibleItemsHTML += item.outerHTML;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                if (!hasVisibleItems) {
+                    itemsContainer.innerHTML = `<div class="empty-assortment">
+                        Ничего не найдено по запросу: "${searchTerm}"
+                    </div>`;
+                }
+            });
+        });
+    </script>
 </body>
 </html>
 '''
