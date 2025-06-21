@@ -127,20 +127,6 @@ def index():
         })
     return render_template('index.html', items=items)
 
-@app.route('/assortment')
-def assortment():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute('''
-        SELECT p.id, p.barcode, p.name, 
-               (SELECT COUNT(*) FROM batches b WHERE b.product_id = p.id) AS batch_count
-        FROM products p
-        ORDER BY p.name
-    ''')
-    products = cursor.fetchall()
-    return render_template('assortment.html', products=products)
-
-
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
@@ -274,6 +260,20 @@ def add_batch():
     return render_template('add_batch.html', 
                            product_name=product['name'],
                            barcode=barcode)
+
+@app.route('/assortment')
+def assortment():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('''
+        SELECT p.id, p.barcode, p.name, 
+               (SELECT COUNT(*) FROM batches b WHERE b.product_id = p.id) AS batch_count
+        FROM products p
+        ORDER BY p.name
+    ''')
+    products = cursor.fetchall()
+    return render_template('assortment.html', products=products)
+
 @app.route('/history')
 def history():
     db = get_db()
