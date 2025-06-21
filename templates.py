@@ -144,8 +144,28 @@ index_html = '''
 </head>
 <body>
     <div class="header">
-        <h1 class="logo">Вкусвилл</h1>
-    </div>
+    <a href="/" class="back-btn">←</a>
+    <h1 class="logo">Вкусвилл</h1>
+</div>
+
+<!-- Добавим стили для кнопки назад -->
+<style>
+    .back-btn {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-size: 24px;
+        text-decoration: none;
+        font-weight: bold;
+        z-index: 10;
+    }
+    
+    .header {
+        position: relative; /* Добавляем для позиционирования кнопки */
+    }
+</style>
     
     <div class="container">
         <h1>Товары с истекающим сроком</h1>
