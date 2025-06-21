@@ -127,6 +127,20 @@ def index():
         })
     return render_template('index.html', items=items)
 
+@app.route('/assortment')
+def assortment():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('''
+        SELECT p.id, p.barcode, p.name, 
+               (SELECT COUNT(*) FROM batches b WHERE b.product_id = p.id) AS batch_count
+        FROM products p
+        ORDER BY p.name
+    ''')
+    products = cursor.fetchall()
+    return render_template('assortment.html', products=products)
+
+
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
@@ -213,21 +227,53 @@ def add_batch():
     barcode = request.args.get('barcode')
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id, name FROM products WHERE barcode = ?", (barcode,))
+    
+    if not barcode:
+        return redirect(url_for('assortment'))
+
+    cursor.execute("SELECT id, name FROM products WHERE barcode = %s", (barcode,))
     product = cursor.fetchone()
 
     if not product:
-        return "Товар не найден", 404
+        return redirect(url_for('assortment'))
 
     if request.method == 'POST':
-        expiration_date = request.form['expiration_date']
-        cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (?, ?)", 
-                       (product['id'], expiration_date))
+        manufacture_date = request.form.get('manufacture_date')
+        duration_value = request.form.get('duration_value')
+        duration_unit = request.form.get('duration_unit')
+        expiration_date = request.form.get('expiration_date')
+        
+        # Если указана дата изготовления и срок
+        if manufacture_date and duration_value and duration_unit:
+            m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
+            
+            if duration_unit == 'days':
+                exp_date = m_date + timedelta(days=int(duration_value))
+            elif duration_unit == 'months':
+                exp_date = m_date + relativedelta(months=int(duration_value))
+            elif duration_unit == 'years':
+                exp_date = m_date + relativedelta(years=int(duration_value))
+            else:
+                exp_date = m_date + timedelta(days=30)
+                
+            expiration_date = exp_date.strftime('%Y-%m-%d')
+        
+        # Если указана конкретная дата истечения
+        elif expiration_date:
+            expiration_date = expiration_date
+        else:
+            return "Не указаны данные о сроке годности", 400
+
+        cursor.execute("""
+            INSERT INTO batches (product_id, expiration_date) 
+            VALUES (%s, %s)
+        """, (product['id'], expiration_date))
         db.commit()
-        return redirect(url_for('index'))
+        return redirect(url_for('assortment'))
 
-    return render_template('add_batch.html', product_name=product['name'])
-
+    return render_template('add_batch.html', 
+                           product_name=product['name'],
+                           barcode=barcode)
 @app.route('/history')
 def history():
     db = get_db()
