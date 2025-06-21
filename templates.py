@@ -1007,6 +1007,27 @@ add_batch_html = '''
             color: #757575;
             font-size: 0.85em;
         }
+        .date-input-group {
+            position: relative;
+        }
+        .date-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
+            pointer-events: none;
+            font-size: 1.2em;
+        }
+        .date-input {
+            padding-left: 40px;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -1026,11 +1047,16 @@ add_batch_html = '''
                 <div class="tab" data-tab="by-expiry">По сроку годности</div>
             </div>
             
-            <form method="POST">
+            <form method="POST" id="add-batch-form">
                 <div class="tab-content active" id="by-date">
                     <div class="form-group">
-                        <label>Дата изготовления:</label>
-                        <input type="date" name="manufacture_date" required>
+                        <label>Дата изготовления (дд.мм.гггг):</label>
+                        <div class="date-input-group">
+                            <span class="date-icon">📅</span>
+                            <input type="hidden" id="manufacture_date" name="manufacture_date">
+                            <input type="text" id="manufacture_date_text" class="date-input" placeholder="дд.мм.гггг" required>
+                            <div class="error-message" id="manufacture_date_error">Пожалуйста, введите дату в формате дд.мм.гггг</div>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -1048,8 +1074,13 @@ add_batch_html = '''
                 
                 <div class="tab-content" id="by-expiry">
                     <div class="form-group">
-                        <label>Срок годности (готовой датой):</label>
-                        <input type="date" name="expiration_date">
+                        <label>Срок годности (дд.мм.гггг):</label>
+                        <div class="date-input-group">
+                            <span class="date-icon">📅</span>
+                            <input type="hidden" id="expiration_date" name="expiration_date">
+                            <input type="text" id="expiration_date_text" class="date-input" placeholder="дд.мм.гггг" required>
+                            <div class="error-message" id="expiration_date_error">Пожалуйста, введите дату в формате дд.мм.гггг</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -1073,6 +1104,94 @@ add_batch_html = '''
                     const tabId = this.getAttribute('data-tab');
                     document.getElementById(tabId).classList.add('active');
                 });
+            });
+            
+            // Функции для обработки ввода даты
+            function setupDateInput(inputId, hiddenId, errorId) {
+                const textField = document.getElementById(inputId);
+                const hiddenField = document.getElementById(hiddenId);
+                const errorField = document.getElementById(errorId);
+                
+                textField.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 8) value = value.substr(0, 8);
+                    
+                    let formatted = '';
+                    for (let i = 0; i < value.length; i++) {
+                        if (i === 2 || i === 4) formatted += '.';
+                        formatted += value[i];
+                    }
+                    e.target.value = formatted;
+                    
+                    if (formatted.length === 10) {
+                        const parts = formatted.split('.');
+                        if (parts.length === 3) {
+                            const [day, month, year] = parts;
+                            hiddenField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            errorField.style.display = 'none';
+                        }
+                    }
+                });
+                
+                textField.addEventListener('blur', function() {
+                    const value = textField.value;
+                    if (value.length > 0 && value.length < 10) {
+                        errorField.style.display = 'block';
+                    } else if (value.length === 10) {
+                        const parts = value.split('.');
+                        if (parts.length === 3) {
+                            const [day, month, year] = parts;
+                            hiddenField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            errorField.style.display = 'none';
+                        } else {
+                            errorField.style.display = 'block';
+                        }
+                    }
+                });
+                
+                textField.addEventListener('keydown', function(e) {
+                    if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
+                        (e.keyCode === 65 && e.ctrlKey === true) || 
+                        (e.keyCode === 67 && e.ctrlKey === true) || 
+                        (e.keyCode === 86 && e.ctrlKey === true) || 
+                        (e.keyCode === 88 && e.ctrlKey === true) || 
+                        (e.keyCode >= 35 && e.keyCode <= 39)) {
+                        return;
+                    }
+                    
+                    if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+            
+            // Настройка полей для дат
+            setupDateInput('manufacture_date_text', 'manufacture_date', 'manufacture_date_error');
+            setupDateInput('expiration_date_text', 'expiration_date', 'expiration_date_error');
+            
+            // Обработка отправки формы
+            document.getElementById('add-batch-form').addEventListener('submit', function(e) {
+                let isValid = true;
+                const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                
+                if (activeTab === 'by-date') {
+                    const manufactureDate = document.getElementById('manufacture_date').value;
+                    if (!manufactureDate || manufactureDate.length !== 10) {
+                        document.getElementById('manufacture_date_error').style.display = 'block';
+                        isValid = false;
+                    }
+                } else if (activeTab === 'by-expiry') {
+                    const expirationDate = document.getElementById('expiration_date').value;
+                    if (!expirationDate || expirationDate.length !== 10) {
+                        document.getElementById('expiration_date_error').style.display = 'block';
+                        isValid = false;
+                    }
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Пожалуйста, введите корректные даты в формате дд.мм.гггг');
+                }
             });
         });
     </script>
