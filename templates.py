@@ -124,6 +124,7 @@ index_html = '''
         }
         .nav-links {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin: 15px 0;
             justify-content: center;
@@ -139,7 +140,12 @@ index_html = '''
             transition: all 0.2s;
             text-align: center;
             flex: 1;
-            max-width: 45%;
+            min-width: calc(50% - 10px);
+            box-sizing: border-box;
+        }
+        .nav-links .full-width {
+            flex: 0 0 100%;
+            min-width: 100%;
         }
         .nav-links a:hover {
             background: #008c3a;
@@ -197,7 +203,7 @@ index_html = '''
         <div class="nav-links">
             <a href="/scan">Сканировать</a>
             <a href="/history">История</a>
-            <a href="/assortment">Ассортимент</a>
+            <a href="/assortment" class="full-width">Ассортимент</a>
         </div>
         
         <div class="items-container" id="items-container">
