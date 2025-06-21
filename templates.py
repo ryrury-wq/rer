@@ -173,6 +173,7 @@ index_html = '''
         <div class="nav-links">
             <a href="/scan">Сканировать</a>
             <a href="/history">История</a>
+            <a href="/assortment">Ассортимент</a>
         </div>
         
         <div class="items-container">
@@ -882,11 +883,11 @@ new_product_html = '''
 </html>
 '''
 
-add_batch_html = '''
+assortment_html = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Добавить срок - Вкусвилл</title>
+    <title>Ассортимент - Вкусвилл</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
@@ -896,13 +897,24 @@ add_batch_html = '''
             margin: 0;
             padding: 0;
             background-color: #f8f9fa;
-            min-height: 100vh;
         }
         .header {
             background-color: #00a046;
             color: white;
             padding: 15px 20px;
             text-align: center;
+            position: relative;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
         }
         .logo {
             font-weight: 700;
@@ -912,82 +924,205 @@ add_batch_html = '''
             color: white;
         }
         .container {
-            max-width: 500px;
-            margin: 30px auto;
-            padding: 0 20px;
+            max-width: 100%;
+            padding: 20px 15px;
         }
-        .form-container {
-            background: white;
+        .items-container {
+            max-height: 65vh;
+            overflow-y: auto;
             border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 15px;
+            margin-top: 15px;
+            background-color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .product-item { 
+            padding: 15px; 
+            border-bottom: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+        .product-item:hover {
+            background: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .item-info { 
+            flex-grow: 1;
+            padding-right: 15px;
+        }
+        .add-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #00a046;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .nav-links a {
+            padding: 12px 20px;
+            background: #00a046;
+            border-radius: 24px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .nav-links a:hover {
+            background: #008c3a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         h1 {
             text-align: center;
             color: #00a046;
             font-weight: 500;
-            margin-top: 0;
-            margin-bottom: 25px;
-        }
-        .product-name {
-            text-align: center;
-            font-size: 1.2em;
-            margin-bottom: 25px;
-            padding: 12px;
-            background: #e8f5e9;
-            border-radius: 8px;
-            font-weight: 500;
-        }
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-weight: 500;
-            color: #424242;
-        }
-        input, button {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 14px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            font-family: 'Roboto', sans-serif;
-        }
-        input:focus {
-            outline: none;
-            border-color: #00a046;
-            box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
-        }
-        button { 
-            background: #00a046;
-            color: white;
-            border: none;
-            font-weight: 500;
-            font-size: 1.1em;
-            padding: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        button:hover {
-            background: #008c3a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            margin: 0;
         }
         .footer {
             text-align: center;
-            padding: 30px 15px 10px;
+            padding: 20px 15px 10px;
             color: #757575;
             font-size: 0.85em;
+            margin-top: 10px;
+        }
+        .empty-assortment {
+            text-align: center;
+            padding: 30px;
+            color: #9e9e9e;
+            font-style: italic;
+        }
+        .item-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .item-details {
+            font-size: 0.9em;
+            color: #616161;
+        }
+        .batch-count {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #e0f7fa;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
     <div class="header">
+        <a href="/" class="back-btn">←</a>
+        <h1 class="logo">Вкусвилл</h1>
+    </div>
+    
+    <div class="container">
+        <h1>Ассортимент товаров</h1>
+        
+        <div class="nav-links">
+            <a href="/scan">Сканировать</a>
+            <a href="/history">История</a>
+        </div>
+        
+        <div class="items-container">
+            {% if products %}
+                {% for product in products %}
+                    <div class="product-item">
+                        <div class="item-info">
+                            <div class="item-title">{{ product['name'] }}</div>
+                            <div class="item-details">
+                                Штрих-код: {{ product['barcode'] }}
+                                <div class="batch-count">
+                                    Сроков: {{ product['batch_count'] }}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="/add_batch?barcode={{ product['barcode'] }}" class="add-btn" title="Добавить срок годности">+</a>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-assortment">
+                    Ассортимент пуст
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="footer">
+        Сделано М2(Shevchenko) by Bekeshnyuk
+    </div>
+</body>
+</html>
+'''
+
+# Добавляем в словарь templates
+templates['assortment.html'] = assortment_html
+
+add_batch_html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Добавить срок - Вкусвилл</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        /* ... (существующие стили) ... */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 3px solid #00a046;
+            color: #00a046;
+            font-weight: 500;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .duration-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .duration-group input {
+            flex: 1;
+        }
+        .duration-group select {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/assortment" class="back-btn">←</a>
         <h1 class="logo">Вкусвилл</h1>
     </div>
     
@@ -995,19 +1130,66 @@ add_batch_html = '''
         <div class="form-container">
             <h1>Добавление срока годности</h1>
             <div class="product-name">{{ product_name }}</div>
+            <div class="product-barcode">Штрих-код: {{ barcode }}</div>
+            
+            <div class="tabs">
+                <div class="tab active" data-tab="by-date">По дате изготовления</div>
+                <div class="tab" data-tab="by-expiry">По сроку годности</div>
+            </div>
+            
             <form method="POST">
-                <div class="form-group">
-                    <label>Срок годности:</label>
-                    <input type="date" name="expiration_date" required>
+                <div class="tab-content active" id="by-date">
+                    <div class="form-group">
+                        <label>Дата изготовления:</label>
+                        <input type="date" name="manufacture_date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Срок годности:</label>
+                        <div class="duration-group">
+                            <input type="number" name="duration_value" placeholder="Количество" required min="1">
+                            <select name="duration_unit" required>
+                                <option value="days">дней</option>
+                                <option value="months">месяцев</option>
+                                <option value="years">лет</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
+                
+                <div class="tab-content" id="by-expiry">
+                    <div class="form-group">
+                        <label>Срок годности (готовой датой):</label>
+                        <input type="date" name="expiration_date">
+                    </div>
+                </div>
+                
                 <button type="submit">Добавить срок</button>
             </form>
         </div>
     </div>
     
-    <div class="footer">
-        Сделано М2(Shevchenko) by Bekeshnyuk
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        });
+    </script>
 </body>
 </html>
 '''
