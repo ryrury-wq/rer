@@ -449,7 +449,7 @@ scan_html = '''
             border-bottom: 1px dashed #00a046;
             padding-bottom: 2px;
         }
-        .date-input-group {
+         .date-input-group {
             position: relative;
         }
         .date-icon {
@@ -460,7 +460,14 @@ scan_html = '''
             color: #757575;
             pointer-events: none;
             font-size: 1.2em;
+            z-index: 2; /* Убедимся, что иконка поверх других элементов */
         }
+        .date-input {
+            padding-left: 45px !important; /* Увеличим отступ слева */
+            width: calc(100% - 45px) !important; /* Учтем отступ в ширине */
+            box-sizing: border-box;
+        }
+        
         .footer {
             text-align: center;
             padding: 20px 15px 10px;
