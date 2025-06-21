@@ -883,200 +883,6 @@ new_product_html = '''
 </html>
 '''
 
-assortment_html = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Ассортимент - Вкусвилл</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
-        body { 
-            font-family: 'Roboto', sans-serif; 
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-        }
-        .header {
-            background-color: #00a046;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            position: relative;
-        }
-        .back-btn {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-            font-weight: bold;
-            z-index: 10;
-        }
-        .logo {
-            font-weight: 700;
-            font-size: 1.8em;
-            letter-spacing: 0.5px;
-            margin: 0;
-            color: white;
-        }
-        .container {
-            max-width: 100%;
-            padding: 20px 15px;
-        }
-        .items-container {
-            max-height: 65vh;
-            overflow-y: auto;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            background-color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        }
-        .product-item { 
-            padding: 15px; 
-            border-bottom: 1px solid #eee;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fafafa;
-            transition: all 0.2s;
-        }
-        .product-item:hover {
-            background: #f5f5f5;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-        .item-info { 
-            flex-grow: 1;
-            padding-right: 15px;
-        }
-        .add-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: #00a046;
-            color: white;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            margin: 20px 0;
-            justify-content: center;
-        }
-        .nav-links a {
-            padding: 12px 20px;
-            background: #00a046;
-            border-radius: 24px;
-            text-decoration: none;
-            color: white;
-            font-weight: 500;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .nav-links a:hover {
-            background: #008c3a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        h1 {
-            text-align: center;
-            color: #00a046;
-            font-weight: 500;
-            margin: 0;
-        }
-        .footer {
-            text-align: center;
-            padding: 20px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
-            margin-top: 10px;
-        }
-        .empty-assortment {
-            text-align: center;
-            padding: 30px;
-            color: #9e9e9e;
-            font-style: italic;
-        }
-        .item-title {
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-        .item-details {
-            font-size: 0.9em;
-            color: #616161;
-        }
-        .batch-count {
-            display: inline-block;
-            padding: 2px 8px;
-            background: #e0f7fa;
-            border-radius: 12px;
-            font-size: 0.8em;
-            margin-top: 5px;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <a href="/" class="back-btn">←</a>
-        <h1 class="logo">Вкусвилл</h1>
-    </div>
-    
-    <div class="container">
-        <h1>Ассортимент товаров</h1>
-        
-        <div class="nav-links">
-            <a href="/scan">Сканировать</a>
-            <a href="/history">История</a>
-        </div>
-        
-        <div class="items-container">
-            {% if products %}
-                {% for product in products %}
-                    <div class="product-item">
-                        <div class="item-info">
-                            <div class="item-title">{{ product['name'] }}</div>
-                            <div class="item-details">
-                                Штрих-код: {{ product['barcode'] }}
-                                <div class="batch-count">
-                                    Сроков: {{ product['batch_count'] }}
-                                </div>
-                            </div>
-                        </div>
-                        <a href="/add_batch?barcode={{ product['barcode'] }}" class="add-btn" title="Добавить срок годности">+</a>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-assortment">
-                    Ассортимент пуст
-                </div>
-            {% endif %}
-        </div>
-    </div>
-    
-    <div class="footer">
-        Сделано М2(Shevchenko) by Bekeshnyuk
-    </div>
-</body>
-</html>
-'''
-
-# Добавляем в словарь templates
-templates['assortment.html'] = assortment_html
 
 add_batch_html = '''
 <!DOCTYPE html>
@@ -1366,11 +1172,207 @@ history_html = '''
 </html>
 '''
 
+assortment_html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ассортимент - Вкусвилл</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background-color: #00a046;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            position: relative;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .logo {
+            font-weight: 700;
+            font-size: 1.8em;
+            letter-spacing: 0.5px;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            max-width: 100%;
+            padding: 20px 15px;
+        }
+        .items-container {
+            max-height: 65vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            background-color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .product-item { 
+            padding: 15px; 
+            border-bottom: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+        .product-item:hover {
+            background: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .item-info { 
+            flex-grow: 1;
+            padding-right: 15px;
+        }
+        .add-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #00a046;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .nav-links a {
+            padding: 12px 20px;
+            background: #00a046;
+            border-radius: 24px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .nav-links a:hover {
+            background: #008c3a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        h1 {
+            text-align: center;
+            color: #00a046;
+            font-weight: 500;
+            margin: 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+        .empty-assortment {
+            text-align: center;
+            padding: 30px;
+            color: #9e9e9e;
+            font-style: italic;
+        }
+        .item-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .item-details {
+            font-size: 0.9em;
+            color: #616161;
+        }
+        .batch-count {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #e0f7fa;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-btn">←</a>
+        <h1 class="logo">Вкусвилл</h1>
+    </div>
+    
+    <div class="container">
+        <h1>Ассортимент товаров</h1>
+        
+        <div class="nav-links">
+            <a href="/scan">Сканировать</a>
+            <a href="/history">История</a>
+        </div>
+        
+        <div class="items-container">
+            {% if products %}
+                {% for product in products %}
+                    <div class="product-item">
+                        <div class="item-info">
+                            <div class="item-title">{{ product['name'] }}</div>
+                            <div class="item-details">
+                                Штрих-код: {{ product['barcode'] }}
+                                <div class="batch-count">
+                                    Сроков: {{ product['batch_count'] }}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="/add_batch?barcode={{ product['barcode'] }}" class="add-btn" title="Добавить срок годности">+</a>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-assortment">
+                    Ассортимент пуст
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="footer">
+        Сделано М2(Shevchenko) by Bekeshnyuk
+    </div>
+</body>
+</html>
+'''
+
+# Добавляем в словарь templates
+templates['assortment.html'] = assortment_html
+
 templates = {
     'index.html': index_html,
     'scan.html': scan_html,
     'new_product.html': new_product_html,
     'add_batch.html': add_batch_html,
+    'assortment.html': assortment_html,
     'history.html': history_html
 }
 
