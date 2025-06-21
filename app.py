@@ -3,6 +3,7 @@ import psycopg2
 from datetime import datetime, timedelta
 from flask import Flask, request, redirect, url_for, g, jsonify
 from psycopg2.extras import DictCursor
+from dateutil.relativedelta import relativedelta
 
 app = Flask(__name__)
 
@@ -137,12 +138,14 @@ def scan():
             duration_unit = request.form['duration_unit']
 
             m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
+            
+            # Используем точный расчет с relativedelta
             if duration_unit == 'days':
                 exp_date = m_date + timedelta(days=duration_value)
             elif duration_unit == 'months':
-                exp_date = m_date + timedelta(days=duration_value * 30)
+                exp_date = m_date + relativedelta(months=duration_value)
             elif duration_unit == 'years':
-                exp_date = m_date + timedelta(days=duration_value * 365)
+                exp_date = m_date + relativedelta(years=duration_value)
             elif duration_unit == 'hours':
                 exp_date = m_date + timedelta(hours=duration_value)
             else:
