@@ -18,7 +18,7 @@ index_html = '''
             color: #333;
         }
         .header {
-            background-color: #00a046; /* Зеленый Вкусвилл */
+            background-color: #00a046;
             color: white;
             padding: 15px 20px;
             text-align: center;
@@ -148,7 +148,6 @@ index_html = '''
     <h1 class="logo">Вкусвилл</h1>
 </div>
 
-<!-- Добавим стили для кнопки назад -->
 <style>
     .back-btn {
         position: absolute;
@@ -163,7 +162,7 @@ index_html = '''
     }
     
     .header {
-        position: relative; /* Добавляем для позиционирования кнопки */
+        position: relative;
     }
 </style>
     
@@ -417,7 +416,6 @@ scan_html = '''
         <h1 class="logo">Вкусвилл</h1>
     </div>
 
-<!-- Добавим стили для кнопки назад -->
     <style>
         .back-btn {
             position: absolute;
@@ -432,7 +430,7 @@ scan_html = '''
         }
     
         .header {
-            position: relative; /* Добавляем для позиционирования кнопки */
+            position: relative;
         }
     </style>
     
@@ -519,7 +517,6 @@ scan_html = '''
         let lastScanTime = 0;
         const SCAN_COOLDOWN = 2000;
         
-        // Функция для остановки текущего потока
         function stopCurrentStream() {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => {
@@ -534,7 +531,6 @@ scan_html = '''
             }
         }
         
-        // Функция для запуска камеры
         async function startCamera() {
             try {
                 stopCurrentStream();
@@ -562,7 +558,6 @@ scan_html = '''
             }
         }
         
-        // Проверка поддержки фонарика
         function checkTorchSupport() {
             torchBtn.style.display = 'none';
             if (currentStream) {
@@ -573,7 +568,6 @@ scan_html = '''
             }
         }
         
-        // Переключение фонарика
         async function toggleTorch() {
             if (!currentStream) return;
             
@@ -591,7 +585,6 @@ scan_html = '''
             }
         }
         
-        // Функция для запуска сканера
         function startScanner() {
             if (!scannerActive) return;
             
@@ -623,7 +616,6 @@ scan_html = '''
             });
         }
         
-        // Функция для остановки сканера
         function stopScanner() {
             scannerActive = false;
             codeReader.reset();
@@ -636,15 +628,12 @@ scan_html = '''
             barcodeInput.placeholder = "Введите штрих-код вручную";
         }
         
-        // Перезапуск камеры
         restartBtn.addEventListener('click', () => {
             startCamera();
         });
         
-        // Управление фонариком
         torchBtn.addEventListener('click', toggleTorch);
         
-        // Ручной ввод штрих-кода
         manualInputLink.addEventListener('click', (e) => {
             e.preventDefault();
             barcodeInput.removeAttribute('readonly');
@@ -652,7 +641,6 @@ scan_html = '''
             barcodeInput.placeholder = "Введите штрих-код вручную";
         });
         
-        // Обработка изменения видимости страницы
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 stopScanner();
@@ -662,7 +650,6 @@ scan_html = '''
             }
         });
         
-        // Проверяем поддержку медиаустройств
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showCameraError();
             cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
@@ -670,7 +657,6 @@ scan_html = '''
             startCamera();
         }
         
-        // Отправка формы
         scannerForm.addEventListener('submit', (e) => {
             if (!barcodeInput.value) {
                 e.preventDefault();
@@ -680,7 +666,6 @@ scan_html = '''
         });
     </script>
 
-    <!-- Скрипт для работы с датой -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const dateField = document.getElementById('manufacture_date');
@@ -697,7 +682,6 @@ scan_html = '''
             }
             e.target.value = formatted;
             
-            // Обновление скрытого поля даты при полном вводе
             if (formatted.length === 10) {
                 const parts = formatted.split('.');
                 if (parts.length === 3) {
@@ -707,52 +691,43 @@ scan_html = '''
             }
         });
             
-            // Валидация формата даты
-            
-            textField.addEventListener('blur', function() {
-                const value = textField.value;
-                if (value.length > 0 && value.length < 10) {
-                    alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
-                    textField.focus();
-                } else if (value.length === 10) {
-                    const parts = value.split('.');
-                    if (parts.length === 3) {
-                        const [day, month, year] = parts;
-                        // Форматируем в YYYY-MM-DD
-                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    }
+        textField.addEventListener('blur', function() {
+            const value = textField.value;
+            if (value.length > 0 && value.length < 10) {
+                alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
+                textField.focus();
+            } else if (value.length === 10) {
+                const parts = value.split('.');
+                if (parts.length === 3) {
+                    const [day, month, year] = parts;
+                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                 }
-            });
-            
-            // Обработка клавиш для удобства ввода
-            textField.addEventListener('keydown', function(e) {
-                // Разрешаем: backspace, delete, tab, escape, enter
-                if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
-                    // Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                    (e.keyCode === 65 && e.ctrlKey === true) || 
-                    (e.keyCode === 67 && e.ctrlKey === true) || 
-                    (e.keyCode === 86 && e.ctrlKey === true) || 
-                    (e.keyCode === 88 && e.ctrlKey === true) || 
-                    // Стрелки вправо/влево
-                    (e.keyCode >= 35 && e.keyCode <= 39)) {
-                    return;
-                }
-                
-                // Запрещаем все, кроме цифр
-                if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
-                    e.preventDefault();
-                }
-            });
-            
-            // Проверка даты перед отправкой формы
-            scannerForm.addEventListener('submit', function(e) {
-                if (!dateField.value) {
-                    e.preventDefault();
-                    alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
-                    textField.focus();
-                }
-            });
+            }
         });
+            
+        textField.addEventListener('keydown', function(e) {
+            if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
+                (e.keyCode === 65 && e.ctrlKey === true) || 
+                (e.keyCode === 67 && e.ctrlKey === true) || 
+                (e.keyCode === 86 && e.ctrlKey === true) || 
+                (e.keyCode === 88 && e.ctrlKey === true) || 
+                (e.keyCode >= 35 && e.keyCode <= 39)) {
+                return;
+            }
+            
+            if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+            
+        scannerForm.addEventListener('submit', function(e) {
+            if (!dateField.value) {
+                e.preventDefault();
+                alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
+                textField.focus();
+            }
+        });
+    });
     </script>
 </body>
 </html>
@@ -891,7 +866,69 @@ add_batch_html = '''
     <title>Добавить срок - Вкусвилл</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* ... (существующие стили) ... */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: #00a046;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            position: relative;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .logo {
+            font-weight: 700;
+            font-size: 1.8em;
+            letter-spacing: 0.5px;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            color: #00a046;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        .product-name {
+            font-size: 1.2em;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .product-barcode {
+            text-align: center;
+            color: #757575;
+            margin-bottom: 20px;
+        }
         .tabs {
             display: flex;
             margin-bottom: 20px;
@@ -913,6 +950,46 @@ add_batch_html = '''
         .tab-content.active {
             display: block;
         }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 500;
+            color: #424242;
+        }
+        input, select, button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Roboto', sans-serif;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #00a046;
+            box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
+        }
+        button { 
+            background: #00a046;
+            color: white;
+            border: none;
+            font-weight: 500;
+            font-size: 1.1em;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background: #008c3a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
         .duration-group {
             display: flex;
             gap: 10px;
@@ -923,6 +1000,12 @@ add_batch_html = '''
         }
         .duration-group select {
             flex: 1;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
         }
     </style>
 </head>
@@ -982,14 +1065,11 @@ add_batch_html = '''
             
             tabs.forEach(tab => {
                 tab.addEventListener('click', function() {
-                    // Remove active class from all tabs and contents
                     tabs.forEach(t => t.classList.remove('active'));
                     tabContents.forEach(c => c.classList.remove('active'));
                     
-                    // Add active class to clicked tab
                     this.classList.add('active');
                     
-                    // Show corresponding content
                     const tabId = this.getAttribute('data-tab');
                     document.getElementById(tabId).classList.add('active');
                 });
@@ -1364,9 +1444,7 @@ assortment_html = '''
 </html>
 '''
 
-# Добавляем в словарь templates
-templates['assortment.html'] = assortment_html
-
+# Создаем словарь шаблонов
 templates = {
     'index.html': index_html,
     'scan.html': scan_html,
@@ -1377,4 +1455,5 @@ templates = {
 }
 
 def render_template(template_name, **context):
+    """Кастомная функция рендеринга шаблонов"""
     return render_template_string(templates[template_name], **context)
