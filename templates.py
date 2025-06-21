@@ -641,38 +641,45 @@ scan_html = '''
 
     <!-- Скрипт для работы с датой -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateField = document.getElementById('manufacture_date');
-            const textField = document.getElementById('manufacture_date_text');
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateField = document.getElementById('manufacture_date');
+        const textField = document.getElementById('manufacture_date_text');
+        
+        textField.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.substr(0, 8);
             
-            // Автозаполнение точек и форматирование
-            textField.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 8) value = value.substr(0, 8);
-                
-                let formatted = '';
-                for (let i = 0; i < value.length; i++) {
-                    if (i === 2 || i === 4) formatted += '.';
-                    formatted += value[i];
+            let formatted = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i === 2 || i === 4) formatted += '.';
+                formatted += value[i];
+            }
+            e.target.value = formatted;
+            
+            // Обновление скрытого поля даты при полном вводе
+            if (formatted.length === 10) {
+                const parts = formatted.split('.');
+                if (parts.length === 3) {
+                    const [day, month, year] = parts;
+                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                 }
-                e.target.value = formatted;
-                
-                // Обновление скрытого поля даты
-                if (formatted.length === 10) {
-                    const parts = formatted.split('.');
-                    if (parts.length === 3) {
-                        const [day, month, year] = parts;
-                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    }
-                }
-            });
+            }
+        });
             
             // Валидация формата даты
+            
             textField.addEventListener('blur', function() {
                 const value = textField.value;
                 if (value.length > 0 && value.length < 10) {
                     alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
                     textField.focus();
+                } else if (value.length === 10) {
+                    const parts = value.split('.');
+                    if (parts.length === 3) {
+                        const [day, month, year] = parts;
+                        // Форматируем в YYYY-MM-DD
+                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    }
                 }
             });
             
