@@ -287,6 +287,65 @@ def history():
     history_items = cursor.fetchall()
     return render_template('history.html', history_items=history_items)
 
+
+@app.route('/edit_product/<int:product_id>', methods=['GET', 'POST'])
+def edit_product(product_id):
+    db = get_db()
+    cursor = db.cursor()
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        barcode = request.form['barcode']
+        
+        try:
+            # Проверяем уникальность штрих-кода
+            cursor.execute('SELECT id FROM products WHERE barcode = %s AND id != %s', (barcode, product_id))
+            if cursor.fetchone():
+                return render_template('edit_product.html', 
+                                       product={'id': product_id, 'name': name, 'barcode': barcode},
+                                       error="Штрих-код уже используется другим товаром")
+            
+            cursor.execute('''
+                UPDATE products 
+                SET name = %s, barcode = %s 
+                WHERE id = %s
+            ''', (name, barcode, product_id))
+            
+            db.commit()
+            return redirect(url_for('assortment'))
+        except Exception as e:
+            db.rollback()
+            return f"Ошибка при обновлении товара: {str(e)}", 500
+    
+    else:
+        cursor.execute('SELECT * FROM products WHERE id = %s', (product_id,))
+        product = cursor.fetchone()
+        
+        if not product:
+            return redirect(url_for('assortment'))
+        
+        return render_template('edit_product.html', product=product)
+
+# Маршрут для удаления товара
+@app.route('/delete_product/<int:product_id>', methods=['POST'])
+def delete_product(product_id):
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        # Удаляем все партии товара
+        cursor.execute('DELETE FROM batches WHERE product_id = %s', (product_id,))
+        
+        # Удаляем сам товар
+        cursor.execute('DELETE FROM products WHERE id = %s', (product_id,))
+        
+        db.commit()
+        return redirect(url_for('assortment'))
+    except Exception as e:
+        db.rollback()
+        return f"Ошибка при удалении товара: {str(e)}", 500
+
+
 @app.route('/edit_batch/<int:batch_id>', methods=['GET', 'POST'])
 def edit_batch(batch_id):
     db = get_db()
