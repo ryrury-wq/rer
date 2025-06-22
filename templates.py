@@ -83,49 +83,42 @@ index_html = '''
             margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
             transition: all 0.2s;
+            position: relative;
         }
         .item:hover {
             box-shadow: 0 2px 6px rgba(0,160,70,0.15);
             transform: translateY(-2px);
         }
-        .item-info { flex-grow: 1; }
-        .move-btn {
-            width: 36px;
-            height: 36px;
+        .item-info { 
+            flex-grow: 1;
+            padding-right: 10px;
+        }
+        .item-actions {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+        }
+        .action-btn {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .move-btn {
             background: #00a046;
             color: white;
-            border: none;
-            cursor: pointer;
-            margin-left: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: bold;
         }
-        .edit-btn, .delete-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            cursor: pointer;
-            border: none;
-        }
-    
-        .edit-btn {
-            background: #ffc107;
-            color: #333;
-        }
-    
-        .delete-btn {
-            background: #f44336;
-            color: white;
+        .move-btn:hover {
+            background: #008c3a;
+            transform: scale(1.1);
         }
         .expired { 
             background-color: #ffebee;
@@ -249,23 +242,13 @@ index_html = '''
                             Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
                         </div>
                     </div>
-                    <div style="display: flex; gap: 5px;">
-                         <form action="/move_to_history" method="POST" style="display: inline;">
-                           <input type="hidden" name="batch_id" value="{{ item.id }}">
-                           <button type="submit" class="move-btn" title="Переместить в историю">→</button>
-                         </form>
-        
-                         <a href="/edit_batch/{{ item.id }}" class="edit-btn" title="Редактировать">✎</a>
-        
-                         <form action="/delete_batch/{{ item.id }}" method="POST" style="display: inline;">
-                           <button type="submit" class="delete-btn" title="Удалить">✕</button>
-                         </form>
-                    </div>
                     
-                    <form action="/move_to_history" method="POST" style="display: inline;">
-                        <input type="hidden" name="batch_id" value="{{ item.id }}">
-                        <button type="submit" class="move-btn" title="Переместить в историю">→</button>
-                    </form>
+                    <div class="item-actions">
+                        <form action="/move_to_history" method="POST" style="display: inline;">
+                            <input type="hidden" name="batch_id" value="{{ item.id }}">
+                            <button type="submit" class="action-btn move-btn" title="Переместить в историю">→</button>
+                        </form>
+                    </div>
                 </div>
             {% else %}
                 <div class="no-items">
