@@ -178,7 +178,7 @@ def scan():
         except Exception as e:
             app.logger.error(f"Scan POST Error: {str(e)}")
             return f"Server Error: {str(e)}", 500
-    return render_template('scan')
+    return render_template('scan.html')
 
 @app.route('/get-product-name', methods=['GET'])
 def get_product_name():
