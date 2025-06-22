@@ -449,22 +449,22 @@ scan_html = '''
             border-bottom: 1px dashed #00a046;
             padding-bottom: 2px;
         }
-         .date-input-group {
+        .date-input-group {
             position: relative;
         }
         .date-icon {
             position: absolute;
-            left: 15px;
+            left: 12px;  /* Сдвигаем иконку ближе к краю */
             top: 50%;
             transform: translateY(-50%);
             color: #757575;
             pointer-events: none;
-            font-size: 1.2em;
-            z-index: 2; /* Убедимся, что иконка поверх других элементов */
+            font-size: 1em;  /* Уменьшаем размер иконки */
+            z-index: 2;
         }
         .date-input {
-            padding-left: 45px !important; /* Увеличим отступ слева */
-            width: calc(100% - 45px) !important; /* Учтем отступ в ширине */
+            padding-left: 40px !important;  /* Уменьшаем отступ */
+            width: 100% !important;  /* Убираем расчет ширины */
             box-sizing: border-box;
         }
         
@@ -549,7 +549,7 @@ scan_html = '''
                     <div class="date-input-group">
                         <span class="date-icon">📅</span>
                         <input type="date" name="manufacture_date" id="manufacture_date" style="display: none">
-                        <input type="text" id="manufacture_date_text" placeholder="   дд.мм.гггг" required>
+                        <input type="text" id="manufacture_date_text" placeholder="дд.мм.гггг" required>
                     </div>
                 </div>
 
