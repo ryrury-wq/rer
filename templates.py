@@ -1928,6 +1928,179 @@ assortment_html = '''
 </html>
 '''
 
+edit_batch_html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Редактировать товар - Вкусвилл</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: #00a046;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            position: relative;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .logo {
+            font-weight: 700;
+            font-size: 1.8em;
+            letter-spacing: 0.5px;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            color: #00a046;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 500;
+            color: #424242;
+        }
+        input, button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Roboto', sans-serif;
+        }
+        input:focus {
+            outline: none;
+            border-color: #00a046;
+            box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
+        }
+        button { 
+            background: #00a046;
+            color: white;
+            border: none;
+            font-weight: 500;
+            font-size: 1.1em;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background: #008c3a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .footer {
+            text-align: center;
+            padding: 30px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-btn">←</a>
+        <h1 class="logo">Вкусвилл</h1>
+    </div>
+    
+    <div class="container">
+        <div class="form-container">
+            <h1>Редактирование товара</h1>
+            <form method="POST">
+                <div class="form-group">
+                    <label>Наименование:</label>
+                    <input type="text" name="name" value="{{ item.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Штрих-код:</label>
+                    <input type="text" name="barcode" value="{{ item.barcode }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Срок годности (дд.мм.гггг):</label>
+                    <input type="date" name="expiration_date" id="expiration_date" style="display: none">
+                    <input type="text" id="expiration_date_text" value="{{ item.expiration_date }}" required>
+                </div>
+                <button type="submit">Сохранить изменения</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateField = document.getElementById('expiration_date');
+            const textField = document.getElementById('expiration_date_text');
+            
+            // Преобразуем дату из формата YYYY-MM-DD в дд.мм.гггг для отображения
+            const parts = textField.value.split('-');
+            if (parts.length === 3) {
+                const [year, month, day] = parts;
+                textField.value = `${day}.${month}.${year}`;
+            }
+            
+            // Обработка ввода
+            textField.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.substr(0, 8);
+                
+                let formatted = '';
+                for (let i = 0; i < value.length; i++) {
+                    if (i === 2 || i === 4) formatted += '.';
+                    formatted += value[i];
+                }
+                e.target.value = formatted;
+                
+                if (formatted.length === 10) {
+                    const parts = formatted.split('.');
+                    if (parts.length === 3) {
+                        const [day, month, year] = parts;
+                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+'''
+
 # Создаем словарь шаблонов
 templates = {
     'index.html': index_html,
@@ -1935,7 +2108,8 @@ templates = {
     'new_product.html': new_product_html,
     'add_batch.html': add_batch_html,
     'assortment.html': assortment_html,
-    'history.html': history_html
+    'history.html': history_html,
+    'edit_batch.html': edit_batch_html 
 }
 
 def render_template(template_name, **context):
