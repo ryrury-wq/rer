@@ -82,7 +82,6 @@ index_html = '''
             border-radius: 8px;
             margin-bottom: 8px;
             display: flex;
-            justify-content: space-between;
             transition: all 0.2s;
             position: relative;
         }
@@ -90,15 +89,17 @@ index_html = '''
             box-shadow: 0 2px 6px rgba(0,160,70,0.15);
             transform: translateY(-2px);
         }
-        .item-info { 
+        .item-content {
             flex-grow: 1;
-            padding-right: 10px;
+            min-width: 0; /* Предотвращает переполнение */
         }
         .item-actions {
             display: flex;
             flex-direction: column;
             justify-content: center;
             gap: 8px;
+            margin-left: 10px;
+            flex-shrink: 0;
         }
         .action-btn {
             width: 40px;
@@ -118,6 +119,22 @@ index_html = '''
         }
         .move-btn:hover {
             background: #008c3a;
+            transform: scale(1.1);
+        }
+        .edit-btn {
+            background: #ffc107;
+            color: #333;
+        }
+        .edit-btn:hover {
+            background: #e6ac00;
+            transform: scale(1.1);
+        }
+        .delete-btn {
+            background: #f44336;
+            color: white;
+        }
+        .delete-btn:hover {
+            background: #e53935;
             transform: scale(1.1);
         }
         .expired { 
@@ -198,6 +215,11 @@ index_html = '''
             color: #9e9e9e;
             font-style: italic;
         }
+        .text-truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 <body>
@@ -223,9 +245,9 @@ index_html = '''
         <div class="items-container" id="items-container">
             {% for item in items %}
                 <div class="item {{ item.status }}">
-                    <div class="item-info">
-                        <strong>{{ item.name }}</strong> 
-                        <div style="font-size:0.9em; color:#666; margin-top:3px">{{ item.barcode }}</div>
+                    <div class="item-content">
+                        <strong class="text-truncate" title="{{ item.name }}">{{ item.name }}</strong> 
+                        <div class="text-truncate" style="font-size:0.9em; color:#666; margin-top:3px" title="{{ item.barcode }}">{{ item.barcode }}</div>
                         <div>Годен до: {{ item.expiration_date }}</div>
                         
                         {% if item.status == "expired" %}
@@ -247,6 +269,12 @@ index_html = '''
                         <form action="/move_to_history" method="POST" style="display: inline;">
                             <input type="hidden" name="batch_id" value="{{ item.id }}">
                             <button type="submit" class="action-btn move-btn" title="Переместить в историю">→</button>
+                        </form>
+                        
+                        <a href="/edit_batch/{{ item.id }}" class="action-btn edit-btn" title="Редактировать">✎</a>
+                        
+                        <form action="/delete_batch/{{ item.id }}" method="POST" style="display: inline;">
+                            <button type="submit" class="action-btn delete-btn" title="Удалить">✕</button>
                         </form>
                     </div>
                 </div>
