@@ -1761,39 +1761,69 @@ assortment_html = '''
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
         .product-item { 
-            padding: 15px; 
+            padding: 20px; 
             border-bottom: 1px solid #eee;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fafafa;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            position: relative;
+            padding-right: 90px; /* Отступ для кнопок */
+            min-height: 100px; /* Минимальная высота для кнопок */
             transition: all 0.2s;
         }
         .product-item:hover {
-            background: #f5f5f5;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,160,70,0.15);
+            transform: translateY(-3px);
         }
         .item-info { 
             flex-grow: 1;
             padding-right: 15px;
         }
-        .add-btn {
-            width: 36px;
-            height: 36px;
+        .item-actions {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 2;
+        }
+        .action-btn {
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            background: #00a046;
-            color: white;
-            border: none;
-            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            flex-shrink: 0;
+            font-size: 20px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .edit-btn {
+            background: #ffc107;
+            color: #333;
+        }
+        .edit-btn:hover {
+            background: #e6ac00;
+            transform: scale(1.15);
+        }
+        .delete-btn {
+            background: #f44336;
+            color: white;
+        }
+        .delete-btn:hover {
+            background: #e53935;
+            transform: scale(1.15);
+        }
+        .add-btn {
+            background: #00a046;
+            color: white;
+        }
+        .add-btn:hover {
+            background: #008c3a;
+            transform: scale(1.15);
         }
         .nav-links {
             display: flex;
@@ -1802,7 +1832,7 @@ assortment_html = '''
             justify-content: center;
         }
         .nav-links a {
-            padding: 12px 20px;
+            padding: 14px 22px;
             background: #00a046;
             border-radius: 24px;
             text-decoration: none;
@@ -1814,7 +1844,7 @@ assortment_html = '''
         }
         .nav-links a:hover {
             background: #008c3a;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         h1 {
@@ -1822,6 +1852,7 @@ assortment_html = '''
             color: #00a046;
             font-weight: 500;
             margin: 0;
+            font-size: 1.6em;
         }
         .footer {
             text-align: center;
@@ -1835,10 +1866,12 @@ assortment_html = '''
             padding: 30px;
             color: #9e9e9e;
             font-style: italic;
+            font-size: 1.1em;
         }
         .item-title {
             font-weight: 500;
             margin-bottom: 5px;
+            font-size: 1.1em;
         }
         .item-details {
             font-size: 0.9em;
@@ -1846,11 +1879,11 @@ assortment_html = '''
         }
         .batch-count {
             display: inline-block;
-            padding: 2px 8px;
+            padding: 4px 10px;
             background: #e0f7fa;
             border-radius: 12px;
-            font-size: 0.8em;
-            margin-top: 5px;
+            font-size: 0.85em;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -1877,16 +1910,28 @@ assortment_html = '''
             {% if products %}
                 {% for product in products %}
                     <div class="product-item">
+                        <div class="item-actions">
+                            <!-- Редактирование сверху -->
+                            <a href="/edit_product/{{ product.id }}" class="action-btn edit-btn" title="Редактировать товар">✎</a>
+                            
+                            <!-- Удаление посередине -->
+                            <form action="/delete_product/{{ product.id }}" method="POST" style="display: inline;">
+                                <button type="submit" class="action-btn delete-btn" title="Удалить товар">✕</button>
+                            </form>
+                            
+                            <!-- Добавление партии снизу -->
+                            <a href="/add_batch?barcode={{ product.barcode }}" class="action-btn add-btn" title="Добавить срок годности">+</a>
+                        </div>
+                        
                         <div class="item-info">
-                            <div class="item-title">{{ product['name'] }}</div>
+                            <div class="item-title">{{ product.name }}</div>
                             <div class="item-details">
-                                Штрих-код: {{ product['barcode'] }}
+                                Штрих-код: {{ product.barcode }}
                                 <div class="batch-count">
-                                    Сроков: {{ product['batch_count'] }}
+                                    Сроков: {{ product.batch_count }}
                                 </div>
                             </div>
                         </div>
-                        <a href="/add_batch?barcode={{ product['barcode'] }}" class="add-btn" title="Добавить срок годности">+</a>
                     </div>
                 {% endfor %}
             {% else %}
@@ -1922,7 +1967,7 @@ assortment_html = '''
                 items.forEach(item => {
                     const itemText = item.textContent.toLowerCase();
                     if (itemText.includes(searchTerm)) {
-                        item.style.display = 'flex';
+                        item.style.display = 'block';
                         hasVisibleItems = true;
                         visibleItemsHTML += item.outerHTML;
                     } else {
