@@ -134,20 +134,40 @@ def scan():
             barcode = request.form['barcode']
             name = request.form['name']
             
-            # Определяем способ ввода срока годности
-            if request.form.get('expiration_date'):
-                # Способ 1: Прямое указание срока годности
-                exp_date_str = request.form['expiration_date']
+            # Определяем активную вкладку
+            active_tab = request.form.get('active_tab', 'by-date')
+            
+            if active_tab == 'by-expiry':
+                # Обработка вкладки "По сроку годности"
+                exp_date_text = request.form['expiration_date_text']
+                
+                # Преобразуем формат дд.мм.гггг в YYYY-MM-DD
+                if exp_date_text:
+                    day, month, year = exp_date_text.split('.')
+                    exp_date_str = f"{year}-{month}-{day}"
+                else:
+                    return "Не указана дата срока годности", 400
             else:
-                # Способ 2: Указание даты изготовления и срока
-                manufacture_date = request.form['manufacture_date']
-                duration_value = int(request.form['duration_value'])
-                duration_unit = request.form['duration_unit']
-
-                # Преобразуем строку в дату
-                m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
+                # Обработка вкладки "По дате изготовления"
+                mfg_date_text = request.form['manufacture_date_text']
+                duration_value = request.form.get('duration_value')
+                duration_unit = request.form.get('duration_unit')
+                
+                if not (mfg_date_text and duration_value and duration_unit):
+                    return "Не указаны данные о сроке годности", 400
+                
+                # Преобразуем формат дд.мм.гггг в YYYY-MM-DD
+                day, month, year = mfg_date_text.split('.')
+                mfg_date = f"{year}-{month}-{day}"
                 
                 # Рассчитываем срок годности
+                m_date = datetime.strptime(mfg_date, "%Y-%m-%d").date()
+                
+                try:
+                    duration_value = int(duration_value)
+                except ValueError:
+                    return "Некорректное значение срока годности", 400
+                
                 if duration_unit == 'days':
                     exp_date = m_date + timedelta(days=duration_value)
                 elif duration_unit == 'months':
@@ -155,8 +175,8 @@ def scan():
                 elif duration_unit == 'years':
                     exp_date = m_date + relativedelta(years=duration_value)
                 else:
-                    exp_date = m_date + timedelta(days=30)
-
+                    return "Некорректная единица измерения срока", 400
+                
                 exp_date_str = exp_date.strftime('%Y-%m-%d')
 
             db = get_db()
@@ -166,23 +186,25 @@ def scan():
             cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
             product = cursor.fetchone()
 
-            if not product:
+            if product:
+                product_id = product['id']
+            else:
                 # Создаем новый товар
                 cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", 
                               (barcode, name))
                 product_id = cursor.fetchone()['id']
-            else:
-                product_id = product['id']
 
             # Добавляем партию товара
             cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)",
-                           (product_id, exp_date_str))
+                          (product_id, exp_date_str))
             db.commit()
 
             return redirect(url_for('index'))
         
         except Exception as e:
             app.logger.error(f"Scan POST Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return f"Server Error: {str(e)}", 500
     
     return render_template('scan.html')
