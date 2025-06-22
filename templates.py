@@ -85,26 +85,52 @@ index_html = '''
             justify-content: space-between;
             align-items: center;
             transition: all 0.2s;
+            position: relative;
+            padding-right: 50px;
         }
         .item:hover {
             box-shadow: 0 2px 6px rgba(0,160,70,0.15);
             transform: translateY(-2px);
         }
-        .item-info { flex-grow: 1; }
-        .move-btn {
+        .item-info { 
+            flex-grow: 1; 
+            max-width: calc(100% - 50px);
+            word-wrap: break-word;
+        }
+        .item-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .action-btn {
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: #00a046;
-            color: white;
+            background: #f0f0f0;
+            color: #333;
             border: none;
             cursor: pointer;
-            margin-left: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 18px;
-            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .move-btn { 
+            background: #00a046;
+            color: white;
+        }
+        .edit-btn { 
+            background: #ffc107;
+            color: #333;
+        }
+        .delete-btn { 
+            background: #f44336;
+            color: white;
         }
         .expired { 
             background-color: #ffebee;
@@ -228,10 +254,17 @@ index_html = '''
                             Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
                         </div>
                     </div>
-                    <form action="/move_to_history" method="POST" style="display: inline;">
-                        <input type="hidden" name="batch_id" value="{{ item.id }}">
-                        <button type="submit" class="move-btn" title="Переместить в историю">→</button>
-                    </form>
+                    <div class="item-actions">
+                        <form action="/move_to_history" method="POST">
+                            <input type="hidden" name="batch_id" value="{{ item.id }}">
+                            <button type="submit" class="action-btn move-btn" title="Переместить в историю">→</button>
+                        </form>
+                        <a href="/edit_batch?batch_id={{ item.id }}" class="action-btn edit-btn" title="Редактировать">✎</a>
+                        <form action="/delete_batch" method="POST">
+                            <input type="hidden" name="batch_id" value="{{ item.id }}">
+                            <button type="submit" class="action-btn delete-btn" title="Удалить">🗑</button>
+                        </form>
+                    </div>
                 </div>
             {% else %}
                 <div class="no-items">
@@ -1593,6 +1626,7 @@ assortment_html = '''
             align-items: center;
             background: #fafafa;
             transition: all 0.2s;
+            position: relative;
         }
         .product-item:hover {
             background: #f5f5f5;
@@ -1601,22 +1635,44 @@ assortment_html = '''
         }
         .item-info { 
             flex-grow: 1;
-            padding-right: 15px;
+            padding-right: 50px;
+            max-width: calc(100% - 60px);
+            word-wrap: break-word;
         }
-        .add-btn {
+        .product-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .action-btn {
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: #00a046;
-            color: white;
+            background: #f0f0f0;
+            color: #333;
             border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            flex-shrink: 0;
+            font-size: 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .add-btn { 
+            background: #00a046;
+            color: white;
+        }
+        .edit-btn { 
+            background: #ffc107;
+            color: #333;
+        }
+        .delete-btn { 
+            background: #f44336;
+            color: white;
         }
         .nav-links {
             display: flex;
@@ -1709,7 +1765,14 @@ assortment_html = '''
                                 </div>
                             </div>
                         </div>
-                        <a href="/add_batch?barcode={{ product['barcode'] }}" class="add-btn" title="Добавить срок годности">+</a>
+                        <div class="product-actions">
+                            <a href="/add_batch?barcode={{ product['barcode'] }}" class="action-btn add-btn" title="Добавить срок годности">+</a>
+                            <a href="/edit_product?product_id={{ product['id'] }}" class="action-btn edit-btn" title="Редактировать">✎</a>
+                            <form action="/delete_product" method="POST">
+                                <input type="hidden" name="product_id" value="{{ product['id'] }}">
+                                <button type="submit" class="action-btn delete-btn" title="Удалить">🗑</button>
+                            </form>
+                        </div>
                     </div>
                 {% endfor %}
             {% else %}
@@ -1765,6 +1828,373 @@ assortment_html = '''
 </html>
 '''
 
+edit_batch_html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Редактировать срок - Вкусвилл</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: #00a046;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            position: relative;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .logo {
+            font-weight: 700;
+            font-size: 1.8em;
+            letter-spacing: 0.5px;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            color: #00a046;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        .product-info {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .product-name {
+            font-size: 1.2em;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .product-barcode {
+            color: #757575;
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 500;
+            color: #424242;
+        }
+        input, button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Roboto', sans-serif;
+        }
+        input:focus {
+            outline: none;
+            border-color: #00a046;
+            box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
+        }
+        button { 
+            background: #00a046;
+            color: white;
+            border: none;
+            font-weight: 500;
+            font-size: 1.1em;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background: #008c3a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
+        }
+        .date-input-group {
+            position: relative;
+        }
+        .date-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
+            pointer-events: none;
+            font-size: 1.2em;
+        }
+        .date-input {
+            padding-left: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-btn">←</a>
+        <h1 class="logo">Вкусвилл</h1>
+    </div>
+    
+    <div class="container">
+        <div class="form-container">
+            <h1>Редактирование срока годности</h1>
+            
+            <div class="product-info">
+                <div class="product-name">{{ batch['name'] }}</div>
+                <div class="product-barcode">Штрих-код: {{ batch['barcode'] }}</div>
+            </div>
+            
+            <form method="POST">
+                <input type="hidden" name="batch_id" value="{{ batch['id'] }}">
+                
+                <div class="form-group">
+                    <label>Срок годности (дд.мм.гггг):</label>
+                    <div class="date-input-group">
+                        <span class="date-icon">📅</span>
+                        <input type="hidden" id="expiration_date" name="expiration_date" value="{{ batch['expiration_date'] }}">
+                        <input type="text" id="expiration_date_text" class="date-input" 
+                               placeholder="дд.мм.гггг" value="{{ batch['expiration_date'] }}" required>
+                    </div>
+                </div>
+                
+                <button type="submit">Сохранить изменения</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="footer">
+        Сделано М2(Shevchenko) by Bekeshnyuk
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const textField = document.getElementById('expiration_date_text');
+            const hiddenField = document.getElementById('expiration_date');
+            
+            // Преобразуем формат даты из YYYY-MM-DD в DD.MM.YYYY
+            const dbDate = hiddenField.value;
+            if (dbDate) {
+                const [year, month, day] = dbDate.split('-');
+                textField.value = `${day}.${month}.${year}`;
+            }
+            
+            textField.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.substr(0, 8);
+                
+                let formatted = '';
+                for (let i = 0; i < value.length; i++) {
+                    if (i === 2 || i === 4) formatted += '.';
+                    formatted += value[i];
+                }
+                e.target.value = formatted;
+                
+                if (formatted.length === 10) {
+                    const parts = formatted.split('.');
+                    if (parts.length === 3) {
+                        const [day, month, year] = parts;
+                        hiddenField.value = `${year}-${month}-${day}`;
+                    }
+                }
+            });
+            
+            textField.addEventListener('keydown', function(e) {
+                if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
+                    (e.keyCode === 65 && e.ctrlKey === true) || 
+                    (e.keyCode === 67 && e.ctrlKey === true) || 
+                    (e.keyCode === 86 && e.ctrlKey === true) || 
+                    (e.keyCode === 88 && e.ctrlKey === true) || 
+                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                    return;
+                }
+                
+                if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+'''
+
+edit_product_html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Редактировать товар - Вкусвилл</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: #00a046;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            position: relative;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .logo {
+            font-weight: 700;
+            font-size: 1.8em;
+            letter-spacing: 0.5px;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            color: #00a046;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 500;
+            color: #424242;
+        }
+        input, button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Roboto', sans-serif;
+        }
+        input:focus {
+            outline: none;
+            border-color: #00a046;
+            box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
+        }
+        button { 
+            background: #00a046;
+            color: white;
+            border: none;
+            font-weight: 500;
+            font-size: 1.1em;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background: #008c3a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/assortment" class="back-btn">←</a>
+        <h1 class="logo">Вкусвилл</h1>
+    </div>
+    
+    <div class="container">
+        <div class="form-container">
+            <h1>Редактирование товара</h1>
+            
+            <form method="POST">
+                <input type="hidden" name="product_id" value="{{ product['id'] }}">
+                
+                <div class="form-group">
+                    <label>Штрих-код:</label>
+                    <input type="text" name="barcode" value="{{ product['barcode'] }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Название товара:</label>
+                    <input type="text" name="name" value="{{ product['name'] }}" required>
+                </div>
+                
+                <button type="submit">Сохранить изменения</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="footer">
+        Сделано М2(Shevchenko) by Bekeshnyuk
+    </div>
+</body>
+</html>
+'''
+
 # Создаем словарь шаблонов
 templates = {
     'index.html': index_html,
@@ -1772,7 +2202,9 @@ templates = {
     'new_product.html': new_product_html,
     'add_batch.html': add_batch_html,
     'assortment.html': assortment_html,
-    'history.html': history_html
+    'history.html': history_html,
+    'edit_batch.html' : edit_batch_html,
+    'edit_product.html' : edit_product_html
 }
 
 def render_template(template_name, **context):
