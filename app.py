@@ -208,7 +208,7 @@ def new_product():
         barcode = request.form['barcode']
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("INSERT INTO products (barcode, name) VALUES (?, ?)", (barcode, name))
+        cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s)", (barcode, name))
         db.commit()
         return redirect(url_for('add_batch', barcode=barcode))
     return render_template('new_product.html', barcode=barcode)
