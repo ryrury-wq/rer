@@ -106,27 +106,6 @@ index_html = '''
             font-size: 18px;
             font-weight: bold;
         }
-        .edit-btn, .delete-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            cursor: pointer;
-            border: none;
-        }
-    
-        .edit-btn {
-            background: #ffc107;
-            color: #333;
-        }
-    
-        .delete-btn {
-            background: #f44336;
-            color: white;
-        }
         .expired { 
             background-color: #ffebee;
             border-left: 4px solid #f44336;
@@ -249,19 +228,6 @@ index_html = '''
                             Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
                         </div>
                     </div>
-                    <div style="display: flex; gap: 5px;">
-                         <form action="/move_to_history" method="POST" style="display: inline;">
-                           <input type="hidden" name="batch_id" value="{{ item.id }}">
-                           <button type="submit" class="move-btn" title="Переместить в историю">→</button>
-                         </form>
-        
-                         <a href="/edit_batch/{{ item.id }}" class="edit-btn" title="Редактировать">✎</a>
-        
-                         <form action="/delete_batch/{{ item.id }}" method="POST" style="display: inline;">
-                           <button type="submit" class="delete-btn" title="Удалить">✕</button>
-                         </form>
-                    </div>
-                    
                     <form action="/move_to_history" method="POST" style="display: inline;">
                         <input type="hidden" name="batch_id" value="{{ item.id }}">
                         <button type="submit" class="move-btn" title="Переместить в историю">→</button>
@@ -483,9 +449,25 @@ scan_html = '''
             border-bottom: 1px dashed #00a046;
             padding-bottom: 2px;
         }
-        .date-input-group {
+         .date-input-group {
             position: relative;
         }
+        .date-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
+            pointer-events: none;
+            font-size: 1.2em;
+            z-index: 2; /* Убедимся, что иконка поверх других элементов */
+        }
+        .date-input {
+            padding-left: 45px !important; /* Увеличим отступ слева */
+            width: calc(100% - 45px) !important; /* Учтем отступ в ширине */
+            box-sizing: border-box;
+        }
+        
         .footer {
             text-align: center;
             padding: 20px 15px 10px;
@@ -501,37 +483,6 @@ scan_html = '''
         }
         .duration-group select {
             flex: 1;
-        }
-        .tabs {
-            display: flex;
-            margin: 20px 0 15px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            font-weight: 500;
-            color: #757575;
-        }
-        .tab.active {
-            border-bottom: 3px solid #00a046;
-            color: #00a046;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .calculated-expiry {
-            padding: 12px;
-            background: #e8f5e9;
-            border-radius: 8px;
-            margin-top: 10px;
-            text-align: center;
-            font-weight: 500;
-            color: #2e7d32;
         }
     </style>
 </head>
@@ -592,45 +543,25 @@ scan_html = '''
                     <label for="name">Наименование:</label>
                     <input type="text" id="name" name="name" required>
                 </div>
-                
-                <div class="tabs">
-                    <div class="tab active" data-tab="by-date">По дате изготовления</div>
-                    <div class="tab" data-tab="by-expiry">По сроку годности</div>
-                </div>
-                
-                <div class="tab-content active" id="by-date">
-                    <div class="form-group">
-                        <label for="manufacture_date_text">Дата изготовления (дд.мм.гггг):</label>
-                        <div class="date-input-group">
-                            <input type="date" name="manufacture_date" id="manufacture_date" style="display: none">
-                            <input type="text" id="manufacture_date_text" placeholder="дд.мм.гггг" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Срок годности:</label>
-                        <div class="duration-group">
-                            <input type="number" name="duration_value" placeholder="Количество" required>
-                            <select name="duration_unit">
-                                <option value="days">дней</option>
-                                <option value="months">месяцев</option>
-                                <option value="years">лет</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div id="calculated-expiry" class="calculated-expiry">
-                        Рассчитанный срок годности: <span id="expiry-result">-</span>
+
+                <div class="form-group">
+                    <label for="manufacture_date_text">Дата изготовления (дд.мм.гггг):</label>
+                    <div class="date-input-group">
+                        <span class="date-icon">📅</span>
+                        <input type="date" name="manufacture_date" id="manufacture_date" style="display: none">
+                        <input type="text" id="manufacture_date_text" placeholder="   дд.мм.гггг" required>
                     </div>
                 </div>
-                
-                <div class="tab-content" id="by-expiry">
-                    <div class="form-group">
-                        <label for="expiration_date_text">Срок годности (дд.мм.гггг):</label>
-                        <div class="date-input-group">
-                            <input type="date" name="expiration_date" id="expiration_date" style="display: none">
-                            <input type="text" id="expiration_date_text" placeholder="дд.мм.гггг" required>
-                        </div>
+
+                <div class="form-group">
+                    <label>Срок годности:</label>
+                    <div class="duration-group">
+                        <input type="number" name="duration_value" placeholder="Количество" required>
+                        <select name="duration_unit">
+                            <option value="days">дней</option>
+                            <option value="months">месяцев</option>
+                            <option value="years">лет</option>
+                        </select>
                     </div>
                 </div>
 
@@ -813,157 +744,63 @@ scan_html = '''
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Элементы для работы с датами
-        const dateFields = {
-            'manufacture': {
-                text: document.getElementById('manufacture_date_text'),
-                hidden: document.getElementById('manufacture_date'),
-                error: null
-            },
-            'expiration': {
-                text: document.getElementById('expiration_date_text'),
-                hidden: document.getElementById('expiration_date'),
-                error: null
-            }
-        };
+        const dateField = document.getElementById('manufacture_date');
+        const textField = document.getElementById('manufacture_date_text');
         
-        // Функция для инициализации работы с датами
-        function setupDateInput(type) {
-            const {text, hidden} = dateFields[type];
+        textField.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.substr(0, 8);
             
-            text.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 8) value = value.substr(0, 8);
-                
-                let formatted = '';
-                for (let i = 0; i < value.length; i++) {
-                    if (i === 2 || i === 4) formatted += '.';
-                    formatted += value[i];
+            let formatted = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i === 2 || i === 4) formatted += '.';
+                formatted += value[i];
+            }
+            e.target.value = formatted;
+            
+            if (formatted.length === 10) {
+                const parts = formatted.split('.');
+                if (parts.length === 3) {
+                    const [day, month, year] = parts;
+                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                 }
-                e.target.value = formatted;
-                
-                if (formatted.length === 10) {
-                    const parts = formatted.split('.');
-                    if (parts.length === 3) {
-                        const [day, month, year] = parts;
-                        hidden.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    }
-                }
-                
-                // Обновляем расчет срока годности
-                if (type === 'manufacture') {
-                    calculateExpiry();
-                }
-            });
-                
-            text.addEventListener('blur', function() {
-                const value = text.value;
-                if (value.length > 0 && value.length < 10) {
-                    alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
-                    text.focus();
-                } else if (value.length === 10) {
-                    const parts = value.split('.');
-                    if (parts.length === 3) {
-                        const [day, month, year] = parts;
-                        hidden.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    }
-                }
-            });
-                
-            text.addEventListener('keydown', function(e) {
-                if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
-                    (e.keyCode === 65 && e.ctrlKey === true) || 
-                    (e.keyCode === 67 && e.ctrlKey === true) || 
-                    (e.keyCode === 86 && e.ctrlKey === true) || 
-                    (e.keyCode === 88 && e.ctrlKey === true) || 
-                    (e.keyCode >= 35 && e.keyCode <= 39)) {
-                    return;
-                }
-                
-                if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
-                    e.preventDefault();
-                }
-            });
-        }
-        
-        // Инициализация полей дат
-        setupDateInput('manufacture');
-        setupDateInput('expiration');
-        
-        // Обработка вкладок
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                tabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                
-                this.classList.add('active');
-                
-                const tabId = this.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
-            });
+            }
         });
-        
-        // Функция для расчета срока годности
-        function calculateExpiry() {
-            const mDate = document.getElementById('manufacture_date').value;
-            const durationValue = document.querySelector('input[name="duration_value"]').value;
-            const durationUnit = document.querySelector('select[name="duration_unit"]').value;
-            const expiryResult = document.getElementById('expiry-result');
             
-            if (mDate && durationValue && durationUnit) {
-                const mDateObj = new Date(mDate);
-                let expiryDate = new Date(mDateObj);
-                
-                if (durationUnit === 'days') {
-                    expiryDate.setDate(expiryDate.getDate() + parseInt(durationValue));
-                } else if (durationUnit === 'months') {
-                    expiryDate.setMonth(expiryDate.getMonth() + parseInt(durationValue));
-                } else if (durationUnit === 'years') {
-                    expiryDate.setFullYear(expiryDate.getFullYear() + parseInt(durationValue));
+        textField.addEventListener('blur', function() {
+            const value = textField.value;
+            if (value.length > 0 && value.length < 10) {
+                alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
+                textField.focus();
+            } else if (value.length === 10) {
+                const parts = value.split('.');
+                if (parts.length === 3) {
+                    const [day, month, year] = parts;
+                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                 }
-                
-                // Форматируем дату в дд.мм.гггг
-                const day = String(expiryDate.getDate()).padStart(2, '0');
-                const month = String(expiryDate.getMonth() + 1).padStart(2, '0');
-                const year = expiryDate.getFullYear();
-                
-                expiryResult.textContent = `${day}.${month}.${year}`;
-            } else {
-                expiryResult.textContent = '-';
             }
-        }
-        
-        // Слушатели для расчета срока годности
-        document.getElementById('manufacture_date_text').addEventListener('input', calculateExpiry);
-        document.querySelector('input[name="duration_value"]').addEventListener('input', calculateExpiry);
-        document.querySelector('select[name="duration_unit"]').addEventListener('change', calculateExpiry);
-        
-        // Инициализация расчета
-        calculateExpiry();
-        
-        // Проверка дат перед отправкой
-        scannerForm.addEventListener('submit', function(e) {
-            const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+        });
             
-            if (activeTab === 'by-date') {
-                const manufactureDate = document.getElementById('manufacture_date').value;
-                if (!manufactureDate || manufactureDate.length !== 10) {
-                    e.preventDefault();
-                    alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
-                    document.getElementById('manufacture_date_text').focus();
-                    return;
-                }
-            } else if (activeTab === 'by-expiry') {
-                const expirationDate = document.getElementById('expiration_date').value;
-                if (!expirationDate || expirationDate.length !== 10) {
-                    e.preventDefault();
-                    alert('Пожалуйста, введите корректную дату срока годности в формате дд.мм.гггг');
-                    document.getElementById('expiration_date_text').focus();
-                    return;
-                }
+        textField.addEventListener('keydown', function(e) {
+            if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
+                (e.keyCode === 65 && e.ctrlKey === true) || 
+                (e.keyCode === 67 && e.ctrlKey === true) || 
+                (e.keyCode === 86 && e.ctrlKey === true) || 
+                (e.keyCode === 88 && e.ctrlKey === true) || 
+                (e.keyCode >= 35 && e.keyCode <= 39)) {
+                return;
+            }
+            
+            if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+            
+        scannerForm.addEventListener('submit', function(e) {
+            if (!dateField.value) {
+                e.preventDefault();
+                alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
+                textField.focus();
             }
         });
     });
@@ -1928,179 +1765,6 @@ assortment_html = '''
 </html>
 '''
 
-edit_batch_html = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Редактировать товар - Вкусвилл</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
-        body { 
-            font-family: 'Roboto', sans-serif; 
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-            min-height: 100vh;
-        }
-        .header {
-            background-color: #00a046;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            position: relative;
-        }
-        .back-btn {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-            font-weight: bold;
-            z-index: 10;
-        }
-        .logo {
-            font-weight: 700;
-            font-size: 1.8em;
-            letter-spacing: 0.5px;
-            margin: 0;
-            color: white;
-        }
-        .container {
-            max-width: 500px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        .form-container {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h1 {
-            text-align: center;
-            color: #00a046;
-            font-weight: 500;
-            margin-top: 0;
-            margin-bottom: 25px;
-        }
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-weight: 500;
-            color: #424242;
-        }
-        input, button {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 14px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            font-family: 'Roboto', sans-serif;
-        }
-        input:focus {
-            outline: none;
-            border-color: #00a046;
-            box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
-        }
-        button { 
-            background: #00a046;
-            color: white;
-            border: none;
-            font-weight: 500;
-            font-size: 1.1em;
-            padding: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        button:hover {
-            background: #008c3a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .footer {
-            text-align: center;
-            padding: 30px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <a href="/" class="back-btn">←</a>
-        <h1 class="logo">Вкусвилл</h1>
-    </div>
-    
-    <div class="container">
-        <div class="form-container">
-            <h1>Редактирование товара</h1>
-            <form method="POST">
-                <div class="form-group">
-                    <label>Наименование:</label>
-                    <input type="text" name="name" value="{{ item.name }}" required>
-                </div>
-                <div class="form-group">
-                    <label>Штрих-код:</label>
-                    <input type="text" name="barcode" value="{{ item.barcode }}" required>
-                </div>
-                <div class="form-group">
-                    <label>Срок годности (дд.мм.гггг):</label>
-                    <input type="date" name="expiration_date" id="expiration_date" style="display: none">
-                    <input type="text" id="expiration_date_text" value="{{ item.expiration_date }}" required>
-                </div>
-                <button type="submit">Сохранить изменения</button>
-            </form>
-        </div>
-    </div>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateField = document.getElementById('expiration_date');
-            const textField = document.getElementById('expiration_date_text');
-            
-            // Преобразуем дату из формата YYYY-MM-DD в дд.мм.гггг для отображения
-            const parts = textField.value.split('-');
-            if (parts.length === 3) {
-                const [year, month, day] = parts;
-                textField.value = `${day}.${month}.${year}`;
-            }
-            
-            // Обработка ввода
-            textField.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 8) value = value.substr(0, 8);
-                
-                let formatted = '';
-                for (let i = 0; i < value.length; i++) {
-                    if (i === 2 || i === 4) formatted += '.';
-                    formatted += value[i];
-                }
-                e.target.value = formatted;
-                
-                if (formatted.length === 10) {
-                    const parts = formatted.split('.');
-                    if (parts.length === 3) {
-                        const [day, month, year] = parts;
-                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    }
-                }
-            });
-        });
-    </script>
-</body>
-</html>
-'''
-
 # Создаем словарь шаблонов
 templates = {
     'index.html': index_html,
@@ -2109,8 +1773,6 @@ templates = {
     'add_batch.html': add_batch_html,
     'assortment.html': assortment_html,
     'history.html': history_html
-    'history.html': history_html,
-    'edit_batch.html': edit_batch_html 
 }
 
 def render_template(template_name, **context):
