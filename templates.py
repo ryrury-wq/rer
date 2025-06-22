@@ -1635,8 +1635,8 @@ assortment_html = '''
         }
         .item-info { 
             flex-grow: 1;
-            padding-right: 60px;
-            max-width: calc(100% - 70px);
+            padding-right: 80px; /* Увеличено место для кнопок */
+            max-width: calc(100% - 100px); /* Увеличено место для кнопок */
             word-wrap: break-word;
         }
         .product-actions {
@@ -1646,11 +1646,11 @@ assortment_html = '''
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px; /* Увеличено расстояние между кнопками */
         }
         .action-btn {
-            width: 36px;
-            height: 36px;
+            width: 40px; /* Увеличена ширина кнопок */
+            height: 40px; /* Увеличена высота кнопок */
             border-radius: 50%;
             background: #f0f0f0;
             color: #333;
@@ -1659,7 +1659,7 @@ assortment_html = '''
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 20px; /* Увеличен размер иконок */
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .add-btn { 
@@ -1718,18 +1718,19 @@ assortment_html = '''
         .item-title {
             font-weight: 500;
             margin-bottom: 5px;
+            font-size: 1.1em; /* Увеличен размер текста */
         }
         .item-details {
-            font-size: 0.9em;
+            font-size: 0.95em; /* Увеличен размер текста */
             color: #616161;
         }
         .batch-count {
             display: inline-block;
-            padding: 2px 8px;
+            padding: 4px 10px; /* Увеличен размер бейджа */
             background: #e0f7fa;
             border-radius: 12px;
-            font-size: 0.8em;
-            margin-top: 5px;
+            font-size: 0.85em;
+            margin-top: 8px; /* Увеличен отступ */
         }
     </style>
 </head>
