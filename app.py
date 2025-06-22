@@ -210,7 +210,7 @@ def new_product():
         cursor = db.cursor()
         cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s)", (barcode, name))
         db.commit()
-        return redirect(url_for('add_batch', barcode=barcode))
+        return redirect(url_for('index', barcode=barcode))
     return render_template('new_product.html', barcode=barcode)
 
 @app.route('/add_batch', methods=['GET', 'POST'])
