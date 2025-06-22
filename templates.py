@@ -1,4 +1,4 @@
-from flask import render_template_string
+from flask import render_template_stringMore actions
 
 # Главная страница с новым стилем Вкусвилл
 index_html = '''
@@ -77,81 +77,71 @@ index_html = '''
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .item { 
-            padding: 20px; /* Увеличено для большего пространства */
+            padding: 15px; 
             border-bottom: 1px solid #eee;
-            border-radius: 12px; /* Увеличено для лучшего вида */
-            margin-bottom: 12px; /* Увеличено для большего пространства */
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             transition: all 0.2s;
-            position: relative;
-            padding-right: 80px; /* Увеличено для кнопок */
-            min-height: 140px; /* Минимальная высота для кнопок */
         }
         .item:hover {
-            box-shadow: 0 4px 12px rgba(0,160,70,0.15); /* Усилено для эффекта */
-            transform: translateY(-3px);
+            box-shadow: 0 2px 6px rgba(0,160,70,0.15);
+            transform: translateY(-2px);
         }
-        .item-actions {
-            position: absolute;
-            top: 50%;
-            right: 20px;
-            transform: translateY(-50%); /* Центрирование по вертикали */
+        .item-info { flex-grow: 1; }
+        .move-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #00a046;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
             display: flex;
-            flex-direction: column;
-            gap: 15px; /* Увеличено расстояние между кнопками */
-            z-index: 2;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
         }
-        .action-btn {
-            width: 45px; /* Увеличено */
-            height: 45px; /* Увеличено */
+        .edit-btn, .delete-btn {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px; /* Увеличено */
+            font-size: 18px;
             cursor: pointer;
             border: none;
-            transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Добавлена тень */
         }
-        .delete-btn {
-            background: #f44336;
-            color: white;
-        }
-        .delete-btn:hover {
-            background: #e53935;
-            transform: scale(1.15); /* Усилено увеличение */
-        }
+    
         .edit-btn {
             background: #ffc107;
             color: #333;
         }
-        .edit-btn:hover {
-            background: #e6ac00;
-            transform: scale(1.15);
-        }
-        .move-btn {
-            background: #00a046;
+    
+        .delete-btn {
+            background: #f44336;
             color: white;
-        }
-        .move-btn:hover {
-            background: #008c3a;
-            transform: scale(1.15);
         }
         .expired { 
             background-color: #ffebee;
-            border-left: 5px solid #f44336; /* Увеличено */
+            border-left: 4px solid #f44336;
         }
         .warning { 
             background-color: #fff8e1;
-            border-left: 5px solid #ffc107;
+            border-left: 4px solid #ffc107;
         }
         .soon { 
             background-color: #e8f5e9;
-            border-left: 5px solid #4caf50;
+            border-left: 4px solid #4caf50;
         }
         .normal { 
             background-color: white;
-            border-left: 5px solid #e0e0e0;
+            border-left: 4px solid #e0e0e0;
         }
         .nav-links {
             display: flex;
@@ -161,7 +151,7 @@ index_html = '''
             justify-content: center;
         }
         .nav-links a {
-            padding: 14px 22px; /* Увеличено */
+            padding: 12px 20px;
             background: #00a046;
             border-radius: 24px;
             text-decoration: none;
@@ -173,7 +163,6 @@ index_html = '''
             flex: 1;
             min-width: calc(50% - 10px);
             box-sizing: border-box;
-            font-size: 1.05em; /* Увеличено */
         }
         .nav-links .full-width {
             flex: 0 0 100%;
@@ -181,12 +170,12 @@ index_html = '''
         }
         .nav-links a:hover {
             background: #008c3a;
-            transform: translateY(-3px); /* Усилено */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         h1 {
-            font-size: 1.6em; /* Увеличено */
-            margin: 0 0 15px 0; /* Увеличено */
+            font-size: 1.5em;
+            margin: 0 0 10px 0;
             text-align: center;
             color: #00a046;
             font-weight: 500;
@@ -200,11 +189,11 @@ index_html = '''
         }
         .badge {
             display: inline-block;
-            padding: 4px 10px; /* Увеличено */
+            padding: 3px 8px;
             border-radius: 12px;
-            font-size: 0.85em; /* Увеличено */
+            font-size: 0.8em;
             font-weight: 500;
-            margin-top: 6px; /* Увеличено */
+            margin-top: 5px;
         }
         .expired-badge { background: #ffcdd2; color: #c62828; }
         .warning-badge { background: #ffecb3; color: #ff8f00; }
@@ -215,10 +204,6 @@ index_html = '''
             padding: 30px;
             color: #9e9e9e;
             font-style: italic;
-            font-size: 1.1em; /* Увеличено */
-        }
-        .item-content {
-            padding-right: 15px; /* Отступ от кнопок */
         }
     </style>
 </head>
@@ -245,26 +230,10 @@ index_html = '''
         <div class="items-container" id="items-container">
             {% for item in items %}
                 <div class="item {{ item.status }}">
-                    <div class="item-actions">
-                        <!-- Удаление сверху -->
-                        <form action="/delete_batch/{{ item.id }}" method="POST" style="display: inline;">
-                            <button type="submit" class="action-btn delete-btn" title="Удалить">✕</button>
-                        </form>
-                        
-                        <!-- Редактирование посередине -->
-                        <a href="/edit_batch/{{ item.id }}" class="action-btn edit-btn" title="Редактировать">✎</a>
-                        
-                        <!-- Перемещение в историю снизу -->
-                        <form action="/move_to_history" method="POST" style="display: inline;">
-                            <input type="hidden" name="batch_id" value="{{ item.id }}">
-                            <button type="submit" class="action-btn move-btn" title="Переместить в историю">→</button>
-                        </form>
-                    </div>
-                    
-                    <div class="item-content">
+                    <div class="item-info">
                         <strong>{{ item.name }}</strong> 
-                        <div style="font-size:0.9em; color:#666; margin-top:5px">{{ item.barcode }}</div>
-                        <div style="margin-top: 5px;">Годен до: {{ item.expiration_date }}</div>
+                        <div style="font-size:0.9em; color:#666; margin-top:3px">{{ item.barcode }}</div>
+                        <div>Годен до: {{ item.expiration_date }}</div>
                         
                         {% if item.status == "expired" %}
                             <div class="badge expired-badge">Просрочено: {{ item.days_since_expiry }} дн.</div>
@@ -276,10 +245,27 @@ index_html = '''
                             <div class="badge normal-badge">До истечения: {{ item.days_until_expiry }} дн.</div>
                         {% endif %}
                         
-                        <div style="font-size:0.85em; margin-top:8px; color:#757575">
+                        <div style="font-size:0.85em; margin-top:5px; color:#757575">
                             Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
                         </div>
                     </div>
+                    <div style="display: flex; gap: 5px;">
+                         <form action="/move_to_history" method="POST" style="display: inline;">
+                           <input type="hidden" name="batch_id" value="{{ item.id }}">
+                           <button type="submit" class="move-btn" title="Переместить в историю">→</button>
+                         </form>
+        
+                         <a href="/edit_batch/{{ item.id }}" class="edit-btn" title="Редактировать">✎</a>
+        
+                         <form action="/delete_batch/{{ item.id }}" method="POST" style="display: inline;">
+                           <button type="submit" class="delete-btn" title="Удалить">✕</button>
+                         </form>
+                    </div>
+                    
+                    <form action="/move_to_history" method="POST" style="display: inline;">
+                        <input type="hidden" name="batch_id" value="{{ item.id }}">
+                        <button type="submit" class="move-btn" title="Переместить в историю">→</button>
+                    </form>
                 </div>
             {% else %}
                 <div class="no-items">
@@ -314,7 +300,7 @@ index_html = '''
                 items.forEach(item => {
                     const itemText = item.textContent.toLowerCase();
                     if (itemText.includes(searchTerm)) {
-                        item.style.display = 'block';
+                        item.style.display = 'flex';
                         hasVisibleItems = true;
                         visibleItemsHTML += item.outerHTML;
                     } else {
@@ -555,6 +541,24 @@ scan_html = '''
         <h1 class="logo">Вкусвилл</h1>
     </div>
 
+    <style>
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
+    
+        .header {
+            position: relative;
+        }
+    </style>
+    
     <div class="container">
         <h1>Сканирование товара</h1>
 
@@ -579,9 +583,6 @@ scan_html = '''
 
         <div class="form-container">
             <form method="POST" id="scanner-form">
-                <!-- Добавлено скрытое поле для активной вкладки -->
-                <input type="hidden" name="active_tab" id="active_tab_input" value="by-date">
-                
                 <div class="form-group">
                     <label for="barcode">Штрих-код:</label>
                     <input type="text" name="barcode" id="barcode" placeholder="Отсканируйте или введите вручную" required>
@@ -812,41 +813,6 @@ scan_html = '''
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Элементы для работы с вкладками
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const activeTabInput = document.getElementById('active_tab_input');
-        
-        // Обработка переключения вкладок
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                tabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                
-                this.classList.add('active');
-                const tabId = this.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
-                
-                // Обновляем скрытое поле активной вкладки
-                activeTabInput.value = tabId;
-            });
-        });
-        
-        // Принудительное обновление полей дат перед отправкой формы
-        scannerForm.addEventListener('submit', function(e) {
-            // Форсируем обновление полей дат
-            const dateFields = ['manufacture_date_text', 'expiration_date_text'];
-            dateFields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    field.dispatchEvent(new Event('blur'));
-                }
-            });
-            
-            // Добавляем небольшую задержку для обработки
-            setTimeout(() => {}, 100);
-        });
-
         // Элементы для работы с датами
         const dateFields = {
             'manufacture': {
@@ -923,6 +889,22 @@ scan_html = '''
         // Инициализация полей дат
         setupDateInput('manufacture');
         setupDateInput('expiration');
+        
+        // Обработка вкладок
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
         
         // Функция для расчета срока годности
         function calculateExpiry() {
@@ -1765,69 +1747,39 @@ assortment_html = '''
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
         .product-item { 
-            padding: 20px; 
+            padding: 15px; 
             border-bottom: 1px solid #eee;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            position: relative;
-            padding-right: 90px; /* Отступ для кнопок */
-            min-height: 100px; /* Минимальная высота для кнопок */
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
             transition: all 0.2s;
         }
         .product-item:hover {
-            box-shadow: 0 4px 12px rgba(0,160,70,0.15);
-            transform: translateY(-3px);
+            background: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
         .item-info { 
             flex-grow: 1;
             padding-right: 15px;
         }
-        .item-actions {
-            position: absolute;
-            top: 50%;
-            right: 20px;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            z-index: 2;
-        }
-        .action-btn {
-            width: 45px;
-            height: 45px;
+        .add-btn {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
+            background: #00a046;
+            color: white;
+            border: none;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .edit-btn {
-            background: #ffc107;
-            color: #333;
-        }
-        .edit-btn:hover {
-            background: #e6ac00;
-            transform: scale(1.15);
-        }
-        .delete-btn {
-            background: #f44336;
-            color: white;
-        }
-        .delete-btn:hover {
-            background: #e53935;
-            transform: scale(1.15);
-        }
-        .add-btn {
-            background: #00a046;
-            color: white;
-        }
-        .add-btn:hover {
-            background: #008c3a;
-            transform: scale(1.15);
+            font-size: 24px;
+            font-weight: bold;
+            flex-shrink: 0;
         }
         .nav-links {
             display: flex;
@@ -1836,7 +1788,7 @@ assortment_html = '''
             justify-content: center;
         }
         .nav-links a {
-            padding: 14px 22px;
+            padding: 12px 20px;
             background: #00a046;
             border-radius: 24px;
             text-decoration: none;
@@ -1848,7 +1800,7 @@ assortment_html = '''
         }
         .nav-links a:hover {
             background: #008c3a;
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         h1 {
@@ -1856,7 +1808,6 @@ assortment_html = '''
             color: #00a046;
             font-weight: 500;
             margin: 0;
-            font-size: 1.6em;
         }
         .footer {
             text-align: center;
@@ -1870,12 +1821,10 @@ assortment_html = '''
             padding: 30px;
             color: #9e9e9e;
             font-style: italic;
-            font-size: 1.1em;
         }
         .item-title {
             font-weight: 500;
             margin-bottom: 5px;
-            font-size: 1.1em;
         }
         .item-details {
             font-size: 0.9em;
@@ -1883,11 +1832,11 @@ assortment_html = '''
         }
         .batch-count {
             display: inline-block;
-            padding: 4px 10px;
+            padding: 2px 8px;
             background: #e0f7fa;
             border-radius: 12px;
-            font-size: 0.85em;
-            margin-top: 8px;
+            font-size: 0.8em;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -1914,28 +1863,16 @@ assortment_html = '''
             {% if products %}
                 {% for product in products %}
                     <div class="product-item">
-                        <div class="item-actions">
-                            <!-- Редактирование сверху -->
-                            <a href="/edit_product/{{ product.id }}" class="action-btn edit-btn" title="Редактировать товар">✎</a>
-                            
-                            <!-- Удаление посередине -->
-                            <form action="/delete_product/{{ product.id }}" method="POST" style="display: inline;">
-                                <button type="submit" class="action-btn delete-btn" title="Удалить товар">✕</button>
-                            </form>
-                            
-                            <!-- Добавление партии снизу -->
-                            <a href="/add_batch?barcode={{ product.barcode }}" class="action-btn add-btn" title="Добавить срок годности">+</a>
-                        </div>
-                        
                         <div class="item-info">
-                            <div class="item-title">{{ product.name }}</div>
+                            <div class="item-title">{{ product['name'] }}</div>
                             <div class="item-details">
-                                Штрих-код: {{ product.barcode }}
+                                Штрих-код: {{ product['barcode'] }}
                                 <div class="batch-count">
-                                    Сроков: {{ product.batch_count }}
+                                    Сроков: {{ product['batch_count'] }}
                                 </div>
                             </div>
                         </div>
+                        <a href="/add_batch?barcode={{ product['barcode'] }}" class="add-btn" title="Добавить срок годности">+</a>
                     </div>
                 {% endfor %}
             {% else %}
@@ -1971,7 +1908,7 @@ assortment_html = '''
                 items.forEach(item => {
                     const itemText = item.textContent.toLowerCase();
                     if (itemText.includes(searchTerm)) {
-                        item.style.display = 'block';
+                        item.style.display = 'flex';
                         hasVisibleItems = true;
                         visibleItemsHTML += item.outerHTML;
                     } else {
@@ -2164,155 +2101,6 @@ edit_batch_html = '''
 </html>
 '''
 
-edit_product_html = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Редактировать товар - Вкусвилл</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
-        body { 
-            font-family: 'Roboto', sans-serif; 
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-            min-height: 100vh;
-        }
-        .header {
-            background-color: #00a046;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            position: relative;
-        }
-        .back-btn {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-            font-weight: bold;
-            z-index: 10;
-        }
-        .logo {
-            font-weight: 700;
-            font-size: 1.8em;
-            letter-spacing: 0.5px;
-            margin: 0;
-            color: white;
-        }
-        .container {
-            max-width: 500px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        .form-container {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h1 {
-            text-align: center;
-            color: #00a046;
-            font-weight: 500;
-            margin-top: 0;
-            margin-bottom: 25px;
-        }
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-weight: 500;
-            color: #424242;
-        }
-        input, button {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 14px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            font-family: 'Roboto', sans-serif;
-        }
-        input:focus {
-            outline: none;
-            border-color: #00a046;
-            box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
-        }
-        button { 
-            background: #00a046;
-            color: white;
-            border: none;
-            font-weight: 500;
-            font-size: 1.1em;
-            padding: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        button:hover {
-            background: #008c3a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .footer {
-            text-align: center;
-            padding: 30px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
-        }
-        .error-message {
-            color: #f44336;
-            padding: 8px;
-            background: #ffebee;
-            border-radius: 4px;
-            margin-top: 10px;
-            text-align: center;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <a href="/assortment" class="back-btn">←</a>
-        <h1 class="logo">Вкусвилл</h1>
-    </div>
-    
-    <div class="container">
-        <div class="form-container">
-            <h1>Редактирование товара</h1>
-            {% if error %}
-                <div class="error-message" style="display: block;">
-                    {{ error }}
-                </div>
-            {% endif %}
-            <form method="POST">
-                <div class="form-group">
-                    <label>Наименование:</label>
-                    <input type="text" name="name" value="{{ product.name }}" required>
-                </div>
-                <div class="form-group">
-                    <label>Штрих-код:</label>
-                    <input type="text" name="barcode" value="{{ product.barcode }}" required>
-                </div>
-                <button type="submit">Сохранить изменения</button>
-            </form>
-        </div>
-    </div>
-</body>
-</html>
-'''
-
-
-
 # Создаем словарь шаблонов
 templates = {
     'index.html': index_html,
@@ -2320,9 +2108,9 @@ templates = {
     'new_product.html': new_product_html,
     'add_batch.html': add_batch_html,
     'assortment.html': assortment_html,
+    'history.html': history_html
     'history.html': history_html,
-    'edit_batch.html': edit_batch_html,
-    'edit_product.html': edit_product_html
+    'edit_batch.html': edit_batch_html 
 }
 
 def render_template(template_name, **context):
