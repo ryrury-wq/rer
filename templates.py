@@ -547,7 +547,6 @@ scan_html = '''
                 <div class="form-group">
                     <label for="manufacture_date_text">Дата изготовления (дд.мм.гггг):</label>
                     <div class="date-input-group">
-                        <span class="date-icon">📅</span>
                         <input type="date" name="manufacture_date" id="manufacture_date" style="display: none">
                         <input type="text" id="manufacture_date_text" placeholder="дд.мм.гггг" required>
                     </div>
