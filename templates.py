@@ -2321,7 +2321,6 @@ templates = {
     'add_batch.html': add_batch_html,
     'assortment.html': assortment_html,
     'history.html': history_html,
-    'edit_batch.html': edit_batch_html 
     'edit_batch.html': edit_batch_html,
     'edit_product.html': edit_product_html
 }
