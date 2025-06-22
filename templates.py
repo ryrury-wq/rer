@@ -81,7 +81,6 @@ index_html = '''
             border-bottom: 1px solid #eee;
             border-radius: 8px;
             margin-bottom: 8px;
-            display: flex;
             transition: all 0.2s;
             position: relative;
         }
@@ -91,12 +90,13 @@ index_html = '''
         }
         .item-content {
             flex-grow: 1;
-            min-width: 0; /* Предотвращает переполнение */
+            min-width: 0;
+            margin-right: 10px;
         }
         .item-actions {
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 8px;
             margin-left: 10px;
             flex-shrink: 0;
@@ -112,6 +112,7 @@ index_html = '''
             cursor: pointer;
             border: none;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
         .move-btn {
             background: #00a046;
@@ -215,10 +216,26 @@ index_html = '''
             color: #9e9e9e;
             font-style: italic;
         }
-        .text-truncate {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        
+        /* Новая структура для переноса текста */
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .item-details {
+            flex-grow: 1;
+            min-width: 0; /* Разрешаем сжатие */
+        }
+        .item-title-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .item-title {
+            flex-grow: 1;
+            min-width: 0; /* Разрешаем сжатие */
+            margin-right: 10px;
+            word-break: break-word; /* Перенос длинных слов */
         }
     </style>
 </head>
@@ -245,36 +262,42 @@ index_html = '''
         <div class="items-container" id="items-container">
             {% for item in items %}
                 <div class="item {{ item.status }}">
-                    <div class="item-content">
-                        <strong class="text-truncate" title="{{ item.name }}">{{ item.name }}</strong> 
-                        <div class="text-truncate" style="font-size:0.9em; color:#666; margin-top:3px" title="{{ item.barcode }}">{{ item.barcode }}</div>
-                        <div>Годен до: {{ item.expiration_date }}</div>
-                        
-                        {% if item.status == "expired" %}
-                            <div class="badge expired-badge">Просрочено: {{ item.days_since_expiry }} дн.</div>
-                        {% elif item.status == "warning" %}
-                            <div class="badge warning-badge">Истекает сегодня!</div>
-                        {% elif item.status == "soon" %}
-                            <div class="badge soon-badge">Истекает через: {{ item.days_until_expiry }} дн.</div>
-                        {% else %}
-                            <div class="badge normal-badge">До истечения: {{ item.days_until_expiry }} дн.</div>
-                        {% endif %}
-                        
-                        <div style="font-size:0.85em; margin-top:5px; color:#757575">
-                            Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
+                    <div class="item-row">
+                        <div class="item-details">
+                            <div class="item-title-row">
+                                <strong class="item-title">{{ item.name }}</strong>
+                                <div class="item-actions">
+                                    <a href="/edit_batch/{{ item.id }}" class="action-btn edit-btn" title="Редактировать">✎</a>
+                                    <form action="/delete_batch/{{ item.id }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="action-btn delete-btn" title="Удалить">✕</button>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <div style="font-size:0.9em; color:#666; margin-top:3px">{{ item.barcode }}</div>
                         </div>
                     </div>
                     
-                    <div class="item-actions">
+                    <div>Годен до: {{ item.expiration_date }}</div>
+                    
+                    {% if item.status == "expired" %}
+                        <div class="badge expired-badge">Просрочено: {{ item.days_since_expiry }} дн.</div>
+                    {% elif item.status == "warning" %}
+                        <div class="badge warning-badge">Истекает сегодня!</div>
+                    {% elif item.status == "soon" %}
+                        <div class="badge soon-badge">Истекает через: {{ item.days_until_expiry }} дн.</div>
+                    {% else %}
+                        <div class="badge normal-badge">До истечения: {{ item.days_until_expiry }} дн.</div>
+                    {% endif %}
+                    
+                    <div style="font-size:0.85em; margin-top:5px; color:#757575">
+                        Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
+                    </div>
+                    
+                    <div class="item-actions" style="margin-top: 10px; margin-left: 0;">
                         <form action="/move_to_history" method="POST" style="display: inline;">
                             <input type="hidden" name="batch_id" value="{{ item.id }}">
                             <button type="submit" class="action-btn move-btn" title="Переместить в историю">→</button>
-                        </form>
-                        
-                        <a href="/edit_batch/{{ item.id }}" class="action-btn edit-btn" title="Редактировать">✎</a>
-                        
-                        <form action="/delete_batch/{{ item.id }}" method="POST" style="display: inline;">
-                            <button type="submit" class="action-btn delete-btn" title="Удалить">✕</button>
                         </form>
                     </div>
                 </div>
@@ -311,7 +334,7 @@ index_html = '''
                 items.forEach(item => {
                     const itemText = item.textContent.toLowerCase();
                     if (itemText.includes(searchTerm)) {
-                        item.style.display = 'flex';
+                        item.style.display = 'block';
                         hasVisibleItems = true;
                         visibleItemsHTML += item.outerHTML;
                     } else {
