@@ -1635,8 +1635,8 @@ assortment_html = '''
         }
         .item-info { 
             flex-grow: 1;
-            padding-right: 50px;
-            max-width: calc(100% - 60px);
+            padding-right: 60px;
+            max-width: calc(100% - 70px);
             word-wrap: break-word;
         }
         .product-actions {
