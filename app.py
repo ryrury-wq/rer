@@ -346,6 +346,65 @@ def restore_from_history():
     
     return redirect(url_for('history'))
 
+@app.route('/edit_batch', methods=['GET', 'POST'])
+def edit_batch():
+    batch_id = request.args.get('batch_id') if request.method == 'GET' else request.form['batch_id']
+    db = get_db()
+    cursor = db.cursor()
+    
+    if request.method == 'POST':
+        new_date = request.form['expiration_date']
+        cursor.execute("UPDATE batches SET expiration_date = %s WHERE id = %s", (new_date, batch_id))
+        db.commit()
+        return redirect(url_for('index'))
+    
+    cursor.execute("""
+        SELECT b.id, b.expiration_date, p.name, p.barcode 
+        FROM batches b
+        JOIN products p ON b.product_id = p.id
+        WHERE b.id = %s
+    """, (batch_id,))
+    batch = cursor.fetchone()
+    
+    return render_template('edit_batch.html', batch=batch)
+
+@app.route('/delete_batch', methods=['POST'])
+def delete_batch():
+    batch_id = request.form['batch_id']
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM batches WHERE id = %s", (batch_id,))
+    db.commit()
+    return redirect(url_for('index'))
+
+@app.route('/edit_product', methods=['GET', 'POST'])
+def edit_product():
+    db = get_db()
+    cursor = db.cursor()
+    product_id = request.args.get('product_id') if request.method == 'GET' else request.form['product_id']
+    
+    if request.method == 'POST':
+        new_name = request.form['name']
+        new_barcode = request.form['barcode']
+        cursor.execute("UPDATE products SET name = %s, barcode = %s WHERE id = %s", 
+                      (new_name, new_barcode, product_id))
+        db.commit()
+        return redirect(url_for('assortment'))
+    
+    cursor.execute("SELECT id, name, barcode FROM products WHERE id = %s", (product_id,))
+    product = cursor.fetchone()
+    return render_template('edit_product.html', product=product)
+
+@app.route('/delete_product', methods=['POST'])
+def delete_product():
+    product_id = request.form['product_id']
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM batches WHERE product_id = %s", (product_id,))
+    cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
+    db.commit()
+    return redirect(url_for('assortment'))
+
 from templates import render_template
 
 def run_app():
@@ -358,63 +417,3 @@ def run_app():
 
 if __name__ == '__main__':
     run_app()
-
-
-@app.route('/edit_product', methods=['GET', 'POST'])
-def edit_product():
-    db = get_db()
-    cursor = db.cursor()
-    product_id = request.args.get('product_id') if request.method == 'GET' else request.form['product_id']
-    if request.method == 'POST':
-        new_name = request.form['name']
-        cursor.execute("UPDATE products SET name = %s WHERE id = %s", (new_name, product_id))
-        db.commit()
-        return redirect(url_for('assortment'))
-    cursor.execute("SELECT id, name FROM products WHERE id = %s", (product_id,))
-    product = cursor.fetchone()
-    return f"""
-    <form method='POST'>
-        <input type='hidden' name='product_id' value='{product["id"]}'>
-        <input type='text' name='name' value='{product["name"]}' required>
-        <button type='submit'>Сохранить</button>
-    </form>
-    """
-
-@app.route('/delete_product', methods=['POST'])
-def delete_product():
-    product_id = request.form['product_id']
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("DELETE FROM batches WHERE product_id = %s", (product_id,))
-    cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
-    db.commit()
-    return redirect(url_for('assortment'))
-
-@app.route('/edit_batch', methods=['GET', 'POST'])
-def edit_batch():
-    db = get_db()
-    cursor = db.cursor()
-    batch_id = request.args.get('batch_id') if request.method == 'GET' else request.form['batch_id']
-    if request.method == 'POST':
-        new_date = request.form['expiration_date']
-        cursor.execute("UPDATE batches SET expiration_date = %s WHERE id = %s", (new_date, batch_id))
-        db.commit()
-        return redirect(url_for('index'))
-    cursor.execute("SELECT id, expiration_date FROM batches WHERE id = %s", (batch_id,))
-    batch = cursor.fetchone()
-    return f"""
-    <form method='POST'>
-        <input type='hidden' name='batch_id' value='{batch["id"]}'>
-        <input type='date' name='expiration_date' value='{batch["expiration_date"]}' required>
-        <button type='submit'>Сохранить</button>
-    </form>
-    """
-
-@app.route('/delete_batch', methods=['POST'])
-def delete_batch():
-    batch_id = request.form['batch_id']
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("DELETE FROM batches WHERE id = %s", (batch_id,))
-    db.commit()
-    return redirect(url_for('index'))
