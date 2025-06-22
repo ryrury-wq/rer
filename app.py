@@ -134,8 +134,8 @@ def scan():
             barcode = request.form['barcode']
             name = request.form['name']
             
-            # Обработка двух способов ввода срока годности
-            if 'expiration_date' in request.form and request.form['expiration_date']:
+            # Определяем способ ввода срока годности
+            if request.form.get('expiration_date'):
                 # Способ 1: Прямое указание срока годности
                 exp_date_str = request.form['expiration_date']
             else:
@@ -144,9 +144,10 @@ def scan():
                 duration_value = int(request.form['duration_value'])
                 duration_unit = request.form['duration_unit']
 
+                # Преобразуем строку в дату
                 m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
                 
-                # Используем точный расчет с relativedelta
+                # Рассчитываем срок годности
                 if duration_unit == 'days':
                     exp_date = m_date + timedelta(days=duration_value)
                 elif duration_unit == 'months':
@@ -161,23 +162,29 @@ def scan():
             db = get_db()
             cursor = db.cursor()
 
+            # Проверяем существование товара
             cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
             product = cursor.fetchone()
 
             if not product:
-                cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", (barcode, name))
+                # Создаем новый товар
+                cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", 
+                              (barcode, name))
                 product_id = cursor.fetchone()['id']
             else:
                 product_id = product['id']
 
+            # Добавляем партию товара
             cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)",
                            (product_id, exp_date_str))
             db.commit()
 
             return redirect(url_for('index'))
+        
         except Exception as e:
             app.logger.error(f"Scan POST Error: {str(e)}")
             return f"Server Error: {str(e)}", 500
+    
     return render_template('scan.html')
 
 @app.route('/get-product-name', methods=['GET'])
