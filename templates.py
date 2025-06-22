@@ -77,38 +77,41 @@ index_html = '''
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .item { 
-            padding: 15px; 
+            padding: 20px; /* Увеличено для большего пространства */
             border-bottom: 1px solid #eee;
-            border-radius: 8px;
-            margin-bottom: 8px;
+            border-radius: 12px; /* Увеличено для лучшего вида */
+            margin-bottom: 12px; /* Увеличено для большего пространства */
             transition: all 0.2s;
             position: relative;
-            padding-right: 60px; /* Отступ для кнопок */
+            padding-right: 80px; /* Увеличено для кнопок */
+            min-height: 140px; /* Минимальная высота для кнопок */
         }
         .item:hover {
-            box-shadow: 0 2px 6px rgba(0,160,70,0.15);
-            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,160,70,0.15); /* Усилено для эффекта */
+            transform: translateY(-3px);
         }
         .item-actions {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%); /* Центрирование по вертикали */
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 15px; /* Увеличено расстояние между кнопками */
             z-index: 2;
         }
         .action-btn {
-            width: 40px;
-            height: 40px;
+            width: 45px; /* Увеличено */
+            height: 45px; /* Увеличено */
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 20px; /* Увеличено */
             cursor: pointer;
             border: none;
             transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Добавлена тень */
         }
         .delete-btn {
             background: #f44336;
@@ -116,7 +119,7 @@ index_html = '''
         }
         .delete-btn:hover {
             background: #e53935;
-            transform: scale(1.1);
+            transform: scale(1.15); /* Усилено увеличение */
         }
         .edit-btn {
             background: #ffc107;
@@ -124,7 +127,7 @@ index_html = '''
         }
         .edit-btn:hover {
             background: #e6ac00;
-            transform: scale(1.1);
+            transform: scale(1.15);
         }
         .move-btn {
             background: #00a046;
@@ -132,23 +135,23 @@ index_html = '''
         }
         .move-btn:hover {
             background: #008c3a;
-            transform: scale(1.1);
+            transform: scale(1.15);
         }
         .expired { 
             background-color: #ffebee;
-            border-left: 4px solid #f44336;
+            border-left: 5px solid #f44336; /* Увеличено */
         }
         .warning { 
             background-color: #fff8e1;
-            border-left: 4px solid #ffc107;
+            border-left: 5px solid #ffc107;
         }
         .soon { 
             background-color: #e8f5e9;
-            border-left: 4px solid #4caf50;
+            border-left: 5px solid #4caf50;
         }
         .normal { 
             background-color: white;
-            border-left: 4px solid #e0e0e0;
+            border-left: 5px solid #e0e0e0;
         }
         .nav-links {
             display: flex;
@@ -158,7 +161,7 @@ index_html = '''
             justify-content: center;
         }
         .nav-links a {
-            padding: 12px 20px;
+            padding: 14px 22px; /* Увеличено */
             background: #00a046;
             border-radius: 24px;
             text-decoration: none;
@@ -170,6 +173,7 @@ index_html = '''
             flex: 1;
             min-width: calc(50% - 10px);
             box-sizing: border-box;
+            font-size: 1.05em; /* Увеличено */
         }
         .nav-links .full-width {
             flex: 0 0 100%;
@@ -177,12 +181,12 @@ index_html = '''
         }
         .nav-links a:hover {
             background: #008c3a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transform: translateY(-3px); /* Усилено */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         h1 {
-            font-size: 1.5em;
-            margin: 0 0 10px 0;
+            font-size: 1.6em; /* Увеличено */
+            margin: 0 0 15px 0; /* Увеличено */
             text-align: center;
             color: #00a046;
             font-weight: 500;
@@ -196,11 +200,11 @@ index_html = '''
         }
         .badge {
             display: inline-block;
-            padding: 3px 8px;
+            padding: 4px 10px; /* Увеличено */
             border-radius: 12px;
-            font-size: 0.8em;
+            font-size: 0.85em; /* Увеличено */
             font-weight: 500;
-            margin-top: 5px;
+            margin-top: 6px; /* Увеличено */
         }
         .expired-badge { background: #ffcdd2; color: #c62828; }
         .warning-badge { background: #ffecb3; color: #ff8f00; }
@@ -211,6 +215,10 @@ index_html = '''
             padding: 30px;
             color: #9e9e9e;
             font-style: italic;
+            font-size: 1.1em; /* Увеличено */
+        }
+        .item-content {
+            padding-right: 15px; /* Отступ от кнопок */
         }
     </style>
 </head>
@@ -255,8 +263,8 @@ index_html = '''
                     
                     <div class="item-content">
                         <strong>{{ item.name }}</strong> 
-                        <div style="font-size:0.9em; color:#666; margin-top:3px">{{ item.barcode }}</div>
-                        <div>Годен до: {{ item.expiration_date }}</div>
+                        <div style="font-size:0.9em; color:#666; margin-top:5px">{{ item.barcode }}</div>
+                        <div style="margin-top: 5px;">Годен до: {{ item.expiration_date }}</div>
                         
                         {% if item.status == "expired" %}
                             <div class="badge expired-badge">Просрочено: {{ item.days_since_expiry }} дн.</div>
@@ -268,7 +276,7 @@ index_html = '''
                             <div class="badge normal-badge">До истечения: {{ item.days_until_expiry }} дн.</div>
                         {% endif %}
                         
-                        <div style="font-size:0.85em; margin-top:5px; color:#757575">
+                        <div style="font-size:0.85em; margin-top:8px; color:#757575">
                             Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
                         </div>
                     </div>
