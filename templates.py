@@ -1,4 +1,4 @@
-from flask import render_template_stringMore actions
+from flask import render_template_string
 
 # Главная страница с новым стилем Вкусвилл
 index_html = '''
