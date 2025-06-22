@@ -133,25 +133,30 @@ def scan():
         try:
             barcode = request.form['barcode']
             name = request.form['name']
-            manufacture_date = request.form['manufacture_date']
-            duration_value = int(request.form['duration_value'])
-            duration_unit = request.form['duration_unit']
-
-            m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
             
-            # Используем точный расчет с relativedelta
-            if duration_unit == 'days':
-                exp_date = m_date + timedelta(days=duration_value)
-            elif duration_unit == 'months':
-                exp_date = m_date + relativedelta(months=duration_value)
-            elif duration_unit == 'years':
-                exp_date = m_date + relativedelta(years=duration_value)
-            elif duration_unit == 'hours':
-                exp_date = m_date + timedelta(hours=duration_value)
+            # Обработка двух способов ввода срока годности
+            if 'expiration_date' in request.form and request.form['expiration_date']:
+                # Способ 1: Прямое указание срока годности
+                exp_date_str = request.form['expiration_date']
             else:
-                exp_date = m_date + timedelta(days=30)
+                # Способ 2: Указание даты изготовления и срока
+                manufacture_date = request.form['manufacture_date']
+                duration_value = int(request.form['duration_value'])
+                duration_unit = request.form['duration_unit']
 
-            exp_date_str = exp_date.strftime('%Y-%m-%d')
+                m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
+                
+                # Используем точный расчет с relativedelta
+                if duration_unit == 'days':
+                    exp_date = m_date + timedelta(days=duration_value)
+                elif duration_unit == 'months':
+                    exp_date = m_date + relativedelta(months=duration_value)
+                elif duration_unit == 'years':
+                    exp_date = m_date + relativedelta(years=duration_value)
+                else:
+                    exp_date = m_date + timedelta(days=30)
+
+                exp_date_str = exp_date.strftime('%Y-%m-%d')
 
             db = get_db()
             cursor = db.cursor()
@@ -281,6 +286,78 @@ def history():
     cursor.execute("SELECT * FROM history ORDER BY removed_date DESC")
     history_items = cursor.fetchall()
     return render_template('history.html', history_items=history_items)
+
+@app.route('/edit_batch/<int:batch_id>', methods=['GET', 'POST'])
+def edit_batch(batch_id):
+    db = get_db()
+    cursor = db.cursor()
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        barcode = request.form['barcode']
+        expiration_date = request.form['expiration_date']
+        
+        # Обновляем товар
+        cursor.execute('''
+            UPDATE products 
+            SET name = %s, barcode = %s 
+            WHERE id = (SELECT product_id FROM batches WHERE id = %s)
+        ''', (name, barcode, batch_id))
+        
+        # Обновляем партию
+        cursor.execute('''
+            UPDATE batches 
+            SET expiration_date = %s 
+            WHERE id = %s
+        ''', (expiration_date, batch_id))
+        
+        db.commit()
+        return redirect(url_for('index'))
+    
+    else:
+        # Получаем данные для редактирования
+        cursor.execute('''
+            SELECT b.id, p.name, p.barcode, b.expiration_date
+            FROM batches b
+            JOIN products p ON p.id = b.product_id
+            WHERE b.id = %s
+        ''', (batch_id,))
+        item = cursor.fetchone()
+        
+        if not item:
+            return "Партия не найдена", 404
+        
+        return render_template('edit_batch.html', item=item)
+
+@app.route('/delete_batch/<int:batch_id>', methods=['POST'])
+def delete_batch(batch_id):
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Удаляем партию
+    cursor.execute("DELETE FROM batches WHERE id = %s", (batch_id,))
+    
+    # Проверяем, остались ли другие партии у товара
+    cursor.execute('''
+        SELECT COUNT(*) 
+        FROM batches 
+        WHERE product_id = (
+            SELECT product_id FROM batches WHERE id = %s
+        )
+    ''', (batch_id,))
+    count = cursor.fetchone()[0]
+    
+    # Если это последняя партия, удаляем товар
+    if count == 0:
+        cursor.execute('''
+            DELETE FROM products 
+            WHERE id = (
+                SELECT product_id FROM batches WHERE id = %s
+            )
+        ''', (batch_id,))
+    
+    db.commit()
+    return redirect(url_for('index'))
 
 @app.route('/move_to_history', methods=['POST'])
 def move_to_history():
