@@ -27,7 +27,7 @@ index_html = '''
             justify-content: center;
             align-items: center;
             position: relative;
-            height: 60px; /* Фиксированная высота */
+            height: 45px; /* Фиксированная высота */
         }
         .logo {
             font-weight: 700;
@@ -206,6 +206,35 @@ index_html = '''
             font-size: 0.85em;
             margin-top: 10px;
         }
+        .notification-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px 10px;
+            z-index: 2;
+        }
+
+/* Добавим индикатор новых уведомлений */
+        .notification-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff5252;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
         /* Модальное окно фильтров */
         .modal-overlay {
@@ -369,6 +398,7 @@ index_html = '''
 </head>
 <body>
     <div class="header">
+        <button class="notification-btn" id="notification-btn">🔔</button>
         <h1 class="logo">Вкусвилл</h1>
         <button class="filter-btn" id="open-filter-modal">☰</button>
     </div>
@@ -483,7 +513,21 @@ index_html = '''
                 e.preventDefault();
             });
         }
-
+        document.getElementById('notification-btn').addEventListener('click', () => {
+            window.location.href = '/notifications';
+        });
+        // Проверка новых уведомлений
+        fetch('/check_new_notifications')
+            .then(res => res.json())
+            .then(data => {
+                if(data.count > 0) {
+                    const badge = document.createElement('div');
+                    badge.className = 'notification-badge';
+                    badge.textContent = data.count;
+                    document.getElementById('notification-btn').appendChild(badge);
+                }
+        });
+        
         // Управление модальным окном
         document.addEventListener('DOMContentLoaded', () => {
             const modal = document.getElementById('filter-modal');
@@ -2564,6 +2608,222 @@ edit_product_html = '''
 </html>
 '''
 
+notifications_html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Уведомления - Вкусвилл</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background-color: #00a046;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            position: relative;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .logo {
+            font-weight: 700;
+            font-size: 1.8em;
+            letter-spacing: 0.5px;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            max-width: 100%;
+            padding: 20px 15px;
+        }
+        .mute-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .mute-btn {
+            flex: 1;
+            padding: 15px;
+            background: #e3f2fd;
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+            color: #1976d2;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .clear-btn {
+            width: 100%;
+            padding: 12px;
+            background: #ffebee;
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+            color: #d32f2f;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .notification-group {
+            margin-bottom: 25px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .group-header {
+            background: #00a046;
+            color: white;
+            padding: 12px 15px;
+            font-weight: 500;
+        }
+        .notification-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        .item-info {
+            flex-grow: 1;
+        }
+        .item-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .item-details {
+            font-size: 0.9em;
+            color: #616161;
+        }
+        .today-header {
+            background: #f44336;
+        }
+        .soon-header {
+            background: #ff9800;
+        }
+        .empty-notifications {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9e9e9e;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="back-btn">←</a>
+        <h1 class="logo">Вкусвилл</h1>
+    </div>
+    
+    <div class="container">
+        <h1 style="text-align:center;color:#00a046">Уведомления</h1>
+        
+        <div class="mute-options">
+            <button class="mute-btn" data-type="weekend">Не беспокоить (2 дня)</button>
+            <button class="mute-btn" data-type="vacation">До отпуска</button>
+        </div>
+        
+        <button class="clear-btn" id="clear-all">Очистить все уведомления</button>
+        
+        {% if notifications %}
+            {% for date, groups in notifications.items() %}
+                <div class="date-header">{{ date }}</div>
+                
+                {% if groups.today %}
+                    <div class="notification-group">
+                        <div class="group-header today-header">Сегодня нужно убрать</div>
+                        {% for item in groups.today %}
+                            <div class="notification-item">
+                                <div class="item-info">
+                                    <div class="item-name">{{ item.name }}</div>
+                                    <div class="item-details">
+                                        Штрих-код: {{ item.barcode }}<br>
+                                        Годен до: {{ item.expiration_date }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                {% if groups.soon %}
+                    <div class="notification-group">
+                        <div class="group-header soon-header">Эти товары подходят по сроку</div>
+                        {% for item in groups.soon %}
+                            <div class="notification-item">
+                                <div class="item-info">
+                                    <div class="item-name">{{ item.name }}</div>
+                                    <div class="item-details">
+                                        Штрих-код: {{ item.barcode }}<br>
+                                        Годен до: {{ item.expiration_date }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="empty-notifications">
+                Нет активных уведомлений
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="footer">
+        Сделано М2(Shevchenko) by Bekeshnyuk
+    </div>
+
+    <script>
+        document.querySelectorAll('.mute-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const muteType = this.dataset.type;
+                const formData = new FormData();
+                formData.append('mute_type', muteType);
+                
+                fetch('/mute_notifications', {
+                    method: 'POST',
+                    body: formData
+                }).then(() => {
+                    window.location.reload();
+                });
+            });
+        });
+        
+        document.getElementById('clear-all').addEventListener('click', function() {
+            if(confirm('Вы уверены, что хотите очистить все уведомления?')) {
+                fetch('/clear_notifications', {
+                    method: 'POST'
+                }).then(() => {
+                    window.location.reload();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+'''
+
 # Создаем словарь шаблонов
 templates = {
     'index.html': index_html,
@@ -2573,7 +2833,8 @@ templates = {
     'assortment.html': assortment_html,
     'history.html': history_html,
     'edit_batch.html' : edit_batch_html,
-    'edit_product.html' : edit_product_html
+    'edit_product.html' : edit_product_html,
+    'notifications.html': notifications_html
 }
 
 def render_template(template_name, **context):
