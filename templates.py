@@ -650,198 +650,14 @@ scan_html = '''
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Инициализация сканера
-            if (typeof BrowserMultiFormatReader !== 'undefined') {
-                const codeReader = new BrowserMultiFormatReader();
-                const video = document.getElementById('video');
-                const barcodeInput = document.getElementById('barcode');
-                const cameraError = document.getElementById('camera-error');
-                const restartBtn = document.getElementById('restart-btn');
-                const torchBtn = document.getElementById('torch-btn');
-                const beepSound = document.getElementById('beep');
-                const manualInputLink = document.getElementById('manual-input-link');
-                const scannerForm = document.getElementById('scanner-form');
-                
-                let currentStream = null;
-                let scannerActive = true;
-                let torchOn = false;
-                let lastScanTime = 0;
-                const SCAN_COOLDOWN = 2000;
-                
-                function stopCurrentStream() {
-                    if (currentStream) {
-                        currentStream.getTracks().forEach(track => {
-                            if (track.kind === 'video' && torchOn) {
-                                track.applyConstraints({ advanced: [{ torch: false }] });
-                            }
-                            track.stop();
-                        });
-                        currentStream = null;
-                        torchOn = false;
-                        if (torchBtn) torchBtn.textContent = 'Фонарик';
-                    }
-                }
-                
-                async function startCamera() {
-                    try {
-                        stopCurrentStream();
-                        
-                        const constraints = {
-                            video: {
-                                facingMode: 'environment',
-                                width: { ideal: 1280 },
-                                height: { ideal: 720 },
-                                focusMode: 'continuous'
-                            }
-                        };
-                        
-                        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                        if (video) {
-                            video.srcObject = currentStream;
-                            video.style.display = 'block';
-                        }
-                        
-                        if (cameraError) cameraError.style.display = 'none';
-                        
-                        checkTorchSupport();
-                        startScanner();
-                    } catch (err) {
-                        console.error("Ошибка доступа к камере:", err);
-                        showCameraError();
-                    }
-                }
-                
-                function checkTorchSupport() {
-                    if (torchBtn) torchBtn.style.display = 'none';
-                    if (currentStream) {
-                        const track = currentStream.getVideoTracks()[0];
-                        if (track && track.getCapabilities().torch) {
-                            if (torchBtn) torchBtn.style.display = 'block';
-                        }
-                    }
-                }
-                
-                async function toggleTorch() {
-                    if (!currentStream) return;
-                    
-                    const track = currentStream.getVideoTracks()[0];
-                    if (!track || !track.getCapabilities().torch) return;
-                    
-                    try {
-                        await track.applyConstraints({
-                            advanced: [{ torch: !torchOn }]
-                        });
-                        torchOn = !torchOn;
-                        if (torchBtn) torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
-                    } catch (err) {
-                        console.error("Ошибка переключения фонарика:", err);
-                    }
-                }
-                
-                function startScanner() {
-                    if (!scannerActive || !codeReader) return;
-                    
-                    codeReader.decodeFromVideoElement(video, (result, err) => {
-                        if (!scannerActive) return;
-                        
-                        const now = Date.now();
-                        if (now - lastScanTime < SCAN_COOLDOWN) return;
-                        
-                        if (result) {
-                            lastScanTime = now;
-                            
-                            if (beepSound) {
-                                beepSound.currentTime = 0;
-                                beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
-                            }
-                            
-                            if (barcodeInput) {
-                                barcodeInput.value = result.text;
-                                if (document.getElementById('name')) {
-                                    document.getElementById('name').focus();
-                                }
-                                
-                                fetch(`/get-product-name?barcode=${result.text}`)
-                                    .then(res => res.json())
-                                    .then(data => {
-                                        if (data.found && document.getElementById('name')) {
-                                            document.getElementById('name').value = data.name;
-                                        }
-                                    });
-                            }
-                        }
-                    });
-                }
-                
-                function stopScanner() {
-                    scannerActive = false;
-                    if (codeReader) codeReader.reset();
-                }
-                
-                function showCameraError() {
-                    if (cameraError) cameraError.style.display = 'block';
-                    if (video) video.style.display = 'none';
-                    if (barcodeInput) {
-                        barcodeInput.removeAttribute('readonly');
-                        barcodeInput.placeholder = "Введите штрих-код вручную";
-                    }
-                }
-                
-                if (restartBtn) {
-                    restartBtn.addEventListener('click', () => {
-                        startCamera();
-                    });
-                }
-                
-                if (torchBtn) {
-                    torchBtn.addEventListener('click', toggleTorch);
-                }
-                
-                if (manualInputLink) {
-                    manualInputLink.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        if (barcodeInput) {
-                            barcodeInput.removeAttribute('readonly');
-                            barcodeInput.focus();
-                            barcodeInput.placeholder = "Введите штрих-код вручную";
-                        }
-                    });
-                }
-                
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        stopScanner();
-                    } else {
-                        scannerActive = true;
-                        startScanner();
-                    }
-                });
-                
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    showCameraError();
-                    if (cameraError) cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
-                } else {
-                    startCamera();
-                }
-                
-                if (scannerForm) {
-                    scannerForm.addEventListener('submit', (e) => {
-                        if (barcodeInput && !barcodeInput.value) {
-                            e.preventDefault();
-                            alert("Пожалуйста, введите или отсканируйте штрих-код");
-                            barcodeInput.focus();
-                        }
-                    });
-                }
-            }
-
-            // Обработка даты и срока годности
+            // Инициализация элементов
             const dateField = document.getElementById('manufacture_date');
             const textField = document.getElementById('manufacture_date_text');
             const durationValue = document.getElementById('duration_value');
             const durationUnit = document.getElementById('duration_unit');
             
-            if (textField) {
+            // Функция для обработки ввода даты (как в add_batch)
+            function setupDateInput() {
                 textField.addEventListener('input', function(e) {
                     let value = e.target.value.replace(/\D/g, '');
                     if (value.length > 8) value = value.substr(0, 8);
@@ -857,12 +673,12 @@ scan_html = '''
                         const parts = formatted.split('.');
                         if (parts.length === 3) {
                             const [day, month, year] = parts;
-                            if (dateField) dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                             calculateExpirationDate();
                         }
                     }
                 });
-                    
+                
                 textField.addEventListener('blur', function() {
                     const value = textField.value;
                     if (value.length > 0 && value.length < 10) {
@@ -872,12 +688,12 @@ scan_html = '''
                         const parts = value.split('.');
                         if (parts.length === 3) {
                             const [day, month, year] = parts;
-                            if (dateField) dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                             calculateExpirationDate();
                         }
                     }
                 });
-                    
+                
                 textField.addEventListener('keydown', function(e) {
                     if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
                         (e.keyCode === 65 && e.ctrlKey === true) || 
@@ -894,21 +710,11 @@ scan_html = '''
                 });
             }
             
-            if (scannerForm) {
-                scannerForm.addEventListener('submit', function(e) {
-                    if (dateField && !dateField.value) {
-                        e.preventDefault();
-                        alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
-                        if (textField) textField.focus();
-                    }
-                });
-            }
-            
-            // Функция для расчета даты истечения срока
+            // Функция для расчета срока годности (как в add_batch)
             function calculateExpirationDate() {
-                const manufactureDate = dateField ? dateField.value : '';
-                const durationVal = durationValue ? durationValue.value : '';
-                const durationUnt = durationUnit ? durationUnit.value : 'days';
+                const manufactureDate = dateField.value;
+                const durationVal = durationValue.value;
+                const durationUnt = durationUnit.value;
                 
                 if (manufactureDate && durationVal) {
                     const [year, month, day] = manufactureDate.split('-');
@@ -939,47 +745,202 @@ scan_html = '''
                     const dateDisplay = document.getElementById('expiration-date-display');
                     const daysCount = document.getElementById('days-count');
                     
-                    if (expirationBox) expirationBox.style.display = 'block';
-                    if (dateDisplay) dateDisplay.textContent = formattedDate;
+                    expirationBox.style.display = 'block';
+                    dateDisplay.textContent = formattedDate;
                     
                     if (diffDays < 0) {
-                        // Просрочено
-                        if (expirationBox) expirationBox.className = 'expiration-box expired';
-                        if (dateDisplay) dateDisplay.className = 'expiration-date expired-date';
-                        if (daysCount) {
-                            daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн. назад`;
-                            daysCount.className = 'days-count expired-date';
-                        }
+                        expirationBox.className = 'expiration-box expired';
+                        dateDisplay.className = 'expiration-date expired-date';
+                        daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн. назад`;
+                        daysCount.className = 'days-count expired-date';
                     } else if (diffDays <= 10) {
-                        // Осталось мало дней
-                        if (expirationBox) expirationBox.className = 'expiration-box warning';
-                        if (dateDisplay) dateDisplay.className = 'expiration-date warning-date';
-                        if (daysCount) {
-                            daysCount.textContent = `Осталось ${diffDays} дн.`;
-                            daysCount.className = 'days-count warning-date';
-                        }
+                        expirationBox.className = 'expiration-box warning';
+                        dateDisplay.className = 'expiration-date warning-date';
+                        daysCount.textContent = `Осталось ${diffDays} дн.`;
+                        daysCount.className = 'days-count warning-date';
                     } else {
-                        // Нормальный срок
-                        if (expirationBox) expirationBox.className = 'expiration-box normal';
-                        if (dateDisplay) dateDisplay.className = 'expiration-date normal-date';
-                        if (daysCount) {
-                            daysCount.textContent = `Осталось ${diffDays} дн.`;
-                            daysCount.className = 'days-count normal-date';
-                        }
+                        expirationBox.className = 'expiration-box normal';
+                        dateDisplay.className = 'expiration-date normal-date';
+                        daysCount.textContent = `Осталось ${diffDays} дн.`;
+                        daysCount.className = 'days-count normal-date';
                     }
                 }
             }
             
+            // Инициализация обработчиков
+            setupDateInput();
+            
             // Слушатели изменений для полей срока годности
-            if (durationValue) {
-                durationValue.addEventListener('input', calculateExpirationDate);
-            }
-            if (durationUnit) {
-                durationUnit.addEventListener('change', calculateExpirationDate);
+            durationValue.addEventListener('input', calculateExpirationDate);
+            durationUnit.addEventListener('change', calculateExpirationDate);
+            
+            // Инициализация сканера
+            if (typeof BrowserMultiFormatReader !== 'undefined') {
+                const codeReader = new BrowserMultiFormatReader();
+                const video = document.getElementById('video');
+                const barcodeInput = document.getElementById('barcode');
+                const cameraError = document.getElementById('camera-error');
+                const restartBtn = document.getElementById('restart-btn');
+                const torchBtn = document.getElementById('torch-btn');
+                const beepSound = document.getElementById('beep');
+                const manualInputLink = document.getElementById('manual-input-link');
+                const scannerForm = document.getElementById('scanner-form');
+                
+                let currentStream = null;
+                let scannerActive = true;
+                let torchOn = false;
+                let lastScanTime = 0;
+                const SCAN_COOLDOWN = 2000;
+                
+                function stopCurrentStream() {
+                    if (currentStream) {
+                        currentStream.getTracks().forEach(track => {
+                            if (track.kind === 'video' && torchOn) {
+                                track.applyConstraints({ advanced: [{ torch: false }] });
+                            }
+                            track.stop();
+                        });
+                        currentStream = null;
+                        torchOn = false;
+                        torchBtn.textContent = 'Фонарик';
+                    }
+                }
+                
+                async function startCamera() {
+                    try {
+                        stopCurrentStream();
+                        
+                        const constraints = {
+                            video: {
+                                facingMode: 'environment',
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 },
+                                focusMode: 'continuous'
+                            }
+                        };
+                        
+                        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                        video.srcObject = currentStream;
+                        
+                        cameraError.style.display = 'none';
+                        video.style.display = 'block';
+                        
+                        checkTorchSupport();
+                        startScanner();
+                    } catch (err) {
+                        console.error("Ошибка доступа к камере:", err);
+                        showCameraError();
+                    }
+                }
+                
+                function checkTorchSupport() {
+                    torchBtn.style.display = 'none';
+                    if (currentStream) {
+                        const track = currentStream.getVideoTracks()[0];
+                        if (track && track.getCapabilities().torch) {
+                            torchBtn.style.display = 'block';
+                        }
+                    }
+                }
+                
+                async function toggleTorch() {
+                    if (!currentStream) return;
+                    
+                    const track = currentStream.getVideoTracks()[0];
+                    if (!track || !track.getCapabilities().torch) return;
+                    
+                    try {
+                        await track.applyConstraints({
+                            advanced: [{ torch: !torchOn }]
+                        });
+                        torchOn = !torchOn;
+                        torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
+                    } catch (err) {
+                        console.error("Ошибка переключения фонарика:", err);
+                    }
+                }
+                
+                function startScanner() {
+                    if (!scannerActive) return;
+                    
+                    codeReader.decodeFromVideoElement(video, (result, err) => {
+                        if (!scannerActive) return;
+                        
+                        const now = Date.now();
+                        if (now - lastScanTime < SCAN_COOLDOWN) return;
+                        
+                        if (result) {
+                            lastScanTime = now;
+                            
+                            if (beepSound) {
+                                beepSound.currentTime = 0;
+                                beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
+                            }
+                            
+                            barcodeInput.value = result.text;
+                            document.getElementById('name').focus();
+                            
+                            fetch(`/get-product-name?barcode=${result.text}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.found) {
+                                        document.getElementById('name').value = data.name;
+                                    }
+                                });
+                        }
+                    });
+                }
+                
+                function stopScanner() {
+                    scannerActive = false;
+                    codeReader.reset();
+                }
+                
+                function showCameraError() {
+                    cameraError.style.display = 'block';
+                    video.style.display = 'none';
+                    barcodeInput.removeAttribute('readonly');
+                    barcodeInput.placeholder = "Введите штрих-код вручную";
+                }
+                
+                restartBtn.addEventListener('click', () => {
+                    startCamera();
+                });
+                
+                torchBtn.addEventListener('click', toggleTorch);
+                
+                manualInputLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    barcodeInput.removeAttribute('readonly');
+                    barcodeInput.focus();
+                    barcodeInput.placeholder = "Введите штрих-код вручную";
+                });
+                
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        stopScanner();
+                    } else {
+                        scannerActive = true;
+                        startScanner();
+                    }
+                });
+                
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showCameraError();
+                    cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
+                } else {
+                    startCamera();
+                }
             }
             
-            // Инициализируем расчет при загрузке, если есть значения
-            setTimeout(calculateExpirationDate, 100);
+            // Обработка отправки формы
+            document.getElementById('scanner-form').addEventListener('submit', function(e) {
+                if (!dateField.value) {
+                    e.preventDefault();
+                    alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
+                    textField.focus();
+                }
+            });
         });
     </script>
     
