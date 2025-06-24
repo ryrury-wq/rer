@@ -2616,116 +2616,381 @@ notifications_html = '''
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap');
+        
+        :root {
+            --primary: #00a046;
+            --primary-dark: #008c3a;
+            --secondary: #ff9800;
+            --danger: #f44336;
+            --light: #f8f9fa;
+            --dark: #333333;
+            --gray: #757575;
+            --white: #ffffff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
         body { 
             font-family: 'Roboto', sans-serif; 
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
         }
+        
         .header {
-            background-color: #00a046;
-            color: white;
-            padding: 15px 20px;
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 22px 20px;
             text-align: center;
             position: relative;
+            box-shadow: var(--shadow);
+            z-index: 100;
         }
+        
         .back-btn {
             position: absolute;
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: white;
+            color: var(--white);
             font-size: 24px;
             text-decoration: none;
             font-weight: bold;
             z-index: 10;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
         }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
         .logo {
+            font-family: 'Montserrat', sans-serif;
             font-weight: 700;
-            font-size: 1.8em;
+            font-size: 1.8rem;
             letter-spacing: 0.5px;
             margin: 0;
-            color: white;
+            color: var(--white);
         }
+        
         .container {
             max-width: 100%;
             padding: 20px 15px;
+            padding-bottom: 80px;
         }
-        .mute-options {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .mute-btn {
-            flex: 1;
-            padding: 15px;
-            background: #e3f2fd;
-            border: none;
-            border-radius: 12px;
-            font-weight: 500;
-            color: #1976d2;
-            cursor: pointer;
+        
+        .page-title {
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: var(--primary);
+            font-weight: 700;
+            margin: 20px 0 30px;
+            font-size: 1.8rem;
+            font-family: 'Montserrat', sans-serif;
         }
-        .clear-btn {
-            width: 100%;
-            padding: 12px;
-            background: #ffebee;
-            border: none;
-            border-radius: 12px;
-            font-weight: 500;
-            color: #d32f2f;
-            margin-bottom: 20px;
-            cursor: pointer;
+        
+        .notification-container {
+            max-width: 600px;
+            margin: 0 auto;
         }
-        .notification-group {
-            margin-bottom: 25px;
-            background: white;
-            border-radius: 12px;
+        
+        .notification-card {
+            background: var(--white);
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
         }
-        .group-header {
-            background: #00a046;
-            color: white;
-            padding: 12px 15px;
-            font-weight: 500;
+        
+        .notification-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         }
-        .notification-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
+        
+        .notification-header {
             display: flex;
-            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            cursor: pointer;
+            position: relative;
         }
+        
+        .notification-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+            font-size: 1.4rem;
+        }
+        
+        .today-badge {
+            background: rgba(244, 67, 54, 0.15);
+            color: var(--danger);
+        }
+        
+        .soon-badge {
+            background: rgba(255, 152, 0, 0.15);
+            color: var(--secondary);
+        }
+        
+        .notification-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 3px;
+        }
+        
+        .notification-subtitle {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .notification-count {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--primary);
+            color: var(--white);
+            border-radius: 12px;
+            padding: 4px 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .notification-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+            background: #fafafa;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .notification-content.expanded {
+            max-height: 1000px;
+        }
+        
+        .notification-item {
+            padding: 18px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+        
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        
+        .notification-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(0, 160, 70, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
         .item-info {
             flex-grow: 1;
         }
+        
         .item-name {
             font-weight: 500;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
+        
         .item-details {
-            font-size: 0.9em;
-            color: #616161;
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .today-header {
-            background: #f44336;
+        
+        .detail-badge {
+            background: #f0f0f0;
+            border-radius: 8px;
+            padding: 2px 8px;
+            font-size: 0.8rem;
         }
-        .soon-header {
-            background: #ff9800;
+        
+        .clear-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            padding: 16px;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(0, 160, 70, 0.3);
+            transition: var(--transition);
+            z-index: 10;
         }
+        
+        .clear-btn:hover {
+            background: var(--primary-dark);
+            transform: translateX(-50%) scale(1.02);
+        }
+        
         .empty-notifications {
             text-align: center;
-            padding: 40px 20px;
-            color: #9e9e9e;
+            padding: 60px 20px;
+            color: var(--gray);
         }
-        .footer {
+        
+        .empty-icon {
+            font-size: 4rem;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .empty-title {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--gray);
+            font-weight: 500;
+        }
+        
+        .empty-text {
+            font-size: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .mute-section {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .mute-title {
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--dark);
+            font-size: 1.1rem;
+        }
+        
+        .mute-options {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .mute-btn {
+            flex: 1;
+            padding: 14px;
+            background: rgba(0, 160, 70, 0.08);
+            border: 1px solid rgba(0, 160, 70, 0.2);
+            border-radius: 12px;
+            font-weight: 500;
+            color: var(--primary);
+            cursor: pointer;
             text-align: center;
-            padding: 20px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
+            transition: var(--transition);
+        }
+        
+        .mute-btn:hover {
+            background: rgba(0, 160, 70, 0.15);
+            border-color: var(--primary);
+        }
+        
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .notification-card {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        
+        .notification-card:nth-child(1) { animation-delay: 0.1s; }
+        .notification-card:nth-child(2) { animation-delay: 0.2s; }
+        .notification-card:nth-child(3) { animation-delay: 0.3s; }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .today-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Иконки */
+        .icon-today::before {
+            content: "⚠️";
+        }
+        
+        .icon-soon::before {
+            content: "🔔";
+        }
+        
+        .icon-product::before {
+            content: "🥬";
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 480px) {
+            .header {
+                padding: 18px 15px;
+            }
+            
+            .logo {
+                font-size: 1.5rem;
+            }
+            
+            .page-title {
+                font-size: 1.5rem;
+                margin: 15px 0 25px;
+            }
+            
+            .mute-options {
+                flex-direction: column;
+            }
+            
+            .notification-header {
+                padding: 15px;
+            }
+            
+            .notification-item {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -2736,88 +3001,161 @@ notifications_html = '''
     </div>
     
     <div class="container">
-        <h1 style="text-align:center;color:#00a046">Уведомления</h1>
+        <h1 class="page-title">Ваши уведомления</h1>
         
-        <div class="mute-options">
-            <button class="mute-btn" data-type="weekend">Не беспокоить (2 дня)</button>
-            <button class="mute-btn" data-type="vacation">До отпуска</button>
+        <div class="notification-container">
+            <div class="mute-section">
+                <div class="mute-title">Режим "Не беспокоить"</div>
+                <div class="mute-options">
+                    <button class="mute-btn" data-type="weekend">На выходные</button>
+                    <button class="mute-btn" data-type="vacation">В отпуск</button>
+                </div>
+            </div>
+            
+            {% if notifications %}
+                {% for date, groups in notifications.items() %}
+                    {% if groups.today %}
+                        <div class="notification-card">
+                            <div class="notification-header" onclick="toggleContent(this)">
+                                <div class="notification-badge today-badge icon-today"></div>
+                                <div>
+                                    <div class="notification-title">Сегодня нужно убрать</div>
+                                    <div class="notification-subtitle">Срок годности истекает сегодня</div>
+                                </div>
+                                <div class="notification-count">{{ groups.today|length }}</div>
+                            </div>
+                            <div class="notification-content">
+                                {% for item in groups.today %}
+                                    <div class="notification-item">
+                                        <div class="item-icon icon-product"></div>
+                                        <div class="item-info">
+                                            <div class="item-name">{{ item.name }}</div>
+                                            <div class="item-details">
+                                                <span class="detail-badge">#{{ item.barcode }}</span>
+                                                <span class="detail-badge">Годен до: {{ item.expiration_date }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if groups.soon %}
+                        <div class="notification-card">
+                            <div class="notification-header" onclick="toggleContent(this)">
+                                <div class="notification-badge soon-badge icon-soon"></div>
+                                <div>
+                                    <div class="notification-title">Товары подходят по сроку</div>
+                                    <div class="notification-subtitle">Срок годности 2-5 дней</div>
+                                </div>
+                                <div class="notification-count">{{ groups.soon|length }}</div>
+                            </div>
+                            <div class="notification-content">
+                                {% for item in groups.soon %}
+                                    <div class="notification-item">
+                                        <div class="item-icon icon-product"></div>
+                                        <div class="item-info">
+                                            <div class="item-name">{{ item.name }}</div>
+                                            <div class="item-details">
+                                                <span class="detail-badge">#{{ item.barcode }}</span>
+                                                <span class="detail-badge">Годен до: {{ item.expiration_date }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="empty-notifications">
+                    <div class="empty-icon">📭</div>
+                    <div class="empty-title">Нет активных уведомлений</div>
+                    <div class="empty-text">Здесь будут появляться уведомления о товарах, которые нужно убрать сегодня или скоро истекает срок годности</div>
+                </div>
+            {% endif %}
         </div>
         
-        <button class="clear-btn" id="clear-all">Очистить все уведомления</button>
-        
         {% if notifications %}
-            {% for date, groups in notifications.items() %}
-                <div class="date-header">{{ date }}</div>
-                
-                {% if groups.today %}
-                    <div class="notification-group">
-                        <div class="group-header today-header">Сегодня нужно убрать</div>
-                        {% for item in groups.today %}
-                            <div class="notification-item">
-                                <div class="item-info">
-                                    <div class="item-name">{{ item.name }}</div>
-                                    <div class="item-details">
-                                        Штрих-код: {{ item.barcode }}<br>
-                                        Годен до: {{ item.expiration_date }}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                
-                {% if groups.soon %}
-                    <div class="notification-group">
-                        <div class="group-header soon-header">Эти товары подходят по сроку</div>
-                        {% for item in groups.soon %}
-                            <div class="notification-item">
-                                <div class="item-info">
-                                    <div class="item-name">{{ item.name }}</div>
-                                    <div class="item-details">
-                                        Штрих-код: {{ item.barcode }}<br>
-                                        Годен до: {{ item.expiration_date }}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endfor %}
-        {% else %}
-            <div class="empty-notifications">
-                Нет активных уведомлений
-            </div>
+            <button class="clear-btn" id="clear-all">Очистить все уведомления</button>
         {% endif %}
-    </div>
-    
-    <div class="footer">
-        Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
 
     <script>
+        // Функция для переключения содержимого уведомления
+        function toggleContent(element) {
+            const content = element.nextElementSibling;
+            content.classList.toggle('expanded');
+            
+            // Анимация иконки
+            const badge = element.querySelector('.notification-badge');
+            badge.style.transform = content.classList.contains('expanded') 
+                ? 'rotate(15deg)' 
+                : 'rotate(0)';
+        }
+        
+        // Обработка кнопок заглушения
         document.querySelectorAll('.mute-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const muteType = this.dataset.type;
-                const formData = new FormData();
-                formData.append('mute_type', muteType);
+                const typeName = muteType === 'weekend' ? 'выходные' : 'отпуск';
                 
-                fetch('/mute_notifications', {
-                    method: 'POST',
-                    body: formData
-                }).then(() => {
-                    window.location.reload();
-                });
+                if(confirm(`Вы уверены, что хотите отключить уведомления на ${typeName}?`)) {
+                    const formData = new FormData();
+                    formData.append('mute_type', muteType);
+                    
+                    fetch('/mute_notifications', {
+                        method: 'POST',
+                        body: formData
+                    }).then(() => {
+                        alert(`Уведомления отключены на ${typeName}!`);
+                        window.location.reload();
+                    });
+                }
             });
         });
         
-        document.getElementById('clear-all').addEventListener('click', function() {
+        // Очистка всех уведомлений
+        document.getElementById('clear-all')?.addEventListener('click', function() {
             if(confirm('Вы уверены, что хотите очистить все уведомления?')) {
                 fetch('/clear_notifications', {
                     method: 'POST'
                 }).then(() => {
-                    window.location.reload();
+                    // Анимация исчезновения
+                    document.querySelectorAll('.notification-card').forEach(card => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            card.style.display = 'none';
+                        }, 300);
+                    });
+                    
+                    // Показываем сообщение об отсутствии уведомлений
+                    setTimeout(() => {
+                        const emptyContainer = document.createElement('div');
+                        emptyContainer.className = 'empty-notifications';
+                        emptyContainer.innerHTML = `
+                            <div class="empty-icon">📭</div>
+                            <div class="empty-title">Все уведомления очищены</div>
+                            <div class="empty-text">Новых уведомлений пока нет</div>
+                        `;
+                        document.querySelector('.notification-container').appendChild(emptyContainer);
+                        
+                        // Убираем кнопку очистки
+                        this.style.display = 'none';
+                    }, 400);
                 });
             }
+        });
+        
+        // Добавляем небольшую анимацию при загрузке
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.querySelectorAll('.notification-badge').forEach(badge => {
+                    badge.style.transition = 'transform 0.3s ease';
+                });
+            }, 1000);
         });
     </script>
 </body>
