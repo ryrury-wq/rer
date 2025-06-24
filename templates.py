@@ -344,6 +344,18 @@ scan_html = '''
             color: white;
             padding: 15px 20px;
             text-align: center;
+            position: relative;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
         }
         .logo {
             font-weight: 700;
@@ -482,30 +494,23 @@ scan_html = '''
             border-bottom: 1px dashed #00a046;
             padding-bottom: 2px;
         }
-         .date-input-group {
+        .date-input-group {
             position: relative;
         }
         .date-icon {
             position: absolute;
-            left: 15px;
+            left: 10px; /* Уменьшен отступ слева */
             top: 50%;
             transform: translateY(-50%);
             color: #757575;
             pointer-events: none;
             font-size: 1.2em;
-            z-index: 2; /* Убедимся, что иконка поверх других элементов */
+            z-index: 1; /* Добавлен z-index */
         }
         .date-input {
-            padding-left: 45px !important; /* Увеличим отступ слева */
-            width: calc(100% - 45px) !important; /* Учтем отступ в ширине */
-            box-sizing: border-box;
-        }
-        
-        .footer {
-            text-align: center;
-            padding: 20px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
+            padding-left: 35px !important; /* Уменьшен отступ */
+            position: relative;
+            z-index: 2; /* Добавлен z-index */
         }
         .duration-group {
             display: flex;
@@ -517,6 +522,50 @@ scan_html = '''
         .duration-group select {
             flex: 1;
         }
+        .expiration-info {
+            background: #f5f5f5;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 0.95em;
+            border-left: 4px solid #00a046;
+        }
+        .expiration-info.normal {
+            border-left-color: #00a046;
+            background: #e8f5e9;
+        }
+        .expiration-info.warning {
+            border-left-color: #ff9800;
+            background: #fff8e1;
+        }
+        .expiration-info.expired {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .expiration-date {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .days-count {
+            font-size: 0.9em;
+            display: block;
+        }
+        .normal-date {
+            color: #00a046;
+        }
+        .warning-date {
+            color: #ff9800;
+        }
+        .expired-date {
+            color: #f44336;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 <body>
@@ -525,24 +574,6 @@ scan_html = '''
         <h1 class="logo">Вкусвилл</h1>
     </div>
 
-    <style>
-        .back-btn {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-            font-weight: bold;
-            z-index: 10;
-        }
-    
-        .header {
-            position: relative;
-        }
-    </style>
-    
     <div class="container">
         <h1>Сканирование товара</h1>
 
@@ -582,20 +613,26 @@ scan_html = '''
                     <div class="date-input-group">
                         <span class="date-icon">📅</span>
                         <input type="date" name="manufacture_date" id="manufacture_date" style="display: none">
-                        <input type="text" id="manufacture_date_text" placeholder="   дд.мм.гггг" required>
+                        <input type="text" id="manufacture_date_text" class="date-input" placeholder="дд.мм.гггг" required>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label>Срок годности:</label>
                     <div class="duration-group">
-                        <input type="number" name="duration_value" placeholder="Количество" required>
-                        <select name="duration_unit">
+                        <input type="number" name="duration_value" id="duration_value" placeholder="Количество" required>
+                        <select name="duration_unit" id="duration_unit">
                             <option value="days">дней</option>
                             <option value="months">месяцев</option>
                             <option value="years">лет</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- Добавлен блок с информацией о сроке годности -->
+                <div class="expiration-info" id="expiration-info" style="display: none;">
+                    <span class="expiration-date" id="expiration-date-display"></span>
+                    <span class="days-count" id="days-count"></span>
                 </div>
 
                 <button type="submit">Сохранить товар</button>
@@ -776,67 +813,133 @@ scan_html = '''
     </script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const dateField = document.getElementById('manufacture_date');
-        const textField = document.getElementById('manufacture_date_text');
-        
-        textField.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 8) value = value.substr(0, 8);
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateField = document.getElementById('manufacture_date');
+            const textField = document.getElementById('manufacture_date_text');
             
-            let formatted = '';
-            for (let i = 0; i < value.length; i++) {
-                if (i === 2 || i === 4) formatted += '.';
-                formatted += value[i];
-            }
-            e.target.value = formatted;
+            textField.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.substr(0, 8);
+                
+                let formatted = '';
+                for (let i = 0; i < value.length; i++) {
+                    if (i === 2 || i === 4) formatted += '.';
+                    formatted += value[i];
+                }
+                e.target.value = formatted;
+                
+                if (formatted.length === 10) {
+                    const parts = formatted.split('.');
+                    if (parts.length === 3) {
+                        const [day, month, year] = parts;
+                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        calculateExpirationDate(); // Добавлен вызов расчета срока
+                    }
+                }
+            });
+                
+            textField.addEventListener('blur', function() {
+                const value = textField.value;
+                if (value.length > 0 && value.length < 10) {
+                    alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
+                    textField.focus();
+                } else if (value.length === 10) {
+                    const parts = value.split('.');
+                    if (parts.length === 3) {
+                        const [day, month, year] = parts;
+                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        calculateExpirationDate(); // Добавлен вызов расчета срока
+                    }
+                }
+            });
+                
+            textField.addEventListener('keydown', function(e) {
+                if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
+                    (e.keyCode === 65 && e.ctrlKey === true) || 
+                    (e.keyCode === 67 && e.ctrlKey === true) || 
+                    (e.keyCode === 86 && e.ctrlKey === true) || 
+                    (e.keyCode === 88 && e.ctrlKey === true) || 
+                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                    return;
+                }
+                
+                if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                }
+            });
+                
+            scannerForm.addEventListener('submit', function(e) {
+                if (!dateField.value) {
+                    e.preventDefault();
+                    alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
+                    textField.focus();
+                }
+            });
             
-            if (formatted.length === 10) {
-                const parts = formatted.split('.');
-                if (parts.length === 3) {
-                    const [day, month, year] = parts;
-                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            // Функция для расчета даты истечения срока
+            function calculateExpirationDate() {
+                const manufactureDate = document.getElementById('manufacture_date').value;
+                const durationValue = document.getElementById('duration_value').value;
+                const durationUnit = document.getElementById('duration_unit').value;
+                
+                if (manufactureDate && durationValue) {
+                    const [year, month, day] = manufactureDate.split('-');
+                    const mDate = new Date(year, month - 1, day);
+                    
+                    let expDate = new Date(mDate);
+                    const duration = parseInt(durationValue);
+                    
+                    if (durationUnit === 'days') {
+                        expDate.setDate(mDate.getDate() + duration);
+                    } else if (durationUnit === 'months') {
+                        expDate.setMonth(mDate.getMonth() + duration);
+                    } else if (durationUnit === 'years') {
+                        expDate.setFullYear(mDate.getFullYear() + duration);
+                    }
+                    
+                    // Форматируем дату для отображения
+                    const formattedDate = `Годен до: ${expDate.getDate().toString().padStart(2, '0')}.${(expDate.getMonth() + 1).toString().padStart(2, '0')}.${expDate.getFullYear()}`;
+                    
+                    // Рассчитываем оставшиеся дни
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const diffTime = expDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    // Устанавливаем стиль в зависимости от срока
+                    const expirationInfo = document.getElementById('expiration-info');
+                    const dateDisplay = document.getElementById('expiration-date-display');
+                    const daysCount = document.getElementById('days-count');
+                    
+                    expirationInfo.style.display = 'block';
+                    dateDisplay.textContent = formattedDate;
+                    
+                    if (diffDays < 0) {
+                        // Просрочено
+                        expirationInfo.className = 'expiration-info expired';
+                        dateDisplay.className = 'expiration-date expired-date';
+                        daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн. назад`;
+                        daysCount.className = 'days-count expired-date';
+                    } else if (diffDays <= 10) {
+                        // Осталось мало дней
+                        expirationInfo.className = 'expiration-info warning';
+                        dateDisplay.className = 'expiration-date warning-date';
+                        daysCount.textContent = `Осталось ${diffDays} дн.`;
+                        daysCount.className = 'days-count warning-date';
+                    } else {
+                        // Нормальный срок
+                        expirationInfo.className = 'expiration-info normal';
+                        dateDisplay.className = 'expiration-date normal-date';
+                        daysCount.textContent = `Осталось ${diffDays} дн.`;
+                        daysCount.className = 'days-count normal-date';
+                    }
                 }
             }
-        });
             
-        textField.addEventListener('blur', function() {
-            const value = textField.value;
-            if (value.length > 0 && value.length < 10) {
-                alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
-                textField.focus();
-            } else if (value.length === 10) {
-                const parts = value.split('.');
-                if (parts.length === 3) {
-                    const [day, month, year] = parts;
-                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                }
-            }
+            // Слушатели изменений для полей срока годности
+            document.getElementById('duration_value').addEventListener('input', calculateExpirationDate);
+            document.getElementById('duration_unit').addEventListener('change', calculateExpirationDate);
         });
-            
-        textField.addEventListener('keydown', function(e) {
-            if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
-                (e.keyCode === 65 && e.ctrlKey === true) || 
-                (e.keyCode === 67 && e.ctrlKey === true) || 
-                (e.keyCode === 86 && e.ctrlKey === true) || 
-                (e.keyCode === 88 && e.ctrlKey === true) || 
-                (e.keyCode >= 35 && e.keyCode <= 39)) {
-                return;
-            }
-            
-            if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
-                e.preventDefault();
-            }
-        });
-            
-        scannerForm.addEventListener('submit', function(e) {
-            if (!dateField.value) {
-                e.preventDefault();
-                alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
-                textField.focus();
-            }
-        });
-    });
     </script>
 </body>
 </html>
