@@ -23,12 +23,26 @@ index_html = '''
             padding: 15px 20px;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
         }
         .logo {
             font-weight: 700;
             font-size: 1.8em;
             margin: 0;
             color: #ffffff;
+            flex-grow: 1;
+            text-align: center;
+        }
+        .filter-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px 10px;
         }
         .container {
             max-width: 100%;
@@ -40,75 +54,6 @@ index_html = '''
             margin-bottom: 10px;
             text-align: center;
             color: #00a046;
-        }
-
-        .filter-block {
-            background: #fff;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-
-        .date-filter-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-
-        .date-input {
-            flex: 1;
-            min-width: 120px;
-            padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 0.95em;
-            text-align: center;
-        }
-
-        .filter-btn,
-        .reset-btn {
-            padding: 10px 14px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.95em;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-        }
-
-        .filter-btn {
-            background: #00a046;
-            color: white;
-        }
-
-        .reset-btn {
-            background: #e0e0e0;
-            color: #333;
-        }
-
-        .quick-btns {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .quick-btns a {
-            padding: 6px 12px;
-            font-size: 0.9em;
-            background: #e8f5e9;
-            color: #2e7d32;
-            border-radius: 16px;
-            text-decoration: none;
-            border: 1px solid #c8e6c9;
-        }
-
-        .quick-btns a:hover {
-            background: #c8e6c9;
         }
 
         .search-container {
@@ -177,10 +122,23 @@ index_html = '''
             padding-right: 50px;
         }
 
-        .item.expired { background-color: #ffebee; border-left: 4px solid #f44336; }
-        .item.warning { background-color: #fff8e1; border-left: 4px solid #ffc107; }
-        .item.soon { background-color: #e8f5e9; border-left: 4px solid #4caf50; }
-        .item.normal { background-color: white; border-left: 4px solid #e0e0e0; }
+        /* Цветовые статусы для товаров */
+        .item.expired { 
+            background-color: #ffebee; 
+            border-left: 4px solid #f44336; 
+        }
+        .item.warning { 
+            background-color: #fff3e0; 
+            border-left: 4px solid #ff9800; 
+        }
+        .item.soon { 
+            background-color: #fff8e1; 
+            border-left: 4px solid #ffc107; 
+        }
+        .item.normal { 
+            background-color: #e8f5e9; 
+            border-left: 4px solid #4caf50; 
+        }
 
         .item-info {
             flex-grow: 1;
@@ -225,9 +183,9 @@ index_html = '''
         }
 
         .expired-badge { background: #ffcdd2; color: #c62828; }
-        .warning-badge { background: #ffecb3; color: #ff8f00; }
-        .soon-badge { background: #c8e6c9; color: #2e7d32; }
-        .normal-badge { background: #e0e0e0; color: #424242; }
+        .warning-badge { background: #ffe0b2; color: #e65100; }
+        .soon-badge { background: #fff59d; color: #f57f17; }
+        .normal-badge { background: #c8e6c9; color: #2e7d32; }
 
         .no-items {
             text-align: center;
@@ -243,30 +201,148 @@ index_html = '''
             font-size: 0.85em;
             margin-top: 10px;
         }
+
+        /* Модальное окно фильтров */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 1.3em;
+            font-weight: 500;
+            color: #00a046;
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #757575;
+        }
+
+        .filter-block {
+            margin-bottom: 20px;
+        }
+
+        .date-filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .date-input {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 0.95em;
+            text-align: center;
+        }
+
+        .apply-btn, .reset-btn {
+            padding: 12px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 1em;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .apply-btn {
+            background: #00a046;
+            color: white;
+        }
+
+        .reset-btn {
+            background: #e0e0e0;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .quick-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .quick-btn {
+            padding: 10px 15px;
+            font-size: 0.9em;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 8px;
+            text-decoration: none;
+            border: 1px solid #c8e6c9;
+            flex: 1;
+            min-width: calc(50% - 10px);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #c8e6c9;
+        }
+
+        .quick-btn.active {
+            background: #00a046;
+            color: white;
+            border-color: #00a046;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1 class="logo">Вкусвилл</h1>
+        <button class="filter-btn" id="open-filter-modal">☰</button>
     </div>
 
     <div class="container">
         <h1>Товары с истекающим сроком</h1>
-
-        <form method="get" class="filter-block">
-            <div class="date-filter-group">
-                <input type="text" id="from_date_text" name="from_date" placeholder="От (дд.мм.гггг)" value="{{ from_date or '' }}" class="date-input">
-                <input type="text" id="to_date_text" name="to_date" placeholder="До (дд.мм.гггг)" value="{{ to_date or '' }}" class="date-input">
-                <button type="submit" class="filter-btn">Фильтр</button>
-                <a href="/" class="reset-btn">Сброс</a>
-            </div>
-
-            <div class="quick-btns">
-                <a href="/?days_left=1">1 день</a>
-                <a href="/?days_left=2">1–2 дня</a>
-                <a href="/?days_left=5">1–5 дней</a>
-            </div>
-        </form>
 
         <div class="search-container">
             <span class="search-icon">🔍</span>
@@ -323,6 +399,35 @@ index_html = '''
         Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
 
+    <!-- Модальное окно фильтров -->
+    <div class="modal-overlay" id="filter-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Фильтры</h3>
+                <button class="close-modal" id="close-filter-modal">×</button>
+            </div>
+            
+            <form id="filter-form" method="get">
+                <div class="filter-block">
+                    <div class="date-filter-group">
+                        <input type="text" id="from_date_text" name="from_date" placeholder="От (дд.мм.гггг)" value="{{ from_date or '' }}" class="date-input">
+                        <input type="text" id="to_date_text" name="to_date" placeholder="До (дд.мм.гггг)" value="{{ to_date or '' }}" class="date-input">
+                    </div>
+                    
+                    <div class="quick-btns">
+                        <a href="/?days_left=1" class="quick-btn {% if request.args.get('days_left') == '1' %}active{% endif %}">1 день</a>
+                        <a href="/?days_left=2" class="quick-btn {% if request.args.get('days_left') == '2' %}active{% endif %}">1-2 дня</a>
+                        <a href="/?days_left=5" class="quick-btn {% if request.args.get('days_left') == '5' %}active{% endif %}">1-5 дней</a>
+                        <a href="/" class="quick-btn">Все</a>
+                    </div>
+                    
+                    <button type="submit" class="apply-btn">Применить</button>
+                    <a href="/" class="reset-btn">Сбросить фильтры</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function setupDateInput(id) {
             const input = document.getElementById(id);
@@ -345,10 +450,31 @@ index_html = '''
             });
         }
 
+        // Управление модальным окном
         document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('filter-modal');
+            const openBtn = document.getElementById('open-filter-modal');
+            const closeBtn = document.getElementById('close-filter-modal');
+            
+            openBtn.addEventListener('click', () => {
+                modal.style.display = 'flex';
+            });
+            
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            // Настройка полей ввода дат
             setupDateInput('from_date_text');
             setupDateInput('to_date_text');
 
+            // Поиск по товарам
             const searchInput = document.getElementById('search-input');
             const itemsContainer = document.getElementById('items-container');
             const originalHTML = itemsContainer.innerHTML;
