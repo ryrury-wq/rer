@@ -9,9 +9,9 @@ index_html = '''
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
-        body { 
-            font-family: 'Roboto', Arial, sans-serif; 
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f8f9fa;
@@ -23,25 +23,11 @@ index_html = '''
             padding: 15px 20px;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: relative;
         }
         .logo {
             font-weight: 700;
             font-size: 1.8em;
-            letter-spacing: 0.5px;
             margin: 0;
-            color: white;
-        }
-        .back-btn {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-            font-weight: bold;
-            z-index: 10;
         }
         .container {
             max-width: 100%;
@@ -57,8 +43,6 @@ index_html = '''
             border-radius: 24px;
             border: 1px solid #e0e0e0;
             font-size: 1em;
-            box-sizing: border-box;
-            background-color: white;
         }
         .search-icon {
             position: absolute;
@@ -70,32 +54,29 @@ index_html = '''
         .items-container {
             max-height: 55vh;
             overflow-y: auto;
-            border-radius: 8px;
             padding: 10px;
-            margin-top: 10px;
             background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .item { 
-            padding: 15px; 
-            border-bottom: 1px solid #eee;
             border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-top: 10px;
+        }
+        .item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
             margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.2s;
             position: relative;
-            padding-right: 50px;
+            border-left: 4px solid transparent;
         }
-        .item:hover {
-            box-shadow: 0 2px 6px rgba(0,160,70,0.15);
-            transform: translateY(-2px);
-        }
-        .item-info { 
-            flex-grow: 1; 
+        .item.expired { background: #ffebee; border-left-color: #f44336; }
+        .item.warning { background: #fff8e1; border-left-color: #ffc107; }
+        .item.soon { background: #e8f5e9; border-left-color: #4caf50; }
+        .item.normal { background: #ffffff; border-left-color: #e0e0e0; }
+
+        .item-info {
             max-width: calc(100% - 50px);
-            word-wrap: break-word;
         }
         .item-actions {
             position: absolute;
@@ -110,105 +91,109 @@ index_html = '''
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: #f0f0f0;
-            color: #333;
             border: none;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .move-btn { 
-            background: #00a046;
-            color: white;
-        }
-        .edit-btn { 
-            background: #ffc107;
-            color: #333;
-        }
-        .delete-btn { 
-            background: #f44336;
-            color: white;
-        }
-        .expired { 
-            background-color: #ffebee;
-            border-left: 4px solid #f44336;
-        }
-        .warning { 
-            background-color: #fff8e1;
-            border-left: 4px solid #ffc107;
-        }
-        .soon { 
-            background-color: #e8f5e9;
-            border-left: 4px solid #4caf50;
-        }
-        .normal { 
-            background-color: white;
-            border-left: 4px solid #e0e0e0;
-        }
+        .move-btn { background: #00a046; color: white; }
+        .edit-btn { background: #ffc107; color: #333; }
+        .delete-btn { background: #f44336; color: white; }
+
         .nav-links {
             display: flex;
-            flex-wrap: wrap;
             gap: 10px;
-            margin: 15px 0;
-            justify-content: center;
+            margin: 10px 0 15px;
+            flex-wrap: wrap;
         }
         .nav-links a {
             padding: 12px 20px;
             background: #00a046;
+            color: white;
             border-radius: 24px;
             text-decoration: none;
-            color: white;
-            font-weight: 500;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-            text-align: center;
             flex: 1;
-            min-width: calc(50% - 10px);
-            box-sizing: border-box;
-        }
-        .nav-links .full-width {
-            flex: 0 0 100%;
-            min-width: 100%;
+            min-width: calc(33.3% - 10px);
+            text-align: center;
         }
         .nav-links a:hover {
             background: #008c3a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
-        h1 {
-            font-size: 1.5em;
-            margin: 0 0 10px 0;
+
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+            justify-content: center;
+        }
+        .quick-filters a {
+            padding: 8px 16px;
+            background: #e0f2f1;
+            color: #00796b;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9em;
+            border: 1px solid #b2dfdb;
+        }
+        .quick-filters a:hover {
+            background: #b2dfdb;
+        }
+
+        .filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .filter-form input[type="date"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .filter-form button,
+        .filter-form a {
+            padding: 10px;
+            border-radius: 8px;
             text-align: center;
-            color: #00a046;
+            text-decoration: none;
             font-weight: 500;
         }
-        .footer {
-            text-align: center;
-            padding: 20px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
-            margin-top: 10px;
+        .filter-form button {
+            background: #00a046;
+            color: white;
+            border: none;
         }
+        .filter-form a {
+            background: #ccc;
+            color: black;
+        }
+
         .badge {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
+            padding: 4px 8px;
             font-size: 0.8em;
-            font-weight: 500;
+            border-radius: 12px;
             margin-top: 5px;
         }
         .expired-badge { background: #ffcdd2; color: #c62828; }
         .warning-badge { background: #ffecb3; color: #ff8f00; }
         .soon-badge { background: #c8e6c9; color: #2e7d32; }
         .normal-badge { background: #e0e0e0; color: #424242; }
+
+        .footer {
+            text-align: center;
+            padding: 20px 10px;
+            color: #757575;
+            font-size: 0.85em;
+        }
         .no-items {
             text-align: center;
-            padding: 30px;
-            color: #9e9e9e;
-            font-style: italic;
+            color: #aaa;
+            padding: 30px 0;
         }
     </style>
 </head>
@@ -216,100 +201,101 @@ index_html = '''
     <div class="header">
         <h1 class="logo">Вкусвилл</h1>
     </div>
-    
+
     <div class="container">
         <h1>Товары с истекающим сроком</h1>
-        
+
         <div class="search-container">
             <span class="search-icon">🔍</span>
             <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или штрих-коду...">
         </div>
-        
+
+        <form class="filter-form" method="get">
+            <input type="date" name="from_date" value="{{ from_date or '' }}">
+            <input type="date" name="to_date" value="{{ to_date or '' }}">
+            <button type="submit">Фильтр</button>
+            <a href="/">Сбросить</a>
+        </form>
+
+        <div class="quick-filters">
+            <a href="/?days_left=1">Остался 1 день</a>
+            <a href="/?days_left=2">Осталось 1–2 дня</a>
+            <a href="/?days_left=5">Осталось 1–5 дней</a>
+        </div>
+
         <div class="nav-links">
             <a href="/scan">Сканировать</a>
             <a href="/history">История</a>
-            <a href="/assortment" class="full-width">Ассортимент</a>
+            <a href="/assortment">Ассортимент</a>
         </div>
-        
+
         <div class="items-container" id="items-container">
             {% for item in items %}
                 <div class="item {{ item.status }}">
                     <div class="item-info">
-                        <strong>{{ item.name }}</strong> 
-                        <div style="font-size:0.9em; color:#666; margin-top:3px">{{ item.barcode }}</div>
-                        <div>Годен до: {{ item.expiration_date }}</div>
-                        
+                        <strong>{{ item.name }}</strong><br>
+                        <small>{{ item.barcode }}</small><br>
+                        Годен до: {{ item.expiration_date }}<br>
+
                         {% if item.status == "expired" %}
-                            <div class="badge expired-badge">Просрочено: {{ item.days_since_expiry }} дн.</div>
+                            <span class="badge expired-badge">Просрочено: {{ item.days_since_expiry }} дн.</span>
                         {% elif item.status == "warning" %}
-                            <div class="badge warning-badge">Истекает сегодня!</div>
+                            <span class="badge warning-badge">Истекает сегодня</span>
                         {% elif item.status == "soon" %}
-                            <div class="badge soon-badge">Истекает через: {{ item.days_until_expiry }} дн.</div>
+                            <span class="badge soon-badge">Истекает через {{ item.days_until_expiry }} дн.</span>
                         {% else %}
-                            <div class="badge normal-badge">До истечения: {{ item.days_until_expiry }} дн.</div>
+                            <span class="badge normal-badge">До окончания: {{ item.days_until_expiry }} дн.</span>
                         {% endif %}
-                        
-                        <div style="font-size:0.85em; margin-top:5px; color:#757575">
-                            Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
-                        </div>
+
+                        <br><small>Удаление через: {{ item.days_until_removal }} дн. ({{ item.removal_date }})</small>
                     </div>
                     <div class="item-actions">
-                        <form action="/move_to_history" method="POST">
+                        <form method="POST" action="/move_to_history">
                             <input type="hidden" name="batch_id" value="{{ item.id }}">
-                            <button type="submit" class="action-btn move-btn" title="Переместить в историю">→</button>
+                            <button class="action-btn move-btn">→</button>
                         </form>
-                        <a href="/edit_batch?batch_id={{ item.id }}" class="action-btn edit-btn" title="Редактировать">✎</a>
-                        <form action="/delete_batch" method="POST">
+                        <a href="/edit_batch?batch_id={{ item.id }}" class="action-btn edit-btn">✎</a>
+                        <form method="POST" action="/delete_batch">
                             <input type="hidden" name="batch_id" value="{{ item.id }}">
-                            <button type="submit" class="action-btn delete-btn" title="Удалить">🗑</button>
+                            <button class="action-btn delete-btn">🗑</button>
                         </form>
                     </div>
                 </div>
             {% else %}
-                <div class="no-items">
-                    Нет товаров с истекающим сроком
-                </div>
+                <div class="no-items">Нет товаров с истекающим сроком</div>
             {% endfor %}
         </div>
     </div>
-    
+
     <div class="footer">
         Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('search-input');
             const itemsContainer = document.getElementById('items-container');
-            const originalItems = itemsContainer.innerHTML;
-            
-            searchInput.addEventListener('input', function() {
-                const searchTerm = searchInput.value.toLowerCase().trim();
-                
-                if (!searchTerm) {
-                    itemsContainer.innerHTML = originalItems;
-                    return;
-                }
-                
+            const allItemsHTML = itemsContainer.innerHTML;
+
+            searchInput.addEventListener('input', () => {
+                const term = searchInput.value.toLowerCase();
                 const items = itemsContainer.querySelectorAll('.item');
-                let hasVisibleItems = false;
-                let visibleItemsHTML = '';
-                
+
+                let found = false;
                 items.forEach(item => {
-                    const itemText = item.textContent.toLowerCase();
-                    if (itemText.includes(searchTerm)) {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(term)) {
                         item.style.display = 'flex';
-                        hasVisibleItems = true;
-                        visibleItemsHTML += item.outerHTML;
+                        found = true;
                     } else {
                         item.style.display = 'none';
                     }
                 });
-                
-                if (!hasVisibleItems) {
-                    itemsContainer.innerHTML = `<div class="no-items">
-                        Ничего не найдено по запросу: "${searchTerm}"
-                    </div>`;
+
+                if (!found) {
+                    itemsContainer.innerHTML = `<div class="no-items">Ничего не найдено по запросу: "${term}"</div>`;
+                } else if (!term) {
+                    itemsContainer.innerHTML = allItemsHTML;
                 }
             });
         });
