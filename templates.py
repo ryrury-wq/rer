@@ -1126,9 +1126,6 @@ add_batch_html = '''
             border-radius: 8px 8px 0 0;
             font-size: 0.95em;
             border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         .expiration-box.normal {
             background: #e8f5e9;
@@ -1144,14 +1141,14 @@ add_batch_html = '''
         }
         .expiration-date {
             font-weight: 500;
-            margin-right: 15px;
-            white-space: nowrap;
+            display: block;
+            margin-bottom: 5px;
+            word-break: break-word;
         }
         .days-count {
             font-size: 0.9em;
-            white-space: nowrap;
-            text-align: right;
-            min-width: 110px;
+            display: block;
+            word-break: break-word;
         }
         .normal-date {
             color: #00a046;
@@ -1312,7 +1309,7 @@ add_batch_html = '''
                     const dateDisplay = document.getElementById('expiration-date-display');
                     const daysCount = document.getElementById('days-count');
                     
-                    expirationBox.style.display = 'flex';
+                    expirationBox.style.display = 'block';
                     dateDisplay.textContent = formattedDate;
                     
                     if (diffDays < 0) {
