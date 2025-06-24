@@ -343,18 +343,6 @@ scan_html = '''
             color: white;
             padding: 15px 20px;
             text-align: center;
-            position: relative;
-        }
-        .back-btn {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-            font-weight: bold;
-            z-index: 10;
         }
         .logo {
             font-weight: 700;
@@ -466,9 +454,6 @@ scan_html = '''
             border-color: #00a046;
             box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
         }
-        .button-container {
-            margin-top: 20px;
-        }
         button[type="submit"] {
             background: #00a046;
             color: white;
@@ -478,9 +463,7 @@ scan_html = '''
             padding: 16px;
             cursor: pointer;
             transition: all 0.2s;
-            border-radius: 0 0 8px 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 0;
         }
         button[type="submit"]:hover {
             background: #008c3a;
@@ -498,7 +481,7 @@ scan_html = '''
             border-bottom: 1px dashed #00a046;
             padding-bottom: 2px;
         }
-        .date-input-group {
+         .date-input-group {
             position: relative;
         }
         .date-icon {
@@ -509,12 +492,19 @@ scan_html = '''
             color: #757575;
             pointer-events: none;
             font-size: 1.2em;
-            z-index: 2;
+            z-index: 2; /* Убедимся, что иконка поверх других элементов */
         }
         .date-input {
-            padding-left: 45px !important;
-            position: relative;
-            z-index: 1;
+            padding-left: 45px !important; /* Увеличим отступ слева */
+            width: calc(100% - 45px) !important; /* Учтем отступ в ширине */
+            box-sizing: border-box;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
         }
         .duration-group {
             display: flex;
@@ -526,49 +516,6 @@ scan_html = '''
         .duration-group select {
             flex: 1;
         }
-        .expiration-box {
-            background: #f5f5f5;
-            padding: 12px 15px;
-            font-size: 0.95em;
-            border-radius: 8px 8px 0 0;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .expiration-box.normal {
-            background: #e8f5e9;
-            border-left: 4px solid #00a046;
-        }
-        .expiration-box.warning {
-            background: #fff8e1;
-            border-left: 4px solid #ff9800;
-        }
-        .expiration-box.expired {
-            background: #ffebee;
-            border-left: 4px solid #f44336;
-        }
-        .expiration-date {
-            font-weight: 500;
-            display: block;
-            margin-bottom: 5px;
-        }
-        .days-count {
-            font-size: 0.9em;
-            display: block;
-        }
-        .normal-date {
-            color: #00a046;
-        }
-        .warning-date {
-            color: #ff9800;
-        }
-        .expired-date {
-            color: #f44336;
-        }
-        .footer {
-            text-align: center;
-            padding: 20px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
-        }
     </style>
 </head>
 <body>
@@ -577,6 +524,24 @@ scan_html = '''
         <h1 class="logo">Вкусвилл</h1>
     </div>
 
+    <style>
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
+        }
+    
+        .header {
+            position: relative;
+        }
+    </style>
+    
     <div class="container">
         <h1>Сканирование товара</h1>
 
@@ -616,15 +581,15 @@ scan_html = '''
                     <div class="date-input-group">
                         <span class="date-icon">📅</span>
                         <input type="date" name="manufacture_date" id="manufacture_date" style="display: none">
-                        <input type="text" id="manufacture_date_text" class="date-input" placeholder="дд.мм.гггг" required>
+                        <input type="text" id="manufacture_date_text" placeholder="   дд.мм.гггг" required>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label>Срок годности:</label>
                     <div class="duration-group">
-                        <input type="number" name="duration_value" id="duration_value" placeholder="Количество" required>
-                        <select name="duration_unit" id="duration_unit">
+                        <input type="number" name="duration_value" placeholder="Количество" required>
+                        <select name="duration_unit">
                             <option value="days">дней</option>
                             <option value="months">месяцев</option>
                             <option value="years">лет</option>
@@ -632,13 +597,7 @@ scan_html = '''
                     </div>
                 </div>
 
-                <div class="button-container">
-                    <div class="expiration-box" id="expiration-box" style="display: none;">
-                        <span class="expiration-date" id="expiration-date-display"></span>
-                        <span class="days-count" id="days-count"></span>
-                    </div>
-                    <button type="submit">Сохранить товар</button>
-                </div>
+                <button type="submit">Сохранить товар</button>
             </form>
         </div>
     </div>
@@ -647,345 +606,241 @@ scan_html = '''
         Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Инициализация сканера
-            if (typeof BrowserMultiFormatReader !== 'undefined') {
-                const codeReader = new BrowserMultiFormatReader();
-                const video = document.getElementById('video');
-                const barcodeInput = document.getElementById('barcode');
-                const cameraError = document.getElementById('camera-error');
-                const restartBtn = document.getElementById('restart-btn');
-                const torchBtn = document.getElementById('torch-btn');
-                const beepSound = document.getElementById('beep');
-                const manualInputLink = document.getElementById('manual-input-link');
-                const scannerForm = document.getElementById('scanner-form');
-                
-                let currentStream = null;
-                let scannerActive = true;
-                let torchOn = false;
-                let lastScanTime = 0;
-                const SCAN_COOLDOWN = 2000;
-                
-                function stopCurrentStream() {
-                    if (currentStream) {
-                        currentStream.getTracks().forEach(track => {
-                            if (track.kind === 'video' && torchOn) {
-                                track.applyConstraints({ advanced: [{ torch: false }] });
-                            }
-                            track.stop();
-                        });
-                        currentStream = null;
-                        torchOn = false;
-                        if (torchBtn) torchBtn.textContent = 'Фонарик';
-                    }
-                }
-                
-                async function startCamera() {
-                    try {
-                        stopCurrentStream();
-                        
-                        const constraints = {
-                            video: {
-                                facingMode: 'environment',
-                                width: { ideal: 1280 },
-                                height: { ideal: 720 },
-                                focusMode: 'continuous'
-                            }
-                        };
-                        
-                        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                        if (video) {
-                            video.srcObject = currentStream;
-                            video.style.display = 'block';
-                        }
-                        
-                        if (cameraError) cameraError.style.display = 'none';
-                        
-                        checkTorchSupport();
-                        startScanner();
-                    } catch (err) {
-                        console.error("Ошибка доступа к камере:", err);
-                        showCameraError();
-                    }
-                }
-                
-                function checkTorchSupport() {
-                    if (torchBtn) torchBtn.style.display = 'none';
-                    if (currentStream) {
-                        const track = currentStream.getVideoTracks()[0];
-                        if (track && track.getCapabilities().torch) {
-                            if (torchBtn) torchBtn.style.display = 'block';
-                        }
-                    }
-                }
-                
-                async function toggleTorch() {
-                    if (!currentStream) return;
-                    
-                    const track = currentStream.getVideoTracks()[0];
-                    if (!track || !track.getCapabilities().torch) return;
-                    
-                    try {
-                        await track.applyConstraints({
-                            advanced: [{ torch: !torchOn }]
-                        });
-                        torchOn = !torchOn;
-                        if (torchBtn) torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
-                    } catch (err) {
-                        console.error("Ошибка переключения фонарика:", err);
-                    }
-                }
-                
-                function startScanner() {
-                    if (!scannerActive || !codeReader) return;
-                    
-                    codeReader.decodeFromVideoElement(video, (result, err) => {
-                        if (!scannerActive) return;
-                        
-                        const now = Date.now();
-                        if (now - lastScanTime < SCAN_COOLDOWN) return;
-                        
-                        if (result) {
-                            lastScanTime = now;
-                            
-                            if (beepSound) {
-                                beepSound.currentTime = 0;
-                                beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
-                            }
-                            
-                            if (barcodeInput) {
-                                barcodeInput.value = result.text;
-                                if (document.getElementById('name')) {
-                                    document.getElementById('name').focus();
-                                }
-                                
-                                fetch(`/get-product-name?barcode=${result.text}`)
-                                    .then(res => res.json())
-                                    .then(data => {
-                                        if (data.found && document.getElementById('name')) {
-                                            document.getElementById('name').value = data.name;
-                                        }
-                                    });
-                            }
-                        }
-                    });
-                }
-                
-                function stopScanner() {
-                    scannerActive = false;
-                    if (codeReader) codeReader.reset();
-                }
-                
-                function showCameraError() {
-                    if (cameraError) cameraError.style.display = 'block';
-                    if (video) video.style.display = 'none';
-                    if (barcodeInput) {
-                        barcodeInput.removeAttribute('readonly');
-                        barcodeInput.placeholder = "Введите штрих-код вручную";
-                    }
-                }
-                
-                if (restartBtn) {
-                    restartBtn.addEventListener('click', () => {
-                        startCamera();
-                    });
-                }
-                
-                if (torchBtn) {
-                    torchBtn.addEventListener('click', toggleTorch);
-                }
-                
-                if (manualInputLink) {
-                    manualInputLink.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        if (barcodeInput) {
-                            barcodeInput.removeAttribute('readonly');
-                            barcodeInput.focus();
-                            barcodeInput.placeholder = "Введите штрих-код вручную";
-                        }
-                    });
-                }
-                
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        stopScanner();
-                    } else {
-                        scannerActive = true;
-                        startScanner();
-                    }
-                });
-                
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    showCameraError();
-                    if (cameraError) cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
-                } else {
-                    startCamera();
-                }
-                
-                if (scannerForm) {
-                    scannerForm.addEventListener('submit', (e) => {
-                        if (barcodeInput && !barcodeInput.value) {
-                            e.preventDefault();
-                            alert("Пожалуйста, введите или отсканируйте штрих-код");
-                            barcodeInput.focus();
-                        }
-                    });
-                }
-            }
+    <script type="module">
+        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
 
-            // Обработка даты и срока годности
-            const dateField = document.getElementById('manufacture_date');
-            const textField = document.getElementById('manufacture_date_text');
-            const durationValue = document.getElementById('duration_value');
-            const durationUnit = document.getElementById('duration_unit');
-            
-            if (textField) {
-                textField.addEventListener('input', function(e) {
-                    let value = e.target.value.replace(/\D/g, '');
-                    if (value.length > 8) value = value.substr(0, 8);
-                    
-                    let formatted = '';
-                    for (let i = 0; i < value.length; i++) {
-                        if (i === 2 || i === 4) formatted += '.';
-                        formatted += value[i];
+        const codeReader = new BrowserMultiFormatReader();
+        const video = document.getElementById('video');
+        const barcodeInput = document.getElementById('barcode');
+        const cameraError = document.getElementById('camera-error');
+        const restartBtn = document.getElementById('restart-btn');
+        const torchBtn = document.getElementById('torch-btn');
+        const beepSound = document.getElementById('beep');
+        const manualInputLink = document.getElementById('manual-input-link');
+        const scannerForm = document.getElementById('scanner-form');
+        
+        let currentStream = null;
+        let scannerActive = true;
+        let torchOn = false;
+        let lastScanTime = 0;
+        const SCAN_COOLDOWN = 2000;
+        
+        function stopCurrentStream() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => {
+                    if (track.kind === 'video' && torchOn) {
+                        track.applyConstraints({ advanced: [{ torch: false }] });
                     }
-                    e.target.value = formatted;
-                    
-                    if (formatted.length === 10) {
-                        const parts = formatted.split('.');
-                        if (parts.length === 3) {
-                            const [day, month, year] = parts;
-                            if (dateField) dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                            calculateExpirationDate();
-                        }
-                    }
+                    track.stop();
                 });
-                    
-                textField.addEventListener('blur', function() {
-                    const value = textField.value;
-                    if (value.length > 0 && value.length < 10) {
-                        alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
-                        textField.focus();
-                    } else if (value.length === 10) {
-                        const parts = value.split('.');
-                        if (parts.length === 3) {
-                            const [day, month, year] = parts;
-                            if (dateField) dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                            calculateExpirationDate();
-                        }
-                    }
-                });
-                    
-                textField.addEventListener('keydown', function(e) {
-                    if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
-                        (e.keyCode === 65 && e.ctrlKey === true) || 
-                        (e.keyCode === 67 && e.ctrlKey === true) || 
-                        (e.keyCode === 86 && e.ctrlKey === true) || 
-                        (e.keyCode === 88 && e.ctrlKey === true) || 
-                        (e.keyCode >= 35 && e.keyCode <= 39)) {
-                        return;
-                    }
-                    
-                    if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
-                        e.preventDefault();
-                    }
-                });
+                currentStream = null;
+                torchOn = false;
+                torchBtn.textContent = 'Фонарик';
             }
-            
-            if (scannerForm) {
-                scannerForm.addEventListener('submit', function(e) {
-                    if (dateField && !dateField.value) {
-                        e.preventDefault();
-                        alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
-                        if (textField) textField.focus();
-                    }
-                });
-            }
-            
-            // Функция для расчета даты истечения срока
-            function calculateExpirationDate() {
-                const manufactureDate = dateField ? dateField.value : '';
-                const durationVal = durationValue ? durationValue.value : '';
-                const durationUnt = durationUnit ? durationUnit.value : 'days';
+        }
+        
+        async function startCamera() {
+            try {
+                stopCurrentStream();
                 
-                if (manufactureDate && durationVal) {
-                    const [year, month, day] = manufactureDate.split('-');
-                    const mDate = new Date(year, month - 1, day);
-                    
-                    let expDate = new Date(mDate);
-                    const duration = parseInt(durationVal);
-                    
-                    if (durationUnt === 'days') {
-                        expDate.setDate(mDate.getDate() + duration);
-                    } else if (durationUnt === 'months') {
-                        expDate.setMonth(mDate.getMonth() + duration);
-                    } else if (durationUnt === 'years') {
-                        expDate.setFullYear(mDate.getFullYear() + duration);
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        focusMode: 'continuous'
                     }
-                    
-                    // Форматируем дату для отображения
-                    const formattedDate = `Годен до: ${expDate.getDate().toString().padStart(2, '0')}.${(expDate.getMonth() + 1).toString().padStart(2, '0')}.${expDate.getFullYear()}`;
-                    
-                    // Рассчитываем оставшиеся дни
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const diffTime = expDate - today;
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
-                    // Устанавливаем стиль в зависимости от срока
-                    const expirationBox = document.getElementById('expiration-box');
-                    const dateDisplay = document.getElementById('expiration-date-display');
-                    const daysCount = document.getElementById('days-count');
-                    
-                    if (expirationBox) expirationBox.style.display = 'block';
-                    if (dateDisplay) dateDisplay.textContent = formattedDate;
-                    
-                    if (diffDays < 0) {
-                        // Просрочено
-                        if (expirationBox) expirationBox.className = 'expiration-box expired';
-                        if (dateDisplay) dateDisplay.className = 'expiration-date expired-date';
-                        if (daysCount) {
-                            daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн. назад`;
-                            daysCount.className = 'days-count expired-date';
-                        }
-                    } else if (diffDays <= 10) {
-                        // Осталось мало дней
-                        if (expirationBox) expirationBox.className = 'expiration-box warning';
-                        if (dateDisplay) dateDisplay.className = 'expiration-date warning-date';
-                        if (daysCount) {
-                            daysCount.textContent = `Осталось ${diffDays} дн.`;
-                            daysCount.className = 'days-count warning-date';
-                        }
-                    } else {
-                        // Нормальный срок
-                        if (expirationBox) expirationBox.className = 'expiration-box normal';
-                        if (dateDisplay) dateDisplay.className = 'expiration-date normal-date';
-                        if (daysCount) {
-                            daysCount.textContent = `Осталось ${diffDays} дн.`;
-                            daysCount.className = 'days-count normal-date';
-                        }
-                    }
+                };
+                
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+                
+                cameraError.style.display = 'none';
+                video.style.display = 'block';
+                
+                checkTorchSupport();
+                startScanner();
+            } catch (err) {
+                console.error("Ошибка доступа к камере:", err);
+                showCameraError();
+            }
+        }
+        
+        function checkTorchSupport() {
+            torchBtn.style.display = 'none';
+            if (currentStream) {
+                const track = currentStream.getVideoTracks()[0];
+                if (track && track.getCapabilities().torch) {
+                    torchBtn.style.display = 'block';
                 }
             }
+        }
+        
+        async function toggleTorch() {
+            if (!currentStream) return;
             
-            // Слушатели изменений для полей срока годности
-            if (durationValue) {
-                durationValue.addEventListener('input', calculateExpirationDate);
-            }
-            if (durationUnit) {
-                durationUnit.addEventListener('change', calculateExpirationDate);
-            }
+            const track = currentStream.getVideoTracks()[0];
+            if (!track || !track.getCapabilities().torch) return;
             
-            // Инициализируем расчет при загрузке, если есть значения
-            setTimeout(calculateExpirationDate, 100);
+            try {
+                await track.applyConstraints({
+                    advanced: [{ torch: !torchOn }]
+                });
+                torchOn = !torchOn;
+                torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
+            } catch (err) {
+                console.error("Ошибка переключения фонарика:", err);
+            }
+        }
+        
+        function startScanner() {
+            if (!scannerActive) return;
+            
+            codeReader.decodeFromVideoElement(video, (result, err) => {
+                if (!scannerActive) return;
+                
+                const now = Date.now();
+                if (now - lastScanTime < SCAN_COOLDOWN) return;
+                
+                if (result) {
+                    lastScanTime = now;
+                    
+                    if (beepSound) {
+                        beepSound.currentTime = 0;
+                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
+                    }
+                    
+                    barcodeInput.value = result.text;
+                    document.getElementById('name').focus();
+                    
+                    fetch(`/get-product-name?barcode=${result.text}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.found) {
+                                document.getElementById('name').value = data.name;
+                            }
+                        });
+                }
+            });
+        }
+        
+        function stopScanner() {
+            scannerActive = false;
+            codeReader.reset();
+        }
+        
+        function showCameraError() {
+            cameraError.style.display = 'block';
+            video.style.display = 'none';
+            barcodeInput.removeAttribute('readonly');
+            barcodeInput.placeholder = "Введите штрих-код вручную";
+        }
+        
+        restartBtn.addEventListener('click', () => {
+            startCamera();
+        });
+        
+        torchBtn.addEventListener('click', toggleTorch);
+        
+        manualInputLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            barcodeInput.removeAttribute('readonly');
+            barcodeInput.focus();
+            barcodeInput.placeholder = "Введите штрих-код вручную";
+        });
+        
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopScanner();
+            } else {
+                scannerActive = true;
+                startScanner();
+            }
+        });
+        
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showCameraError();
+            cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
+        } else {
+            startCamera();
+        }
+        
+        scannerForm.addEventListener('submit', (e) => {
+            if (!barcodeInput.value) {
+                e.preventDefault();
+                alert("Пожалуйста, введите или отсканируйте штрих-код");
+                barcodeInput.focus();
+            }
         });
     </script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/dist/umd/index.min.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateField = document.getElementById('manufacture_date');
+        const textField = document.getElementById('manufacture_date_text');
+        
+        textField.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.substr(0, 8);
+            
+            let formatted = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i === 2 || i === 4) formatted += '.';
+                formatted += value[i];
+            }
+            e.target.value = formatted;
+            
+            if (formatted.length === 10) {
+                const parts = formatted.split('.');
+                if (parts.length === 3) {
+                    const [day, month, year] = parts;
+                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                }
+            }
+        });
+            
+        textField.addEventListener('blur', function() {
+            const value = textField.value;
+            if (value.length > 0 && value.length < 10) {
+                alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
+                textField.focus();
+            } else if (value.length === 10) {
+                const parts = value.split('.');
+                if (parts.length === 3) {
+                    const [day, month, year] = parts;
+                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                }
+            }
+        });
+            
+        textField.addEventListener('keydown', function(e) {
+            if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
+                (e.keyCode === 65 && e.ctrlKey === true) || 
+                (e.keyCode === 67 && e.ctrlKey === true) || 
+                (e.keyCode === 86 && e.ctrlKey === true) || 
+                (e.keyCode === 88 && e.ctrlKey === true) || 
+                (e.keyCode >= 35 && e.keyCode <= 39)) {
+                return;
+            }
+            
+            if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+            
+        scannerForm.addEventListener('submit', function(e) {
+            if (!dateField.value) {
+                e.preventDefault();
+                alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
+                textField.focus();
+            }
+        });
+    });
+    </script>
 </body>
 </html>
 '''
+
 # Стиль для новых страниц
 new_product_html = '''
 <!DOCTYPE html>
