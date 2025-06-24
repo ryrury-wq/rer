@@ -28,6 +28,7 @@ index_html = '''
             font-weight: 700;
             font-size: 1.8em;
             margin: 0;
+            color: #ffffff;
         }
         .container {
             max-width: 100%;
