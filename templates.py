@@ -1070,7 +1070,7 @@ add_batch_html = '''
             padding: 16px;
             cursor: pointer;
             transition: all 0.2s;
-            margin-top: 10px;
+            margin-top: 0;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         button:hover {
@@ -1116,16 +1116,40 @@ add_batch_html = '''
             margin-top: 5px;
             display: none;
         }
-        .expiration-result {
-            background: #e8f5e9;
+        .expiration-info {
+            background: #f5f5f5;
             padding: 15px;
             border-radius: 8px;
-            margin-top: 20px;
+            margin-bottom: 20px;
             text-align: center;
-            display: none;
+            font-size: 1em;
+            border-left: 4px solid #00a046;
         }
-        .expiration-result strong {
+        .expiration-info.normal {
+            border-left-color: #00a046;
+            background: #e8f5e9;
+        }
+        .expiration-info.warning {
+            border-left-color: #ff9800;
+            background: #fff8e1;
+        }
+        .expiration-info.expired {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .expiration-date {
+            font-weight: 500;
+            margin-top: 5px;
+            display: block;
+        }
+        .normal-date {
             color: #00a046;
+        }
+        .warning-date {
+            color: #ff9800;
+        }
+        .expired-date {
+            color: #f44336;
         }
     </style>
 </head>
@@ -1164,13 +1188,19 @@ add_batch_html = '''
                     </div>
                 </div>
                 
-                <div class="expiration-result" id="expiration-result">
-                    Товар будет годен до: <strong id="expiration-date-display"></strong>
+                <div class="expiration-info" id="expiration-info" style="display: none;">
+                    Годен до: 
+                    <span class="expiration-date" id="expiration-date-display"></span>
+                    <span id="days-remaining"></span>
                 </div>
                 
                 <button type="submit">Добавить срок</button>
             </form>
         </div>
+    </div>
+    
+    <div class="footer">
+        Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
     
     <script>
@@ -1257,10 +1287,39 @@ add_batch_html = '''
                         expDate.setFullYear(mDate.getFullYear() + duration);
                     }
                     
+                    // Форматируем дату для отображения
                     const formattedDate = `${expDate.getDate().toString().padStart(2, '0')}.${(expDate.getMonth() + 1).toString().padStart(2, '0')}.${expDate.getFullYear()}`;
                     
-                    document.getElementById('expiration-date-display').textContent = formattedDate;
-                    document.getElementById('expiration-result').style.display = 'block';
+                    // Рассчитываем оставшиеся дни
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const diffTime = expDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    // Устанавливаем стиль в зависимости от срока
+                    const expirationInfo = document.getElementById('expiration-info');
+                    const dateDisplay = document.getElementById('expiration-date-display');
+                    const daysRemaining = document.getElementById('days-remaining');
+                    
+                    expirationInfo.style.display = 'block';
+                    dateDisplay.textContent = formattedDate;
+                    
+                    if (diffDays < 0) {
+                        // Просрочено
+                        expirationInfo.className = 'expiration-info expired';
+                        dateDisplay.className = 'expiration-date expired-date';
+                        daysRemaining.textContent = ` (просрочено ${Math.abs(diffDays)} дн. назад)`;
+                    } else if (diffDays <= 10) {
+                        // Осталось мало дней
+                        expirationInfo.className = 'expiration-info warning';
+                        dateDisplay.className = 'expiration-date warning-date';
+                        daysRemaining.textContent = ` (осталось ${diffDays} дн.)`;
+                    } else {
+                        // Нормальный срок
+                        expirationInfo.className = 'expiration-info normal';
+                        dateDisplay.className = 'expiration-date normal-date';
+                        daysRemaining.textContent = ` (осталось ${diffDays} дн.)`;
+                    }
                 }
             }
             
