@@ -504,18 +504,18 @@ scan_html = '''
         }
         .date-icon {
             position: absolute;
-            left: 10px;
+            left: 15px;
             top: 50%;
             transform: translateY(-50%);
             color: #757575;
             pointer-events: none;
             font-size: 1.2em;
-            z-index: 1;
+            z-index: 2;
         }
         .date-input {
-            padding-left: 35px !important;
+            padding-left: 45px !important;
             position: relative;
-            z-index: 2;
+            z-index: 1;
         }
         .duration-group {
             display: flex;
@@ -648,256 +648,280 @@ scan_html = '''
         Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
 
-    <script type="module">
-        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
-
-        const codeReader = new BrowserMultiFormatReader();
-        const video = document.getElementById('video');
-        const barcodeInput = document.getElementById('barcode');
-        const cameraError = document.getElementById('camera-error');
-        const restartBtn = document.getElementById('restart-btn');
-        const torchBtn = document.getElementById('torch-btn');
-        const beepSound = document.getElementById('beep');
-        const manualInputLink = document.getElementById('manual-input-link');
-        const scannerForm = document.getElementById('scanner-form');
-        
-        let currentStream = null;
-        let scannerActive = true;
-        let torchOn = false;
-        let lastScanTime = 0;
-        const SCAN_COOLDOWN = 2000;
-        
-        function stopCurrentStream() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => {
-                    if (track.kind === 'video' && torchOn) {
-                        track.applyConstraints({ advanced: [{ torch: false }] });
-                    }
-                    track.stop();
-                });
-                currentStream = null;
-                torchOn = false;
-                torchBtn.textContent = 'Фонарик';
-            }
-        }
-        
-        async function startCamera() {
-            try {
-                stopCurrentStream();
-                
-                const constraints = {
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        focusMode: 'continuous'
-                    }
-                };
-                
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
-                
-                cameraError.style.display = 'none';
-                video.style.display = 'block';
-                
-                checkTorchSupport();
-                startScanner();
-            } catch (err) {
-                console.error("Ошибка доступа к камере:", err);
-                showCameraError();
-            }
-        }
-        
-        function checkTorchSupport() {
-            torchBtn.style.display = 'none';
-            if (currentStream) {
-                const track = currentStream.getVideoTracks()[0];
-                if (track && track.getCapabilities().torch) {
-                    torchBtn.style.display = 'block';
-                }
-            }
-        }
-        
-        async function toggleTorch() {
-            if (!currentStream) return;
-            
-            const track = currentStream.getVideoTracks()[0];
-            if (!track || !track.getCapabilities().torch) return;
-            
-            try {
-                await track.applyConstraints({
-                    advanced: [{ torch: !torchOn }]
-                });
-                torchOn = !torchOn;
-                torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
-            } catch (err) {
-                console.error("Ошибка переключения фонарика:", err);
-            }
-        }
-        
-        function startScanner() {
-            if (!scannerActive) return;
-            
-            codeReader.decodeFromVideoElement(video, (result, err) => {
-                if (!scannerActive) return;
-                
-                const now = Date.now();
-                if (now - lastScanTime < SCAN_COOLDOWN) return;
-                
-                if (result) {
-                    lastScanTime = now;
-                    
-                    if (beepSound) {
-                        beepSound.currentTime = 0;
-                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
-                    }
-                    
-                    barcodeInput.value = result.text;
-                    document.getElementById('name').focus();
-                    
-                    fetch(`/get-product-name?barcode=${result.text}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.found) {
-                                document.getElementById('name').value = data.name;
-                            }
-                        });
-                }
-            });
-        }
-        
-        function stopScanner() {
-            scannerActive = false;
-            codeReader.reset();
-        }
-        
-        function showCameraError() {
-            cameraError.style.display = 'block';
-            video.style.display = 'none';
-            barcodeInput.removeAttribute('readonly');
-            barcodeInput.placeholder = "Введите штрих-код вручную";
-        }
-        
-        restartBtn.addEventListener('click', () => {
-            startCamera();
-        });
-        
-        torchBtn.addEventListener('click', toggleTorch);
-        
-        manualInputLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            barcodeInput.removeAttribute('readonly');
-            barcodeInput.focus();
-            barcodeInput.placeholder = "Введите штрих-код вручную";
-        });
-        
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopScanner();
-            } else {
-                scannerActive = true;
-                startScanner();
-            }
-        });
-        
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showCameraError();
-            cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
-        } else {
-            startCamera();
-        }
-        
-        scannerForm.addEventListener('submit', (e) => {
-            if (!barcodeInput.value) {
-                e.preventDefault();
-                alert("Пожалуйста, введите или отсканируйте штрих-код");
-                barcodeInput.focus();
-            }
-        });
-    </script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация сканера
+            if (typeof BrowserMultiFormatReader !== 'undefined') {
+                const codeReader = new BrowserMultiFormatReader();
+                const video = document.getElementById('video');
+                const barcodeInput = document.getElementById('barcode');
+                const cameraError = document.getElementById('camera-error');
+                const restartBtn = document.getElementById('restart-btn');
+                const torchBtn = document.getElementById('torch-btn');
+                const beepSound = document.getElementById('beep');
+                const manualInputLink = document.getElementById('manual-input-link');
+                const scannerForm = document.getElementById('scanner-form');
+                
+                let currentStream = null;
+                let scannerActive = true;
+                let torchOn = false;
+                let lastScanTime = 0;
+                const SCAN_COOLDOWN = 2000;
+                
+                function stopCurrentStream() {
+                    if (currentStream) {
+                        currentStream.getTracks().forEach(track => {
+                            if (track.kind === 'video' && torchOn) {
+                                track.applyConstraints({ advanced: [{ torch: false }] });
+                            }
+                            track.stop();
+                        });
+                        currentStream = null;
+                        torchOn = false;
+                        if (torchBtn) torchBtn.textContent = 'Фонарик';
+                    }
+                }
+                
+                async function startCamera() {
+                    try {
+                        stopCurrentStream();
+                        
+                        const constraints = {
+                            video: {
+                                facingMode: 'environment',
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 },
+                                focusMode: 'continuous'
+                            }
+                        };
+                        
+                        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                        if (video) {
+                            video.srcObject = currentStream;
+                            video.style.display = 'block';
+                        }
+                        
+                        if (cameraError) cameraError.style.display = 'none';
+                        
+                        checkTorchSupport();
+                        startScanner();
+                    } catch (err) {
+                        console.error("Ошибка доступа к камере:", err);
+                        showCameraError();
+                    }
+                }
+                
+                function checkTorchSupport() {
+                    if (torchBtn) torchBtn.style.display = 'none';
+                    if (currentStream) {
+                        const track = currentStream.getVideoTracks()[0];
+                        if (track && track.getCapabilities().torch) {
+                            if (torchBtn) torchBtn.style.display = 'block';
+                        }
+                    }
+                }
+                
+                async function toggleTorch() {
+                    if (!currentStream) return;
+                    
+                    const track = currentStream.getVideoTracks()[0];
+                    if (!track || !track.getCapabilities().torch) return;
+                    
+                    try {
+                        await track.applyConstraints({
+                            advanced: [{ torch: !torchOn }]
+                        });
+                        torchOn = !torchOn;
+                        if (torchBtn) torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
+                    } catch (err) {
+                        console.error("Ошибка переключения фонарика:", err);
+                    }
+                }
+                
+                function startScanner() {
+                    if (!scannerActive || !codeReader) return;
+                    
+                    codeReader.decodeFromVideoElement(video, (result, err) => {
+                        if (!scannerActive) return;
+                        
+                        const now = Date.now();
+                        if (now - lastScanTime < SCAN_COOLDOWN) return;
+                        
+                        if (result) {
+                            lastScanTime = now;
+                            
+                            if (beepSound) {
+                                beepSound.currentTime = 0;
+                                beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
+                            }
+                            
+                            if (barcodeInput) {
+                                barcodeInput.value = result.text;
+                                if (document.getElementById('name')) {
+                                    document.getElementById('name').focus();
+                                }
+                                
+                                fetch(`/get-product-name?barcode=${result.text}`)
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.found && document.getElementById('name')) {
+                                            document.getElementById('name').value = data.name;
+                                        }
+                                    });
+                            }
+                        }
+                    });
+                }
+                
+                function stopScanner() {
+                    scannerActive = false;
+                    if (codeReader) codeReader.reset();
+                }
+                
+                function showCameraError() {
+                    if (cameraError) cameraError.style.display = 'block';
+                    if (video) video.style.display = 'none';
+                    if (barcodeInput) {
+                        barcodeInput.removeAttribute('readonly');
+                        barcodeInput.placeholder = "Введите штрих-код вручную";
+                    }
+                }
+                
+                if (restartBtn) {
+                    restartBtn.addEventListener('click', () => {
+                        startCamera();
+                    });
+                }
+                
+                if (torchBtn) {
+                    torchBtn.addEventListener('click', toggleTorch);
+                }
+                
+                if (manualInputLink) {
+                    manualInputLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (barcodeInput) {
+                            barcodeInput.removeAttribute('readonly');
+                            barcodeInput.focus();
+                            barcodeInput.placeholder = "Введите штрих-код вручную";
+                        }
+                    });
+                }
+                
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        stopScanner();
+                    } else {
+                        scannerActive = true;
+                        startScanner();
+                    }
+                });
+                
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showCameraError();
+                    if (cameraError) cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
+                } else {
+                    startCamera();
+                }
+                
+                if (scannerForm) {
+                    scannerForm.addEventListener('submit', (e) => {
+                        if (barcodeInput && !barcodeInput.value) {
+                            e.preventDefault();
+                            alert("Пожалуйста, введите или отсканируйте штрих-код");
+                            barcodeInput.focus();
+                        }
+                    });
+                }
+            }
+
+            // Обработка даты и срока годности
             const dateField = document.getElementById('manufacture_date');
             const textField = document.getElementById('manufacture_date_text');
+            const durationValue = document.getElementById('duration_value');
+            const durationUnit = document.getElementById('duration_unit');
             
-            textField.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 8) value = value.substr(0, 8);
-                
-                let formatted = '';
-                for (let i = 0; i < value.length; i++) {
-                    if (i === 2 || i === 4) formatted += '.';
-                    formatted += value[i];
-                }
-                e.target.value = formatted;
-                
-                if (formatted.length === 10) {
-                    const parts = formatted.split('.');
-                    if (parts.length === 3) {
-                        const [day, month, year] = parts;
-                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                        calculateExpirationDate();
+            if (textField) {
+                textField.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 8) value = value.substr(0, 8);
+                    
+                    let formatted = '';
+                    for (let i = 0; i < value.length; i++) {
+                        if (i === 2 || i === 4) formatted += '.';
+                        formatted += value[i];
                     }
-                }
-            });
-                
-            textField.addEventListener('blur', function() {
-                const value = textField.value;
-                if (value.length > 0 && value.length < 10) {
-                    alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
-                    textField.focus();
-                } else if (value.length === 10) {
-                    const parts = value.split('.');
-                    if (parts.length === 3) {
-                        const [day, month, year] = parts;
-                        dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                        calculateExpirationDate();
+                    e.target.value = formatted;
+                    
+                    if (formatted.length === 10) {
+                        const parts = formatted.split('.');
+                        if (parts.length === 3) {
+                            const [day, month, year] = parts;
+                            if (dateField) dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            calculateExpirationDate();
+                        }
                     }
-                }
-            });
-                
-            textField.addEventListener('keydown', function(e) {
-                if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
-                    (e.keyCode === 65 && e.ctrlKey === true) || 
-                    (e.keyCode === 67 && e.ctrlKey === true) || 
-                    (e.keyCode === 86 && e.ctrlKey === true) || 
-                    (e.keyCode === 88 && e.ctrlKey === true) || 
-                    (e.keyCode >= 35 && e.keyCode <= 39)) {
-                    return;
-                }
-                
-                if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
-                    e.preventDefault();
-                }
-            });
-                
-            scannerForm.addEventListener('submit', function(e) {
-                if (!dateField.value) {
-                    e.preventDefault();
-                    alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
-                    textField.focus();
-                }
-            });
+                });
+                    
+                textField.addEventListener('blur', function() {
+                    const value = textField.value;
+                    if (value.length > 0 && value.length < 10) {
+                        alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
+                        textField.focus();
+                    } else if (value.length === 10) {
+                        const parts = value.split('.');
+                        if (parts.length === 3) {
+                            const [day, month, year] = parts;
+                            if (dateField) dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            calculateExpirationDate();
+                        }
+                    }
+                });
+                    
+                textField.addEventListener('keydown', function(e) {
+                    if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
+                        (e.keyCode === 65 && e.ctrlKey === true) || 
+                        (e.keyCode === 67 && e.ctrlKey === true) || 
+                        (e.keyCode === 86 && e.ctrlKey === true) || 
+                        (e.keyCode === 88 && e.ctrlKey === true) || 
+                        (e.keyCode >= 35 && e.keyCode <= 39)) {
+                        return;
+                    }
+                    
+                    if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+            
+            if (scannerForm) {
+                scannerForm.addEventListener('submit', function(e) {
+                    if (dateField && !dateField.value) {
+                        e.preventDefault();
+                        alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
+                        if (textField) textField.focus();
+                    }
+                });
+            }
             
             // Функция для расчета даты истечения срока
             function calculateExpirationDate() {
-                const manufactureDate = document.getElementById('manufacture_date').value;
-                const durationValue = document.getElementById('duration_value').value;
-                const durationUnit = document.getElementById('duration_unit').value;
+                const manufactureDate = dateField ? dateField.value : '';
+                const durationVal = durationValue ? durationValue.value : '';
+                const durationUnt = durationUnit ? durationUnit.value : 'days';
                 
-                if (manufactureDate && durationValue) {
+                if (manufactureDate && durationVal) {
                     const [year, month, day] = manufactureDate.split('-');
                     const mDate = new Date(year, month - 1, day);
                     
                     let expDate = new Date(mDate);
-                    const duration = parseInt(durationValue);
+                    const duration = parseInt(durationVal);
                     
-                    if (durationUnit === 'days') {
+                    if (durationUnt === 'days') {
                         expDate.setDate(mDate.getDate() + duration);
-                    } else if (durationUnit === 'months') {
+                    } else if (durationUnt === 'months') {
                         expDate.setMonth(mDate.getMonth() + duration);
-                    } else if (durationUnit === 'years') {
+                    } else if (durationUnt === 'years') {
                         expDate.setFullYear(mDate.getFullYear() + duration);
                     }
                     
@@ -915,36 +939,51 @@ scan_html = '''
                     const dateDisplay = document.getElementById('expiration-date-display');
                     const daysCount = document.getElementById('days-count');
                     
-                    expirationBox.style.display = 'block';
-                    dateDisplay.textContent = formattedDate;
+                    if (expirationBox) expirationBox.style.display = 'block';
+                    if (dateDisplay) dateDisplay.textContent = formattedDate;
                     
                     if (diffDays < 0) {
                         // Просрочено
-                        expirationBox.className = 'expiration-box expired';
-                        dateDisplay.className = 'expiration-date expired-date';
-                        daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн. назад`;
-                        daysCount.className = 'days-count expired-date';
+                        if (expirationBox) expirationBox.className = 'expiration-box expired';
+                        if (dateDisplay) dateDisplay.className = 'expiration-date expired-date';
+                        if (daysCount) {
+                            daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн. назад`;
+                            daysCount.className = 'days-count expired-date';
+                        }
                     } else if (diffDays <= 10) {
                         // Осталось мало дней
-                        expirationBox.className = 'expiration-box warning';
-                        dateDisplay.className = 'expiration-date warning-date';
-                        daysCount.textContent = `Осталось ${diffDays} дн.`;
-                        daysCount.className = 'days-count warning-date';
+                        if (expirationBox) expirationBox.className = 'expiration-box warning';
+                        if (dateDisplay) dateDisplay.className = 'expiration-date warning-date';
+                        if (daysCount) {
+                            daysCount.textContent = `Осталось ${diffDays} дн.`;
+                            daysCount.className = 'days-count warning-date';
+                        }
                     } else {
                         // Нормальный срок
-                        expirationBox.className = 'expiration-box normal';
-                        dateDisplay.className = 'expiration-date normal-date';
-                        daysCount.textContent = `Осталось ${diffDays} дн.`;
-                        daysCount.className = 'days-count normal-date';
+                        if (expirationBox) expirationBox.className = 'expiration-box normal';
+                        if (dateDisplay) dateDisplay.className = 'expiration-date normal-date';
+                        if (daysCount) {
+                            daysCount.textContent = `Осталось ${diffDays} дн.`;
+                            daysCount.className = 'days-count normal-date';
+                        }
                     }
                 }
             }
             
             // Слушатели изменений для полей срока годности
-            document.getElementById('duration_value').addEventListener('input', calculateExpirationDate);
-            document.getElementById('duration_unit').addEventListener('change', calculateExpirationDate);
+            if (durationValue) {
+                durationValue.addEventListener('input', calculateExpirationDate);
+            }
+            if (durationUnit) {
+                durationUnit.addEventListener('change', calculateExpirationDate);
+            }
+            
+            // Инициализируем расчет при загрузке, если есть значения
+            setTimeout(calculateExpirationDate, 100);
         });
     </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/dist/umd/index.min.js"></script>
 </body>
 </html>
 '''
