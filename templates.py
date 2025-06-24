@@ -1047,7 +1047,7 @@ add_batch_html = '''
             font-weight: 500;
             color: #424242;
         }
-        input, select, button {
+        input, select {
             width: 100%;
             box-sizing: border-box;
             padding: 14px;
@@ -1061,7 +1061,11 @@ add_batch_html = '''
             border-color: #00a046;
             box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
         }
+        .button-container {
+            margin-top: 20px;
+        }
         button { 
+            width: 100%;
             background: #00a046;
             color: white;
             border: none;
@@ -1070,7 +1074,7 @@ add_batch_html = '''
             padding: 16px;
             cursor: pointer;
             transition: all 0.2s;
-            margin-top: 0;
+            border-radius: 0 0 8px 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         button:hover {
@@ -1116,31 +1120,31 @@ add_batch_html = '''
             margin-top: 5px;
             display: none;
         }
-        .expiration-info {
+        .expiration-box {
             background: #f5f5f5;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 1em;
+            padding: 12px 15px;
+            border-radius: 8px 8px 0 0;
+            font-size: 0.95em;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .expiration-box.normal {
+            background: #e8f5e9;
             border-left: 4px solid #00a046;
         }
-        .expiration-info.normal {
-            border-left-color: #00a046;
-            background: #e8f5e9;
-        }
-        .expiration-info.warning {
-            border-left-color: #ff9800;
+        .expiration-box.warning {
             background: #fff8e1;
+            border-left: 4px solid #ff9800;
         }
-        .expiration-info.expired {
-            border-left-color: #f44336;
+        .expiration-box.expired {
             background: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        .expiration-line {
+            display: flex;
+            justify-content: space-between;
         }
         .expiration-date {
             font-weight: 500;
-            margin-top: 5px;
-            display: block;
         }
         .normal-date {
             color: #00a046;
@@ -1150,6 +1154,9 @@ add_batch_html = '''
         }
         .expired-date {
             color: #f44336;
+        }
+        .days-count {
+            font-size: 0.9em;
         }
     </style>
 </head>
@@ -1188,13 +1195,15 @@ add_batch_html = '''
                     </div>
                 </div>
                 
-                <div class="expiration-info" id="expiration-info" style="display: none;">
-                    Годен до: 
-                    <span class="expiration-date" id="expiration-date-display"></span>
-                    <span id="days-remaining"></span>
+                <div class="button-container">
+                    <div class="expiration-box" id="expiration-box" style="display: none;">
+                        <div class="expiration-line">
+                            <span>Годен до: <span class="expiration-date" id="expiration-date-display"></span></span>
+                            <span class="days-count" id="days-count"></span>
+                        </div>
+                    </div>
+                    <button type="submit">Добавить срок</button>
                 </div>
-                
-                <button type="submit">Добавить срок</button>
             </form>
         </div>
     </div>
@@ -1297,28 +1306,31 @@ add_batch_html = '''
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                     
                     // Устанавливаем стиль в зависимости от срока
-                    const expirationInfo = document.getElementById('expiration-info');
+                    const expirationBox = document.getElementById('expiration-box');
                     const dateDisplay = document.getElementById('expiration-date-display');
-                    const daysRemaining = document.getElementById('days-remaining');
+                    const daysCount = document.getElementById('days-count');
                     
-                    expirationInfo.style.display = 'block';
+                    expirationBox.style.display = 'block';
                     dateDisplay.textContent = formattedDate;
                     
                     if (diffDays < 0) {
                         // Просрочено
-                        expirationInfo.className = 'expiration-info expired';
+                        expirationBox.className = 'expiration-box expired';
                         dateDisplay.className = 'expiration-date expired-date';
-                        daysRemaining.textContent = ` (просрочено ${Math.abs(diffDays)} дн. назад)`;
+                        daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн.`;
+                        daysCount.className = 'days-count expired-date';
                     } else if (diffDays <= 10) {
                         // Осталось мало дней
-                        expirationInfo.className = 'expiration-info warning';
+                        expirationBox.className = 'expiration-box warning';
                         dateDisplay.className = 'expiration-date warning-date';
-                        daysRemaining.textContent = ` (осталось ${diffDays} дн.)`;
+                        daysCount.textContent = `Осталось ${diffDays} дн.`;
+                        daysCount.className = 'days-count warning-date';
                     } else {
                         // Нормальный срок
-                        expirationInfo.className = 'expiration-info normal';
+                        expirationBox.className = 'expiration-box normal';
                         dateDisplay.className = 'expiration-date normal-date';
-                        daysRemaining.textContent = ` (осталось ${diffDays} дн.)`;
+                        daysCount.textContent = `Осталось ${diffDays} дн.`;
+                        daysCount.className = 'days-count normal-date';
                     }
                 }
             }
