@@ -142,9 +142,9 @@ def index():
         removal_date = exp_date + timedelta(days=30)
         days_until_removal = max(0, (removal_date - today).days)
 
-        if days_since_expiry > 0:
+        if days_since_expiry > 1:
             status = 'expired'
-        elif days_until_expiry == 0:
+        elif days_until_expiry == 1:
             status = 'warning'
         elif days_until_expiry <= 5:
             status = 'soon'
