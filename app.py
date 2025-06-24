@@ -93,12 +93,38 @@ def index():
     cursor = db.cursor()
     today = datetime.now().date()
 
-    cursor.execute('''
+    from_date = request.args.get('from_date')
+    to_date = request.args.get('to_date')
+    days_left = request.args.get('days_left')
+
+    query = '''
         SELECT b.id, p.name, p.barcode, b.expiration_date, b.added_date
         FROM batches b
         JOIN products p ON p.id = b.product_id
-        ORDER BY b.expiration_date ASC
-    ''')
+    '''
+    params = []
+
+    filters = []
+    if from_date:
+        filters.append("b.expiration_date >= %s")
+        params.append(from_date)
+    if to_date:
+        filters.append("b.expiration_date <= %s")
+        params.append(to_date)
+    if days_left:
+        try:
+            days = int(days_left)
+            target_date = (today + timedelta(days=days)).strftime('%Y-%m-%d')
+            filters.append("b.expiration_date <= %s")
+            params.append(target_date)
+        except:
+            pass
+
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+
+    query += " ORDER BY b.expiration_date ASC"
+    cursor.execute(query, tuple(params))
 
     items = []
     for row in cursor.fetchall():
@@ -125,7 +151,8 @@ def index():
             'days_until_expiry': days_until_expiry,
             'status': status
         })
-    return render_template('index.html', items=items)
+
+    return render_template('index.html', items=items, from_date=from_date, to_date=to_date)
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
