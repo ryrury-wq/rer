@@ -1126,6 +1126,9 @@ add_batch_html = '''
             border-radius: 8px 8px 0 0;
             font-size: 0.95em;
             border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .expiration-box.normal {
             background: #e8f5e9;
@@ -1139,12 +1142,16 @@ add_batch_html = '''
             background: #ffebee;
             border-left: 4px solid #f44336;
         }
-        .expiration-line {
-            display: flex;
-            justify-content: space-between;
-        }
         .expiration-date {
             font-weight: 500;
+            margin-right: 15px;
+            white-space: nowrap;
+        }
+        .days-count {
+            font-size: 0.9em;
+            white-space: nowrap;
+            text-align: right;
+            min-width: 110px;
         }
         .normal-date {
             color: #00a046;
@@ -1154,9 +1161,6 @@ add_batch_html = '''
         }
         .expired-date {
             color: #f44336;
-        }
-        .days-count {
-            font-size: 0.9em;
         }
     </style>
 </head>
@@ -1197,10 +1201,8 @@ add_batch_html = '''
                 
                 <div class="button-container">
                     <div class="expiration-box" id="expiration-box" style="display: none;">
-                        <div class="expiration-line">
-                            <span>Годен до: <span class="expiration-date" id="expiration-date-display"></span></span>
-                            <span class="days-count" id="days-count"></span>
-                        </div>
+                        <span class="expiration-date" id="expiration-date-display"></span>
+                        <span class="days-count" id="days-count"></span>
                     </div>
                     <button type="submit">Добавить срок</button>
                 </div>
@@ -1297,7 +1299,7 @@ add_batch_html = '''
                     }
                     
                     // Форматируем дату для отображения
-                    const formattedDate = `${expDate.getDate().toString().padStart(2, '0')}.${(expDate.getMonth() + 1).toString().padStart(2, '0')}.${expDate.getFullYear()}`;
+                    const formattedDate = `Годен до: ${expDate.getDate().toString().padStart(2, '0')}.${(expDate.getMonth() + 1).toString().padStart(2, '0')}.${expDate.getFullYear()}`;
                     
                     // Рассчитываем оставшиеся дни
                     const today = new Date();
@@ -1310,7 +1312,7 @@ add_batch_html = '''
                     const dateDisplay = document.getElementById('expiration-date-display');
                     const daysCount = document.getElementById('days-count');
                     
-                    expirationBox.style.display = 'block';
+                    expirationBox.style.display = 'flex';
                     dateDisplay.textContent = formattedDate;
                     
                     if (diffDays < 0) {
