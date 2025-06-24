@@ -95,6 +95,7 @@ def generate_notifications():
     cursor.execute("DELETE FROM notifications WHERE type LIKE 'mute_%%' AND notification_date < %s", (today.strftime('%Y-%m-%d'),))
     
     # Генерируем уведомления для товаров, которые нужно убрать сегодня
+    tomorrow = (today + timedelta(days=1)).strftime('%Y-%m-%d')
     cursor.execute('''
         INSERT INTO notifications (type, product_id, batch_id, notification_date)
         SELECT 'today', p.id, b.id, %s
