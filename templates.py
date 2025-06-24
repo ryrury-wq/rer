@@ -214,7 +214,6 @@ index_html = '''
 </head>
 <body>
     <div class="header">
-        <a href="/" class="back-btn">←</a>
         <h1 class="logo">Вкусвилл</h1>
     </div>
     
