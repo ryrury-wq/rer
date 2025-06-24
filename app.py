@@ -78,7 +78,7 @@ def generate_notifications():
     today = datetime.now().date()
     
     # Проверяем, не заглушены ли уведомления
-    cursor.execute("SELECT notification_date FROM notifications WHERE type LIKE 'mute_%'")
+    cursor.execute("SELECT notification_date FROM notifications WHERE type LIKE 'mute_%%'")
     mute_notification = cursor.fetchone()
     
     if mute_notification:
@@ -92,7 +92,7 @@ def generate_notifications():
     cursor.execute("DELETE FROM notifications WHERE notification_date < %s", (six_days_ago,))
     
     # Удаляем старые уведомления о заглушении
-    cursor.execute("DELETE FROM notifications WHERE type LIKE 'mute_%' AND notification_date < %s", (today.strftime('%Y-%m-%d'),))
+    cursor.execute("DELETE FROM notifications WHERE type LIKE 'mute_%%' AND notification_date < %s", (today.strftime('%Y-%m-%d'),))
     
     # Генерируем уведомления для товаров, которые нужно убрать сегодня
     cursor.execute('''
@@ -150,7 +150,7 @@ def generate_notifications():
     ''', (soon_start.strftime('%Y-%m-%d'), soon_end.strftime('%Y-%m-%d')))
     
     db.commit()
-
+    
 def remove_expired():
     db = get_db()
     cursor = db.cursor()
@@ -178,6 +178,11 @@ def remove_expired():
 
 @app.route('/')
 def index():
+    try:
+        generate_notifications()
+    except Exception as e:
+        app.logger.error(f"Notification generation error: {e}")
+        
     db = get_db()
     cursor = db.cursor()
     today = datetime.now().date()
@@ -613,9 +618,11 @@ def run_app():
         init_db()
         remove_expired()
         clear_old_history()
-        generate_notifications()
+        try:
+            generate_notifications()
+        except Exception as e:
+            print(f"Error generating notifications: {e}")
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
 if __name__ == '__main__':
     run_app()
