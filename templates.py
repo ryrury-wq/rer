@@ -8,211 +8,372 @@ index_html = '''
     <title>Контроль сроков - Вкусвилл</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* Общие стили */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Roboto', Arial, sans-serif;
             margin: 0;
-            background: #f5f5f5;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
         }
-
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #00a046;
+            background-color: #00a046;
             color: white;
-            padding: 12px 16px;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        .header h1 {
+        .logo {
+            font-weight: 700;
+            font-size: 1.8em;
             margin: 0;
-            font-size: 1.5em;
+            color: #ffffff;
         }
-
-        .filter-toggle-btn {
-            background: white;
-            color: #00a046;
-            border: none;
-            border-radius: 20px;
-            padding: 8px 16px;
-            font-weight: 500;
-            cursor: pointer;
-        }
-
         .container {
-            padding: 16px;
+            max-width: 100%;
+            padding: 15px;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            top: 60px;
-            right: 20px;
-            width: 90%;
-            max-width: 400px;
-            background: white;
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #00a046;
+        }
+
+        .filter-block {
+            background: #fff;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            padding: 16px;
-            z-index: 999;
+            padding: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }
 
-        .modal.active {
-            display: block;
+        .date-filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 10px;
         }
 
-        .filter-form input[type="text"],
-        .filter-form button,
-        .filter-form a {
-            margin: 6px 0;
-            padding: 10px;
-            font-size: 0.95em;
-            border-radius: 8px;
+        .date-input {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 12px;
             border: 1px solid #ccc;
-            width: 100%;
-            box-sizing: border-box;
+            border-radius: 8px;
+            font-size: 0.95em;
+            text-align: center;
         }
 
-        .filter-form button {
-            background: #00a046;
-            color: white;
+        .filter-btn,
+        .reset-btn {
+            padding: 10px 14px;
             border: none;
-        }
-
-        .filter-form a {
-            background: #e0e0e0;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95em;
+            cursor: pointer;
             text-align: center;
             text-decoration: none;
-            display: block;
-            color: black;
+        }
+
+        .filter-btn {
+            background: #00a046;
+            color: white;
+        }
+
+        .reset-btn {
+            background: #e0e0e0;
+            color: #333;
         }
 
         .quick-btns {
             display: flex;
             gap: 8px;
+            justify-content: center;
             flex-wrap: wrap;
-            margin-top: 10px;
         }
 
         .quick-btns a {
             padding: 6px 12px;
+            font-size: 0.9em;
             background: #e8f5e9;
             color: #2e7d32;
             border-radius: 16px;
             text-decoration: none;
-            font-size: 0.85em;
             border: 1px solid #c8e6c9;
         }
 
-        .item {
-            background: white;
-            border-left: 6px solid transparent;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        .quick-btns a:hover {
+            background: #c8e6c9;
         }
 
-        .item.expired { border-left-color: #f44336; background: #ffebee; }
-        .item.warning { border-left-color: #ff9800; background: #fff3e0; }
-        .item.soon    { border-left-color: #ffeb3b; background: #fffde7; }
-        .item.normal  { border-left-color: #4caf50; background: #e8f5e9; }
+        .search-container {
+            position: relative;
+            margin: 15px 0;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 40px;
+            border-radius: 24px;
+            border: 1px solid #e0e0e0;
+            font-size: 1em;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+
+        .nav-links a {
+            padding: 12px 20px;
+            background: #00a046;
+            border-radius: 24px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: calc(50% - 10px);
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .items-container {
+            max-height: 55vh;
+            overflow-y: auto;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            position: relative;
+            padding-right: 50px;
+        }
+
+        .item.expired { background-color: #ffebee; border-left: 4px solid #f44336; }
+        .item.warning { background-color: #fff8e1; border-left: 4px solid #ffc107; }
+        .item.soon { background-color: #e8f5e9; border-left: 4px solid #4caf50; }
+        .item.normal { background-color: white; border-left: 4px solid #e0e0e0; }
+
+        .item-info {
+            flex-grow: 1;
+            max-width: calc(100% - 50px);
+        }
+
+        .item-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .move-btn { background: #00a046; color: white; }
+        .edit-btn { background: #ffc107; color: #333; }
+        .delete-btn { background: #f44336; color: white; }
 
         .badge {
             display: inline-block;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 12px;
             font-size: 0.8em;
+            font-weight: 500;
             margin-top: 5px;
+        }
+
+        .expired-badge { background: #ffcdd2; color: #c62828; }
+        .warning-badge { background: #ffecb3; color: #ff8f00; }
+        .soon-badge { background: #c8e6c9; color: #2e7d32; }
+        .normal-badge { background: #e0e0e0; color: #424242; }
+
+        .no-items {
+            text-align: center;
+            padding: 30px;
+            color: #9e9e9e;
+            font-style: italic;
         }
 
         .footer {
             text-align: center;
-            padding: 20px;
+            padding: 20px 15px 10px;
+            color: #757575;
             font-size: 0.85em;
-            color: #777;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Вкусвилл</h1>
-        <button class="filter-toggle-btn" onclick="toggleFilter()">Фильтр</button>
-    </div>
-
-    <div class="modal" id="filterModal">
-        <form method="get" class="filter-form">
-            <input type="text" id="from_date" name="from_date" placeholder="От (дд.мм.гггг)" value="{{ from_date or '' }}">
-            <input type="text" id="to_date" name="to_date" placeholder="До (дд.мм.гггг)" value="{{ to_date or '' }}">
-            <button type="submit">Применить фильтр</button>
-            <a href="/">Сбросить фильтр</a>
-            <div class="quick-btns">
-                <a href="/?days_left=1">1 день</a>
-                <a href="/?days_left=2">1-2 дня</a>
-                <a href="/?days_left=5">1-5 дней</a>
-            </div>
-        </form>
+        <h1 class="logo">Вкусвилл</h1>
     </div>
 
     <div class="container">
-        <h2 style="text-align:center;">Товары с истекающим сроком</h2>
+        <h1>Товары с истекающим сроком</h1>
 
-        {% for item in items %}
-        <div class="item {{ item.status }}">
-            <strong>{{ item.name }}</strong><br>
-            Штрихкод: {{ item.barcode }}<br>
-            Годен до: {{ item.expiration_date }}<br>
+        <form method="get" class="filter-block">
+            <div class="date-filter-group">
+                <input type="text" id="from_date_text" name="from_date" placeholder="От (дд.мм.гггг)" value="{{ from_date or '' }}" class="date-input">
+                <input type="text" id="to_date_text" name="to_date" placeholder="До (дд.мм.гггг)" value="{{ to_date or '' }}" class="date-input">
+                <button type="submit" class="filter-btn">Фильтр</button>
+                <a href="/" class="reset-btn">Сброс</a>
+            </div>
 
-            {% if item.status == 'expired' %}
-                <span class="badge" style="background:#ffcdd2; color:#b71c1c;">Просрочен ({{ item.days_since_expiry }} дн)</span>
-            {% elif item.status == 'warning' %}
-                <span class="badge" style="background:#ffe0b2; color:#e65100;">Остался 1 день</span>
-            {% elif item.status == 'soon' %}
-                <span class="badge" style="background:#fff59d; color:#f57f17;">{{ item.days_until_expiry }} дн. до конца</span>
-            {% else %}
-                <span class="badge" style="background:#c8e6c9; color:#1b5e20;">{{ item.days_until_expiry }} дн. до конца</span>
-            {% endif %}
+            <div class="quick-btns">
+                <a href="/?days_left=1">1 день</a>
+                <a href="/?days_left=2">1–2 дня</a>
+                <a href="/?days_left=5">1–5 дней</a>
+            </div>
+        </form>
 
-            <br><small>Удаление через {{ item.days_until_removal }} дн. ({{ item.removal_date }})</small>
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или штрих-коду...">
         </div>
-        {% else %}
-        <div style="text-align:center; padding:20px; color:#999;">Нет товаров с истекающим сроком</div>
-        {% endfor %}
+
+        <div class="nav-links">
+            <a href="/scan">Сканировать</a>
+            <a href="/history">История</a>
+            <a href="/assortment">Ассортимент</a>
+        </div>
+
+        <div class="items-container" id="items-container">
+            {% for item in items %}
+                <div class="item {{ item.status }}">
+                    <div class="item-info">
+                        <strong>{{ item.name }}</strong>
+                        <div style="font-size:0.9em; color:#666; margin-top:3px">{{ item.barcode }}</div>
+                        <div>Годен до: {{ item.expiration_date }}</div>
+
+                        {% if item.status == "expired" %}
+                            <div class="badge expired-badge">Просрочено: {{ item.days_since_expiry }} дн.</div>
+                        {% elif item.status == "warning" %}
+                            <div class="badge warning-badge">Истекает сегодня!</div>
+                        {% elif item.status == "soon" %}
+                            <div class="badge soon-badge">Истекает через: {{ item.days_until_expiry }} дн.</div>
+                        {% else %}
+                            <div class="badge normal-badge">До истечения: {{ item.days_until_expiry }} дн.</div>
+                        {% endif %}
+
+                        <div style="font-size:0.85em; margin-top:5px; color:#757575">
+                            Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <form action="/move_to_history" method="POST">
+                            <input type="hidden" name="batch_id" value="{{ item.id }}">
+                            <button type="submit" class="action-btn move-btn">→</button>
+                        </form>
+                        <a href="/edit_batch?batch_id={{ item.id }}" class="action-btn edit-btn">✎</a>
+                        <form action="/delete_batch" method="POST">
+                            <input type="hidden" name="batch_id" value="{{ item.id }}">
+                            <button type="submit" class="action-btn delete-btn">🗑</button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="no-items">Нет товаров с истекающим сроком</div>
+            {% endfor %}
+        </div>
     </div>
 
-    <div class="footer">Сделано М2 (Shevchenko) by Bekeshnyuk</div>
+    <div class="footer">
+        Сделано М2(Shevchenko) by Bekeshnyuk
+    </div>
 
     <script>
-        function toggleFilter() {
-            document.getElementById('filterModal').classList.toggle('active');
-        }
-
         function setupDateInput(id) {
             const input = document.getElementById(id);
             input.addEventListener('input', function (e) {
-                let v = input.value.replace(/\D/g, '');
-                if (v.length > 8) v = v.substr(0, 8);
-                let f = '';
-                for (let i = 0; i < v.length; i++) {
-                    if (i === 2 || i === 4) f += '.';
-                    f += v[i];
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.substr(0, 8);
+                let formatted = '';
+                for (let i = 0; i < value.length; i++) {
+                    if (i === 2 || i === 4) formatted += '.';
+                    formatted += value[i];
                 }
-                input.value = f;
+                e.target.value = formatted;
             });
 
             input.addEventListener('keydown', function (e) {
-                if (
-                    [8, 9, 13, 27, 46, 37, 39].includes(e.keyCode) ||
+                if ([8, 9, 13, 27, 46, 37, 39].includes(e.keyCode) ||
                     (e.keyCode >= 48 && e.keyCode <= 57) ||
-                    (e.keyCode >= 96 && e.keyCode <= 105)
-                ) return;
+                    (e.keyCode >= 96 && e.keyCode <= 105)) return;
                 e.preventDefault();
             });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            setupDateInput('from_date');
-            setupDateInput('to_date');
+            setupDateInput('from_date_text');
+            setupDateInput('to_date_text');
+
+            const searchInput = document.getElementById('search-input');
+            const itemsContainer = document.getElementById('items-container');
+            const originalHTML = itemsContainer.innerHTML;
+
+            searchInput.addEventListener('input', () => {
+                const term = searchInput.value.toLowerCase();
+                const items = itemsContainer.querySelectorAll('.item');
+                let found = false;
+
+                items.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(term)) {
+                        item.style.display = 'flex';
+                        found = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                if (!found && term.length > 0) {
+                    itemsContainer.innerHTML = `<div class="no-items">Ничего не найдено по запросу: "${term}"</div>`;
+                } else if (!term) {
+                    itemsContainer.innerHTML = originalHTML;
+                }
+            });
         });
     </script>
 </body>
