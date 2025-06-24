@@ -467,6 +467,9 @@ scan_html = '''
             border-color: #00a046;
             box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
         }
+        .button-container {
+            margin-top: 20px;
+        }
         button[type="submit"] {
             background: #00a046;
             color: white;
@@ -476,7 +479,9 @@ scan_html = '''
             padding: 16px;
             cursor: pointer;
             transition: all 0.2s;
+            border-radius: 0 0 8px 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 0;
         }
         button[type="submit"]:hover {
             background: #008c3a;
@@ -499,18 +504,18 @@ scan_html = '''
         }
         .date-icon {
             position: absolute;
-            left: 10px; /* Уменьшен отступ слева */
+            left: 10px;
             top: 50%;
             transform: translateY(-50%);
             color: #757575;
             pointer-events: none;
             font-size: 1.2em;
-            z-index: 1; /* Добавлен z-index */
+            z-index: 1;
         }
         .date-input {
-            padding-left: 35px !important; /* Уменьшен отступ */
+            padding-left: 35px !important;
             position: relative;
-            z-index: 2; /* Добавлен z-index */
+            z-index: 2;
         }
         .duration-group {
             display: flex;
@@ -522,25 +527,24 @@ scan_html = '''
         .duration-group select {
             flex: 1;
         }
-        .expiration-info {
+        .expiration-box {
             background: #f5f5f5;
             padding: 12px 15px;
-            border-radius: 8px;
-            margin: 15px 0;
             font-size: 0.95em;
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .expiration-box.normal {
+            background: #e8f5e9;
             border-left: 4px solid #00a046;
         }
-        .expiration-info.normal {
-            border-left-color: #00a046;
-            background: #e8f5e9;
-        }
-        .expiration-info.warning {
-            border-left-color: #ff9800;
+        .expiration-box.warning {
             background: #fff8e1;
+            border-left: 4px solid #ff9800;
         }
-        .expiration-info.expired {
-            border-left-color: #f44336;
+        .expiration-box.expired {
             background: #ffebee;
+            border-left: 4px solid #f44336;
         }
         .expiration-date {
             font-weight: 500;
@@ -629,13 +633,13 @@ scan_html = '''
                     </div>
                 </div>
 
-                <!-- Добавлен блок с информацией о сроке годности -->
-                <div class="expiration-info" id="expiration-info" style="display: none;">
-                    <span class="expiration-date" id="expiration-date-display"></span>
-                    <span class="days-count" id="days-count"></span>
+                <div class="button-container">
+                    <div class="expiration-box" id="expiration-box" style="display: none;">
+                        <span class="expiration-date" id="expiration-date-display"></span>
+                        <span class="days-count" id="days-count"></span>
+                    </div>
+                    <button type="submit">Сохранить товар</button>
                 </div>
-
-                <button type="submit">Сохранить товар</button>
             </form>
         </div>
     </div>
@@ -833,7 +837,7 @@ scan_html = '''
                     if (parts.length === 3) {
                         const [day, month, year] = parts;
                         dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                        calculateExpirationDate(); // Добавлен вызов расчета срока
+                        calculateExpirationDate();
                     }
                 }
             });
@@ -848,7 +852,7 @@ scan_html = '''
                     if (parts.length === 3) {
                         const [day, month, year] = parts;
                         dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                        calculateExpirationDate(); // Добавлен вызов расчета срока
+                        calculateExpirationDate();
                     }
                 }
             });
@@ -907,28 +911,28 @@ scan_html = '''
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                     
                     // Устанавливаем стиль в зависимости от срока
-                    const expirationInfo = document.getElementById('expiration-info');
+                    const expirationBox = document.getElementById('expiration-box');
                     const dateDisplay = document.getElementById('expiration-date-display');
                     const daysCount = document.getElementById('days-count');
                     
-                    expirationInfo.style.display = 'block';
+                    expirationBox.style.display = 'block';
                     dateDisplay.textContent = formattedDate;
                     
                     if (diffDays < 0) {
                         // Просрочено
-                        expirationInfo.className = 'expiration-info expired';
+                        expirationBox.className = 'expiration-box expired';
                         dateDisplay.className = 'expiration-date expired-date';
                         daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн. назад`;
                         daysCount.className = 'days-count expired-date';
                     } else if (diffDays <= 10) {
                         // Осталось мало дней
-                        expirationInfo.className = 'expiration-info warning';
+                        expirationBox.className = 'expiration-box warning';
                         dateDisplay.className = 'expiration-date warning-date';
                         daysCount.textContent = `Осталось ${diffDays} дн.`;
                         daysCount.className = 'days-count warning-date';
                     } else {
                         // Нормальный срок
-                        expirationInfo.className = 'expiration-info normal';
+                        expirationBox.className = 'expiration-box normal';
                         dateDisplay.className = 'expiration-date normal-date';
                         daysCount.textContent = `Осталось ${diffDays} дн.`;
                         daysCount.className = 'days-count normal-date';
