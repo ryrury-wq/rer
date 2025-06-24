@@ -93,32 +93,40 @@ def index():
     cursor = db.cursor()
     today = datetime.now().date()
 
-    from_date = request.args.get('from_date')
-    to_date = request.args.get('to_date')
-    days_left = request.args.get('days_left')
+    from_date_raw = request.args.get('from_date', '').strip()
+    to_date_raw = request.args.get('to_date', '').strip()
+    days_left = request.args.get('days_left', '').strip()
+
+    def parse_date_russian(date_str):
+        try:
+            return datetime.strptime(date_str, '%d.%m.%Y').date()
+        except:
+            return None
+
+    from_date = parse_date_russian(from_date_raw)
+    to_date = parse_date_russian(to_date_raw)
 
     query = '''
         SELECT b.id, p.name, p.barcode, b.expiration_date, b.added_date
         FROM batches b
         JOIN products p ON p.id = b.product_id
     '''
+    filters = []
     params = []
 
-    filters = []
     if from_date:
         filters.append("b.expiration_date >= %s")
-        params.append(from_date)
+        params.append(from_date.strftime('%Y-%m-%d'))
+
     if to_date:
         filters.append("b.expiration_date <= %s")
-        params.append(to_date)
-    if days_left:
-        try:
-            days = int(days_left)
-            target_date = (today + timedelta(days=days)).strftime('%Y-%m-%d')
-            filters.append("b.expiration_date <= %s")
-            params.append(target_date)
-        except:
-            pass
+        params.append(to_date.strftime('%Y-%m-%d'))
+
+    if days_left.isdigit():
+        max_days = int(days_left)
+        target_date = today + timedelta(days=max_days)
+        filters.append("b.expiration_date <= %s")
+        params.append(target_date.strftime('%Y-%m-%d'))
 
     if filters:
         query += " WHERE " + " AND ".join(filters)
@@ -133,26 +141,30 @@ def index():
         days_since_expiry = max(0, (today - exp_date).days)
         removal_date = exp_date + timedelta(days=30)
         days_until_removal = max(0, (removal_date - today).days)
-        status = "normal"
-        if days_since_expiry > 0 or days_until_expiry == 0:
-            status = "expired"
-        elif days_until_expiry == 1:
-            status = "warning"
-        elif days_until_expiry <= 7:
-            status = "soon"
+
+        if days_since_expiry > 0:
+            status = 'expired'
+        elif days_until_expiry == 0:
+            status = 'warning'
+        elif days_until_expiry <= 5:
+            status = 'soon'
+        else:
+            status = 'normal'
+
         items.append({
             'id': row['id'],
             'name': row['name'],
             'barcode': row['barcode'],
-            'expiration_date': row['expiration_date'],
-            'days_since_expiry': days_since_expiry,
-            'days_until_removal': days_until_removal,
-            'removal_date': removal_date.strftime('%Y-%m-%d'),
+            'expiration_date': exp_date.strftime('%d.%m.%Y'),
             'days_until_expiry': days_until_expiry,
+            'days_since_expiry': days_since_expiry,
+            'removal_date': removal_date.strftime('%d.%m.%Y'),
+            'days_until_removal': days_until_removal,
             'status': status
         })
 
-    return render_template('index.html', items=items, from_date=from_date, to_date=to_date)
+    return render_template('index.html', items=items,
+                           from_date=from_date_raw, to_date=to_date_raw)
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
