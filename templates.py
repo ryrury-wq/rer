@@ -1038,27 +1038,6 @@ add_batch_html = '''
             color: #757575;
             margin-bottom: 20px;
         }
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-        }
-        .tab.active {
-            border-bottom: 3px solid #00a046;
-            color: #00a046;
-            font-weight: 500;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
         .form-group { 
             margin-bottom: 20px; 
         }
@@ -1137,6 +1116,17 @@ add_batch_html = '''
             margin-top: 5px;
             display: none;
         }
+        .expiration-result {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+        .expiration-result strong {
+            color: #00a046;
+        }
     </style>
 </head>
 <body>
@@ -1151,46 +1141,31 @@ add_batch_html = '''
             <div class="product-name">{{ product_name }}</div>
             <div class="product-barcode">Штрих-код: {{ barcode }}</div>
             
-            <div class="tabs">
-                <div class="tab active" data-tab="by-date">По дате изготовления</div>
-                <div class="tab" data-tab="by-expiry">По сроку годности</div>
-            </div>
-            
             <form method="POST" id="add-batch-form">
-                <div class="tab-content active" id="by-date">
-                    <div class="form-group">
-                        <label>Дата изготовления (дд.мм.гггг):</label>
-                        <div class="date-input-group">
-                            <span class="date-icon">📅</span>
-                            <input type="hidden" id="manufacture_date" name="manufacture_date">
-                            <input type="text" id="manufacture_date_text" class="date-input" placeholder="дд.мм.гггг" required>
-                            <div class="error-message" id="manufacture_date_error">Пожалуйста, введите дату в формате дд.мм.гггг</div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Срок годности:</label>
-                        <div class="duration-group">
-                            <input type="number" name="duration_value" placeholder="Количество" required min="1">
-                            <select name="duration_unit" required>
-                                <option value="days">дней</option>
-                                <option value="months">месяцев</option>
-                                <option value="years">лет</option>
-                            </select>
-                        </div>
+                <div class="form-group">
+                    <label>Дата изготовления (дд.мм.гггг):</label>
+                    <div class="date-input-group">
+                        <span class="date-icon">📅</span>
+                        <input type="hidden" id="manufacture_date" name="manufacture_date">
+                        <input type="text" id="manufacture_date_text" class="date-input" placeholder="дд.мм.гггг" required>
+                        <div class="error-message" id="manufacture_date_error">Пожалуйста, введите дату в формате дд.мм.гггг</div>
                     </div>
                 </div>
                 
-                <div class="tab-content" id="by-expiry">
-                    <div class="form-group">
-                        <label>Срок годности (дд.мм.гггг):</label>
-                        <div class="date-input-group">
-                            <span class="date-icon">📅</span>
-                            <input type="hidden" id="expiration_date" name="expiration_date">
-                            <input type="text" id="expiration_date_text" class="date-input" placeholder="дд.мм.гггг" required>
-                            <div class="error-message" id="expiration_date_error">Пожалуйста, введите дату в формате дд.мм.гггг</div>
-                        </div>
+                <div class="form-group">
+                    <label>Срок годности:</label>
+                    <div class="duration-group">
+                        <input type="number" name="duration_value" id="duration_value" placeholder="Количество" required min="1">
+                        <select name="duration_unit" id="duration_unit" required>
+                            <option value="days">дней</option>
+                            <option value="months">месяцев</option>
+                            <option value="years">лет</option>
+                        </select>
                     </div>
+                </div>
+                
+                <div class="expiration-result" id="expiration-result">
+                    Товар будет годен до: <strong id="expiration-date-display"></strong>
                 </div>
                 
                 <button type="submit">Добавить срок</button>
@@ -1200,22 +1175,7 @@ add_batch_html = '''
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const tabs = document.querySelectorAll('.tab');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tabContents.forEach(c => c.classList.remove('active'));
-                    
-                    this.classList.add('active');
-                    
-                    const tabId = this.getAttribute('data-tab');
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-            
-            // Функции для обработки ввода даты
+            // Функция для обработки ввода даты
             function setupDateInput(inputId, hiddenId, errorId) {
                 const textField = document.getElementById(inputId);
                 const hiddenField = document.getElementById(hiddenId);
@@ -1238,6 +1198,7 @@ add_batch_html = '''
                             const [day, month, year] = parts;
                             hiddenField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                             errorField.style.display = 'none';
+                            calculateExpirationDate();
                         }
                     }
                 });
@@ -1252,6 +1213,7 @@ add_batch_html = '''
                             const [day, month, year] = parts;
                             hiddenField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                             errorField.style.display = 'none';
+                            calculateExpirationDate();
                         } else {
                             errorField.style.display = 'block';
                         }
@@ -1274,32 +1236,48 @@ add_batch_html = '''
                 });
             }
             
-            // Настройка полей для дат
+            // Функция для расчета даты истечения срока
+            function calculateExpirationDate() {
+                const manufactureDate = document.getElementById('manufacture_date').value;
+                const durationValue = document.getElementById('duration_value').value;
+                const durationUnit = document.getElementById('duration_unit').value;
+                
+                if (manufactureDate && durationValue) {
+                    const [year, month, day] = manufactureDate.split('-');
+                    const mDate = new Date(year, month - 1, day);
+                    
+                    let expDate = new Date(mDate);
+                    const duration = parseInt(durationValue);
+                    
+                    if (durationUnit === 'days') {
+                        expDate.setDate(mDate.getDate() + duration);
+                    } else if (durationUnit === 'months') {
+                        expDate.setMonth(mDate.getMonth() + duration);
+                    } else if (durationUnit === 'years') {
+                        expDate.setFullYear(mDate.getFullYear() + duration);
+                    }
+                    
+                    const formattedDate = `${expDate.getDate().toString().padStart(2, '0')}.${(expDate.getMonth() + 1).toString().padStart(2, '0')}.${expDate.getFullYear()}`;
+                    
+                    document.getElementById('expiration-date-display').textContent = formattedDate;
+                    document.getElementById('expiration-result').style.display = 'block';
+                }
+            }
+            
+            // Настройка поля для даты
             setupDateInput('manufacture_date_text', 'manufacture_date', 'manufacture_date_error');
-            setupDateInput('expiration_date_text', 'expiration_date', 'expiration_date_error');
+            
+            // Слушатели изменений для полей срока годности
+            document.getElementById('duration_value').addEventListener('input', calculateExpirationDate);
+            document.getElementById('duration_unit').addEventListener('change', calculateExpirationDate);
             
             // Обработка отправки формы
             document.getElementById('add-batch-form').addEventListener('submit', function(e) {
-                let isValid = true;
-                const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
-                
-                if (activeTab === 'by-date') {
-                    const manufactureDate = document.getElementById('manufacture_date').value;
-                    if (!manufactureDate || manufactureDate.length !== 10) {
-                        document.getElementById('manufacture_date_error').style.display = 'block';
-                        isValid = false;
-                    }
-                } else if (activeTab === 'by-expiry') {
-                    const expirationDate = document.getElementById('expiration_date').value;
-                    if (!expirationDate || expirationDate.length !== 10) {
-                        document.getElementById('expiration_date_error').style.display = 'block';
-                        isValid = false;
-                    }
-                }
-                
-                if (!isValid) {
+                const manufactureDate = document.getElementById('manufacture_date').value;
+                if (!manufactureDate || manufactureDate.length !== 10) {
                     e.preventDefault();
-                    alert('Пожалуйста, введите корректные даты в формате дд.мм.гггг');
+                    document.getElementById('manufacture_date_error').style.display = 'block';
+                    alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
                 }
             });
         });
