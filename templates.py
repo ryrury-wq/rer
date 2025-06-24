@@ -27,6 +27,7 @@ index_html = '''
             justify-content: center;
             align-items: center;
             position: relative;
+            height: 60px; /* Фиксированная высота */
         }
         .logo {
             font-weight: 700;
