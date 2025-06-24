@@ -277,8 +277,27 @@ index_html = '''
             text-align: center;
         }
 
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .filter-buttons .apply-btn,
+        .filter-buttons .reset-btn {
+            flex: 1;
+            margin: 0;
+            padding: 12px;
+            font-size: 0.95em;
+        }
+
+        .quick-btns {
+            /* Убираем нижний отступ, так как кнопки теперь в отдельном контейнере */
+            margin-bottom: 0;
+        }
+        
         .apply-btn, .reset-btn {
-            padding: 12px 15px;
+            padding: 12px;
             border: none;
             border-radius: 8px;
             font-weight: 500;
@@ -299,7 +318,6 @@ index_html = '''
         .reset-btn {
             background: #e0e0e0;
             color: #333;
-            margin-top: 5px;
         }
 
         .quick-btns {
@@ -332,6 +350,15 @@ index_html = '''
             background: #00a046;
             color: white;
             border-color: #00a046;
+        }
+        .apply-btn:hover {
+            background: #008c3a;
+            transform: translateY(-2px);
+        }
+
+        .reset-btn:hover {
+            background: #d0d0d0;
+            transform: translateY(-2px);
         }
     </style>
 </head>
@@ -421,8 +448,10 @@ index_html = '''
                         <a href="/" class="quick-btn">Все</a>
                     </div>
                     
-                    <button type="submit" class="apply-btn">Применить</button>
-                    <a href="/" class="reset-btn">Сбросить фильтры</a>
+                    <div class="filter-buttons">
+                        <button type="submit" class="apply-btn">Применить</button>
+                        <a href="/" class="reset-btn">Сбросить фильтры</a>
+                    </div>
                 </div>
             </form>
         </div>
