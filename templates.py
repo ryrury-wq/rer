@@ -613,8 +613,8 @@ scan_html = '''
                     <label for="manufacture_date_text">Дата изготовления (дд.мм.гггг):</label>
                     <div class="date-input-group">
                         <span class="date-icon">📅</span>
-                        <input type="date" name="manufacture_date" id="manufacture_date" style="display: none">
-                        <input type="text" id="manufacture_date_text" placeholder="   дд.мм.гггг" required>
+                        <input type="hidden" name="manufacture_date" id="manufacture_date">
+                        <input type="text" id="manufacture_date_text" placeholder="дд.мм.гггг" required class="date-input">
                     </div>
                 </div>
 
@@ -833,6 +833,7 @@ scan_html = '''
                 if (parts.length === 3) {
                     const [day, month, year] = parts;
                     dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    calculateExpirationDate(); // обновить табличку
                 }
             }
         });
