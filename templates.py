@@ -24,17 +24,19 @@ index_html = '''
             text-align: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             position: relative;
         }
         .logo {
             font-weight: 700;
             font-size: 1.8em;
+            color: white;
+            position: absolute; /* Абсолютное позиционирование */
+            left: 50%; /* Центрируем по горизонтали */
+            transform: translateX(-50%); /* Точное центрирование */
             margin: 0;
-            color: #ffffff;
-            flex-grow: 1;
-            text-align: center;
+            z-index: 1;
         }
         .filter-btn {
             background: none;
@@ -43,6 +45,8 @@ index_html = '''
             font-size: 1.5em;
             cursor: pointer;
             padding: 5px 10px;
+            position: absolute; /* Абсолютное позиционирование */
+            right: 15px; /* Фиксируем справа */
         }
         .container {
             max-width: 100%;
