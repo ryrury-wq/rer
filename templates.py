@@ -516,6 +516,39 @@ scan_html = '''
         .duration-group select {
             flex: 1;
         }
+        .expiration-box {
+            background: #f5f5f5;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .expiration-box.normal {
+            background: #e8f5e9;
+            border-left: 4px solid #00a046;
+        }
+        .expiration-box.warning {
+            background: #fff8e1;
+            border-left: 4px solid #ff9800;
+        }
+        .expiration-box.expired {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        .expiration-date {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+        .days-count {
+            font-size: 0.9em;
+            display: block;
+            word-break: break-word;
+        }
+        .normal-date { color: #00a046; }
+        .warning-date { color: #ff9800; }
+        .expired-date { color: #f44336; }
     </style>
 </head>
 <body>
@@ -596,7 +629,12 @@ scan_html = '''
                         </select>
                     </div>
                 </div>
-
+                <div class="form-group">
+                    <div class="expiration-box" id="expiration-box" style="display: none;">
+                        <span class="expiration-date" id="expiration-date-display"></span>
+                        <span class="days-count" id="days-count"></span>
+                    </div>
+                </div>
                 <button type="submit">Сохранить товар</button>
             </form>
         </div>
@@ -836,6 +874,66 @@ scan_html = '''
             }
         });
     });
+    </script>
+    <script>
+function calculateExpirationDate() {
+    const dateStr = document.getElementById('manufacture_date').value;
+    const durationValue = parseInt(document.querySelector('input[name="duration_value"]').value);
+    const durationUnit = document.querySelector('select[name="duration_unit"]').value;
+
+    const box = document.getElementById('expiration-box');
+    const dateEl = document.getElementById('expiration-date-display');
+    const daysEl = document.getElementById('days-count');
+
+    if (!dateStr || !durationValue || durationValue <= 0) {
+        box.style.display = 'none';
+        return;
+    }
+
+    const [year, month, day] = dateStr.split('-');
+    let mDate = new Date(year, month - 1, day);
+    let expDate = new Date(mDate);
+
+    if (durationUnit === 'days') {
+        expDate.setDate(expDate.getDate() + durationValue);
+    } else if (durationUnit === 'months') {
+        expDate.setMonth(expDate.getMonth() + durationValue);
+    } else if (durationUnit === 'years') {
+        expDate.setFullYear(expDate.getFullYear() + durationValue);
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+
+    const formatted = `Годен до: ${expDate.toLocaleDateString('ru-RU')}`;
+    dateEl.textContent = formatted;
+
+    if (diffDays < 1) {
+        box.className = 'expiration-box expired';
+        dateEl.className = 'expiration-date expired-date';
+        daysEl.textContent = `Просрочено ${Math.abs(diffDays)} дн.`;
+        daysEl.className = 'days-count expired-date';
+    } else if (diffDays <= 10) {
+        box.className = 'expiration-box warning';
+        dateEl.className = 'expiration-date warning-date';
+        daysEl.textContent = `Осталось ${diffDays} дн.`;
+        daysEl.className = 'days-count warning-date';
+    } else {
+        box.className = 'expiration-box normal';
+        dateEl.className = 'expiration-date normal-date';
+        daysEl.textContent = `Осталось ${diffDays} дн.`;
+        daysEl.className = 'days-count normal-date';
+    }
+
+    box.style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('manufacture_date').addEventListener('change', calculateExpirationDate);
+    document.querySelector('input[name="duration_value"]').addEventListener('input', calculateExpirationDate);
+    document.querySelector('select[name="duration_unit"]').addEventListener('change', calculateExpirationDate);
+});
     </script>
 </body>
 </html>
