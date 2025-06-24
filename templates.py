@@ -748,7 +748,7 @@ scan_html = '''
                     expirationBox.style.display = 'block';
                     dateDisplay.textContent = formattedDate;
                     
-                    if (diffDays < 0) {
+                    if (diffDays < 1) {
                         expirationBox.className = 'expiration-box expired';
                         dateDisplay.className = 'expiration-date expired-date';
                         daysCount.textContent = `Просрочено ${Math.abs(diffDays)} дн. назад`;
@@ -1419,7 +1419,7 @@ add_batch_html = '''
                     expirationBox.style.display = 'block';
                     dateDisplay.textContent = formattedDate;
                     
-                    if (diffDays < 0) {
+                    if (diffDays < 1) {
                         // Просрочено
                         expirationBox.className = 'expiration-box expired';
                         dateDisplay.className = 'expiration-date expired-date';
