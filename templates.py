@@ -3162,6 +3162,82 @@ notifications_html = '''
 </html>
 '''
 
+index_html = index_html.replace(
+    '</body>',
+    '''
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Регистрация Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}')
+                    .then(reg => {
+                        console.log('Service Worker зарегистрирован');
+                        
+                        // Запрос разрешения
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') {
+                                subscribeUser(reg);
+                            }
+                        });
+                    });
+            }
+            
+            function subscribeUser(reg) {
+                reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: new Uint8Array(
+                        '{{ vapid_public_key }}'.match(/[0-9a-f]{2}/gi).map(h => parseInt(h, 16))
+                }).then(subscription => {
+                    fetch('/subscribe', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(subscription)
+                    });
+                });
+            }
+        });
+    </script>
+    </body>
+    '''
+)
+
+# Обновленный scan.html с поддержкой push-уведомлений
+scan_html = scan_html.replace(
+    '</body>',
+    '''
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}')
+                    .then(reg => console.log('Service Worker зарегистрирован'));
+            }
+        });
+    </script>
+    </body>
+    '''
+)
+
+# Обновленный notifications.html
+notifications_html = notifications_html.replace(
+    '<button class="clear-btn" id="clear-all">Очистить все уведомления</button>',
+    '''
+    <button class="clear-btn" id="clear-all">Очистить все уведомления</button>
+    <button class="clear-btn" id="test-push" style="bottom: 90px; background: #9c27b0;">
+        Тест push-уведомления
+    </button>
+    '''
+).replace(
+    '</script>',
+    '''
+    // Тест push-уведомления
+    document.getElementById('test-push')?.addEventListener('click', function() {
+        fetch('/test_push')
+            .then(() => alert('Тестовое уведомление отправлено!'));
+    });
+    </script>
+    '''
+)
+
 # Создаем словарь шаблонов
 templates = {
     'index.html': index_html,
