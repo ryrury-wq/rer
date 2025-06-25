@@ -1,11 +1,23 @@
 import os
 import psycopg2
+import subprocess
 from datetime import datetime, timedelta
-from flask import Flask, request, redirect, url_for, g, jsonify
+from flask import Flask, request, redirect, url_for, g, jsonify, render_template_string
 from psycopg2.extras import DictCursor
 from dateutil.relativedelta import relativedelta
+from pywebpush import webpush, WebPushException
+import json
 
 app = Flask(__name__)
+
+# VAPID Keys (замените своими ключами или используйте переменные окружения)
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', 'your_private_key')
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'your_public_key')
+VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'admin@example.com')
+
+if not os.path.exists('vapid_private.pem'):
+    subprocess.run(['pip', 'install', 'py_vapid'])
+    subprocess.run(['vapid', '--gen'])
 
 # Подключение к PostgreSQL
 def get_db():
@@ -62,6 +74,14 @@ def init_db():
                 removed_date TEXT NOT NULL
             )
         ''')
+        # Таблица для push-подписок
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                id SERIAL PRIMARY KEY,
+                endpoint TEXT NOT NULL UNIQUE,
+                keys TEXT NOT NULL
+            )
+        ''')
         db.commit()
 
 def clear_old_history():
@@ -71,6 +91,36 @@ def clear_old_history():
         three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
         cursor.execute("DELETE FROM history WHERE removed_date < %s", (three_months_ago,))
         db.commit()
+
+def send_push_notification(title, message):
+    """Отправка push-уведомления всем подписчикам"""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT endpoint, keys FROM push_subscriptions")
+    subscriptions = cursor.fetchall()
+    
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub['endpoint'],
+                    "keys": json.loads(sub['keys'])
+                },
+                data=json.dumps({
+                    "title": title,
+                    "body": message,
+                    "url": url_for('notifications', _external=True)
+                }),
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={
+                    "sub": f"mailto:{VAPID_CLAIM_EMAIL}",
+                    "aud": "https://fcm.googleapis.com"
+                }
+            )
+        except WebPushException as e:
+            print("Ошибка отправки push-уведомления:", e)
+        except Exception as e:
+            print("Общая ошибка при отправке:", e)
 
 def generate_notifications():
     db = get_db()
@@ -132,7 +182,6 @@ def generate_notifications():
           today.strftime('%Y-%m-%d')))
     
     # Удаляем уведомления для товаров, которые больше не соответствуют условиям
-    # Для today: удаляем если срок больше не сегодня
     cursor.execute('''
         DELETE FROM notifications n
         USING batches b
@@ -141,7 +190,6 @@ def generate_notifications():
         AND b.expiration_date != %s
     ''', (today.strftime('%Y-%m-%d'),))
     
-    # Для soon: удаляем если срок больше не в диапазоне 2-5 дней
     cursor.execute('''
         DELETE FROM notifications n
         USING batches b
@@ -152,6 +200,16 @@ def generate_notifications():
     
     db.commit()
     
+    # Проверяем новые уведомления для отправки push
+    cursor.execute("SELECT COUNT(*) FROM notifications WHERE notification_date = %s", (today.strftime('%Y-%m-%d'),))
+    new_count = cursor.fetchone()['count']
+    
+    if new_count > 0:
+        send_push_notification(
+            "Новые уведомления о сроках годности",
+            f"У вас {new_count} новых уведомлений. Проверьте список!"
+        )
+
 def remove_expired():
     db = get_db()
     cursor = db.cursor()
@@ -259,7 +317,9 @@ def index():
         })
 
     return render_template('index.html', items=items,
-                           from_date=from_date_raw, to_date=to_date_raw)
+                           from_date=from_date_raw, to_date=to_date_raw,
+                           vapid_public_key=VAPID_PUBLIC_KEY)
+
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
@@ -614,6 +674,30 @@ def delete_product():
 
 from templates import render_template
 
+@app.route('/subscribe', methods=['POST'])
+def subscribe():
+    subscription = request.json
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO push_subscriptions (endpoint, keys) VALUES (%s, %s)",
+            (subscription['endpoint'], json.dumps(subscription['keys']))
+        )
+        db.commit()
+        return jsonify({'success': True}), 201
+    except psycopg2.IntegrityError:
+        db.rollback()
+        return jsonify({'success': False}), 200
+
+@app.route('/test_push')
+def test_push():
+    send_push_notification(
+        "Тест уведомления",
+        "Это тестовое уведомление от системы контроля сроков годности!"
+    )
+    return "Тестовое уведомление отправлено", 200
+
 def run_app():
     with app.app_context():
         init_db()
@@ -625,5 +709,6 @@ def run_app():
             print(f"Error generating notifications: {e}")
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 if __name__ == '__main__':
     run_app()
