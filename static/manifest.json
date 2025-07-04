@@ -1,0 +1,21 @@
+{
+  "name": "Вкусвилл - Контроль сроков",
+  "short_name": "Вкусвилл",
+  "description": "Приложение для контроля сроков годности товаров",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#00a046",
+  "theme_color": "#00a046",
+  "icons": [
+    {
+      "src": "{{ url_for('static', filename='icon-192x192.png') }}",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "{{ url_for('static', filename='icon-512x512.png') }}",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
