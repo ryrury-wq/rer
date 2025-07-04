@@ -47,15 +47,6 @@ index_html = '''
             margin: 0;
             z-index: 1;
         }
-        .install-button
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5em;
-            cursor: pointer;
-            padding: 5px 10px;
-            position: absolute; /* Абсолютное позиционирование */
-            left: 15px; /* Фиксируем справа */
         
         .filter-btn {
             background: none;
@@ -412,14 +403,71 @@ index_html = '''
             background: #d0d0d0;
             transform: translateY(-2px);
         }
+/* Стиль для кнопки установки */
+        .install-button {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            z-index: 1000;
+            background: #00a046;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 25px;
+            font-size: 1.1em;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            transform: translateY(100px); /* Начальное положение - скрыто */
+            animation: slideUp 0.5s forwards 1s; /* Появление через 1 секунду */
+        }
+
+        .install-button:hover {
+            background: #008c3a;
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .install-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .install-icon {
+            font-size: 1.4em;
+        }
+
+/* Анимация появления */
+        @keyframes slideUp {
+            from { transform: translateY(100px); }
+            to { transform: translateY(0); }
+        }
+
+/* Для мобильных устройств */
+       @media (max-width: 768px) {
+            .install-button {
+               bottom: 20px;
+               right: 15px;
+               padding: 12px 20px;
+               font-size: 1em;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <button id="install-button" style="display: none;">Установить приложение</button>
-        <h1 class="logo">Вкусвилл</h1>
-        <button class="filter-btn" id="open-filter-modal">☰</button>
-    </div>
+     <div class="header">
+            <h1 class="logo">Вкусвилл</h1>
+            <div class="header-buttons">
+                <button id="install-button" class="install-btn" title="Установить приложение" style="display: none;">
+                    <span class="install-icon">⬇️</span> Установить
+                </button>
+                <button class="filter-btn" id="open-filter-modal">☰</button>
+            </div>
+        </div>
 
     <div class="container">
         <h1>Товары с истекающим сроком</h1>
@@ -585,35 +633,44 @@ index_html = '''
     });
     </script>
 <script>
-// Регистрация Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('{{ url_for('static', filename='sw.js') }}')
-      .then(reg => console.log('Service Worker зарегистрирован'))
-      .catch(err => console.error('Ошибка регистрации Service Worker:', err));
-  });
-}
-
-// Обработчик для кнопки "Установить"
 let deferredPrompt;
+
+// Показываем кнопку при возможности установки
 window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  
-  // Показать кнопку установки (по желанию)
-  const installButton = document.getElementById('install-button');
-  if (installButton) {
-    installButton.style.display = 'block';
-    installButton.addEventListener('click', () => {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('Пользователь установил приложение');
-        }
-        deferredPrompt = null;
-      });
-    });
-  }
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    const installButton = document.getElementById('install-button');
+    if (installButton) {
+        installButton.style.display = 'flex';
+        
+        installButton.addEventListener('click', () => {
+            // Скрыть кнопку после нажатия
+            installButton.style.display = 'none';
+            
+            // Показать подсказку установки
+            deferredPrompt.prompt();
+            
+            // Ждем, пока пользователь решит
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Пользователь установил приложение');
+                } else {
+                    console.log('Пользователь отказался от установки');
+                }
+                deferredPrompt = null;
+            });
+        });
+    }
+});
+
+// Скрываем кнопку после установки
+window.addEventListener('appinstalled', () => {
+    console.log('Приложение успешно установлено');
+    const installButton = document.getElementById('install-button');
+    if (installButton) {
+        installButton.style.display = 'none';
+    }
 });
 </script>
 </body>
