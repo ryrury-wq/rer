@@ -47,6 +47,16 @@ index_html = '''
             margin: 0;
             z-index: 1;
         }
+        .install-button
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px 10px;
+            position: absolute; /* Абсолютное позиционирование */
+            left: 15px; /* Фиксируем справа */
+        
         .filter-btn {
             background: none;
             border: none;
