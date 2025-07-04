@@ -5,18 +5,9 @@ from datetime import datetime, timedelta
 from flask import Flask, request, redirect, url_for, g, jsonify, render_template_string
 from psycopg2.extras import DictCursor
 from dateutil.relativedelta import relativedelta
-from pywebpush import webpush, WebPushException
 import json
 
 app = Flask(__name__)
-
-VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', 'your_private_key')
-VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'your_public_key')
-VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'admin@example.com')
-
-if not os.path.exists('vapid_private.pem'):
-    subprocess.run(['pip', 'install', 'py_vapid'])
-    subprocess.run(['vapid', '--gen'])
 
 # Подключение к PostgreSQL
 def get_db():
@@ -55,30 +46,12 @@ def init_db():
             )
         ''')
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS notifications (
-                id SERIAL PRIMARY KEY,
-                type TEXT NOT NULL,  -- 'today' или 'soon'
-                product_id INTEGER REFERENCES products(id),
-                batch_id INTEGER REFERENCES batches(id),
-                notification_date TEXT DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),
-                is_active BOOLEAN DEFAULT TRUE
-            )
-        ''')
-        cursor.execute('''
             CREATE TABLE IF NOT EXISTS history (
                 id SERIAL PRIMARY KEY,
                 barcode TEXT NOT NULL,
                 product_name TEXT NOT NULL,
                 expiration_date TEXT NOT NULL,
                 removed_date TEXT NOT NULL
-            )
-        ''')
-        # Таблица для push-подписок
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS push_subscriptions (
-                id SERIAL PRIMARY KEY,
-                endpoint TEXT NOT NULL UNIQUE,
-                keys TEXT NOT NULL
             )
         ''')
         db.commit()
@@ -90,124 +63,6 @@ def clear_old_history():
         three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
         cursor.execute("DELETE FROM history WHERE removed_date < %s", (three_months_ago,))
         db.commit()
-
-def send_push_notification(title, message):
-    """Отправка push-уведомления всем подписчикам"""
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT endpoint, keys FROM push_subscriptions")
-    subscriptions = cursor.fetchall()
-    
-    for sub in subscriptions:
-        try:
-            webpush(
-                subscription_info={
-                    "endpoint": sub['endpoint'],
-                    "keys": json.loads(sub['keys'])
-                },
-                data=json.dumps({
-                    "title": title,
-                    "body": message,
-                    "url": url_for('notifications', _external=True)
-                }),
-                vapid_private_key=VAPID_PRIVATE_KEY,
-                vapid_claims={
-                    "sub": f"mailto:{VAPID_CLAIM_EMAIL}",
-                    "aud": "https://fcm.googleapis.com"
-                }
-            )
-        except WebPushException as e:
-            print("Ошибка отправки push-уведомления:", e)
-        except Exception as e:
-            print("Общая ошибка при отправке:", e)
-
-def generate_notifications():
-    db = get_db()
-    cursor = db.cursor()
-    today = datetime.now().date()
-    
-    # Проверяем, не заглушены ли уведомления
-    cursor.execute("SELECT notification_date FROM notifications WHERE type LIKE 'mute_%%'")
-    mute_notification = cursor.fetchone()
-    
-    if mute_notification:
-        mute_date = datetime.strptime(mute_notification['notification_date'], '%Y-%m-%d').date()
-        if mute_date > today:
-            # Уведомления заглушены, пропускаем генерацию
-            return
-    
-    # Удаляем старые уведомления (старше 6 дней)
-    six_days_ago = (today - timedelta(days=6)).strftime('%Y-%m-%d')
-    cursor.execute("DELETE FROM notifications WHERE notification_date < %s", (six_days_ago,))
-    
-    # Удаляем старые уведомления о заглушении
-    cursor.execute("DELETE FROM notifications WHERE type LIKE 'mute_%%' AND notification_date < %s", (today.strftime('%Y-%m-%d'),))
-    
-    # Генерируем уведомления для товаров, которые нужно убрать сегодня
-    tomorrow = (today + timedelta(days=1)).strftime('%Y-%m-%d')
-    cursor.execute('''
-        INSERT INTO notifications (type, product_id, batch_id, notification_date)
-        SELECT 'today', p.id, b.id, %s
-        FROM batches b
-        JOIN products p ON b.product_id = p.id
-        WHERE b.expiration_date = %s
-        AND NOT EXISTS (
-            SELECT 1 FROM notifications n 
-            WHERE n.batch_id = b.id 
-            AND n.type = 'today'
-            AND n.notification_date = %s
-        )
-    ''', (today.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d')))
-    
-    # Генерируем уведомления для товаров с истекающим сроком (2-5 дней)
-    soon_start = today + timedelta(days=2)
-    soon_end = today + timedelta(days=5)
-    
-    cursor.execute('''
-        INSERT INTO notifications (type, product_id, batch_id, notification_date)
-        SELECT 'soon', p.id, b.id, %s
-        FROM batches b
-        JOIN products p ON b.product_id = p.id
-        WHERE b.expiration_date BETWEEN %s AND %s
-        AND NOT EXISTS (
-            SELECT 1 FROM notifications n 
-            WHERE n.batch_id = b.id 
-            AND n.type = 'soon'
-            AND n.notification_date = %s
-        )
-    ''', (today.strftime('%Y-%m-%d'), 
-          soon_start.strftime('%Y-%m-%d'), 
-          soon_end.strftime('%Y-%m-%d'),
-          today.strftime('%Y-%m-%d')))
-    
-    # Удаляем уведомления для товаров, которые больше не соответствуют условиям
-    cursor.execute('''
-        DELETE FROM notifications n
-        USING batches b
-        WHERE n.batch_id = b.id
-        AND n.type = 'today'
-        AND b.expiration_date != %s
-    ''', (today.strftime('%Y-%m-%d'),))
-    
-    cursor.execute('''
-        DELETE FROM notifications n
-        USING batches b
-        WHERE n.batch_id = b.id
-        AND n.type = 'soon'
-        AND b.expiration_date NOT BETWEEN %s AND %s
-    ''', (soon_start.strftime('%Y-%m-%d'), soon_end.strftime('%Y-%m-%d')))
-    
-    db.commit()
-    
-    # Проверяем новые уведомления для отправки push
-    cursor.execute("SELECT COUNT(*) FROM notifications WHERE notification_date = %s", (today.strftime('%Y-%m-%d'),))
-    new_count = cursor.fetchone()['count']
-    
-    if new_count > 0:
-        send_push_notification(
-            "Новые уведомления о сроках годности",
-            f"У вас {new_count} новых уведомлений. Проверьте список!"
-        )
 
 def remove_expired():
     db = get_db()
@@ -236,11 +91,6 @@ def remove_expired():
 
 @app.route('/')
 def index():
-    try:
-        generate_notifications()
-    except Exception as e:
-        app.logger.error(f"Notification generation error: {e}")
-        
     db = get_db()
     cursor = db.cursor()
     today = datetime.now().date()
@@ -316,8 +166,7 @@ def index():
         })
 
     return render_template('index.html', items=items,
-                           from_date=from_date_raw, to_date=to_date_raw,
-                           vapid_public_key=VAPID_PUBLIC_KEY)
+                           from_date=from_date_raw, to_date=to_date_raw)
 
 
 @app.route('/scan', methods=['GET', 'POST'])
@@ -588,79 +437,6 @@ def edit_product():
     product = cursor.fetchone()
     return render_template('edit_product.html', product=product)
 
-@app.route('/notifications')
-def notifications():
-    db = get_db()
-    cursor = db.cursor()
-    
-    # Получаем все активные уведомления
-    cursor.execute('''
-        SELECT n.id, n.type, n.notification_date, 
-               p.name, p.barcode, b.expiration_date
-        FROM notifications n
-        JOIN products p ON n.product_id = p.id
-        JOIN batches b ON n.batch_id = b.id
-        WHERE n.is_active = TRUE
-        ORDER BY n.notification_date DESC, n.type
-    ''')
-    notifications = cursor.fetchall()
-    
-    # Группируем по дате и типу
-    grouped = {}
-    for note in notifications:
-        date = note['notification_date']
-        if date not in grouped:
-            grouped[date] = {'today': [], 'soon': []}
-        
-        item = {
-            'id': note['id'],
-            'name': note['name'],
-            'barcode': note['barcode'],
-            'expiration_date': datetime.strptime(note['expiration_date'], '%Y-%m-%d').strftime('%d.%m.%Y')
-        }
-        
-        grouped[date][note['type']].append(item)
-    
-    return render_template('notifications.html', notifications=grouped)
-
-@app.route('/mute_notifications', methods=['POST'])
-def mute_notifications():
-    mute_type = request.form['mute_type']
-    db = get_db()
-    cursor = db.cursor()
-    
-    if mute_type == 'weekend':
-        # Заглушить на 2 дня (выходные)
-        mute_date = (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d')
-    else:  # vacation
-        # Заглушить до отпуска (по умолчанию 14 дней)
-        mute_date = (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d')
-    
-    # Помечаем все уведомления как неактивные
-    cursor.execute("UPDATE notifications SET is_active = FALSE")
-    # Создаем запись о заглушении
-    cursor.execute("INSERT INTO notifications (type, notification_date) VALUES (%s, %s)", 
-                  (f'mute_{mute_type}', mute_date))
-    
-    db.commit()
-    return redirect(url_for('notifications'))
-
-@app.route('/clear_notifications', methods=['POST'])
-def clear_notifications():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("DELETE FROM notifications")
-    db.commit()
-    return redirect(url_for('notifications'))
-
-@app.route('/check_new_notifications')
-def check_new_notifications():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT COUNT(*) FROM notifications WHERE is_active = TRUE")
-    count = cursor.fetchone()[0]
-    return jsonify({'count': count})
-
 @app.route('/delete_product', methods=['POST'])
 def delete_product():
     product_id = request.form['product_id']
@@ -673,39 +449,11 @@ def delete_product():
 
 from templates import render_template
 
-@app.route('/subscribe', methods=['POST'])
-def subscribe():
-    subscription = request.json
-    db = get_db()
-    cursor = db.cursor()
-    try:
-        cursor.execute(
-            "INSERT INTO push_subscriptions (endpoint, keys) VALUES (%s, %s)",
-            (subscription['endpoint'], json.dumps(subscription['keys']))
-        )
-        db.commit()
-        return jsonify({'success': True}), 201
-    except psycopg2.IntegrityError:
-        db.rollback()
-        return jsonify({'success': False}), 200
-
-@app.route('/test_push')
-def test_push():
-    send_push_notification(
-        "Тест уведомления",
-        "Это тестовое уведомление от системы контроля сроков годности!"
-    )
-    return "Тестовое уведомление отправлено", 200
-
 def run_app():
     with app.app_context():
         init_db()
         remove_expired()
         clear_old_history()
-        try:
-            generate_notifications()
-        except Exception as e:
-            print(f"Error generating notifications: {e}")
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
 
