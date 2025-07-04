@@ -477,33 +477,45 @@ def history():
 
 @app.route('/move_to_history', methods=['POST'])
 def move_to_history():
-    batch_id = int(request.form['batch_id'])  # Явное преобразование в int
+    batch_id = int(request.form['batch_id'])
     db = get_db()
     cursor = db.cursor()
-    today = datetime.now().date().strftime('%Y-%m-%d')
-    
-    # Получаем информацию о товаре
+    today = datetime.now().date().strftime('%Y-%m-%d')  # всегда строка
+
+    # Получаем товар по ID
     cursor.execute('''
-    SELECT p.barcode, p.name, b.expiration_date
-    FROM batches b
-    JOIN products p ON b.product_id = p.id
-    WHERE b.id = %s
-''', (batch_id,)) 
+        SELECT p.barcode, p.name, b.expiration_date
+        FROM batches b
+        JOIN products p ON b.product_id = p.id
+        WHERE b.id = %s
+    ''', (batch_id,))
     item = cursor.fetchone()
-    
+
     if item:
-        # Проверяем, нет ли уже такой записи в истории
-        cursor.execute("SELECT id FROM history WHERE barcode = %s AND expiration_date = %s",
-                     (item['barcode'], item['expiration_date']))
+        # Явно приводим дату к строке (важно!)
+        exp_date = item['expiration_date']
+        if isinstance(exp_date, datetime):
+            exp_date_str = exp_date.strftime('%Y-%m-%d')
+        elif isinstance(exp_date, date):
+            exp_date_str = exp_date.strftime('%Y-%m-%d')
+        else:
+            exp_date_str = str(exp_date)
+
+        # Проверяем, есть ли уже запись в истории
+        cursor.execute(
+            "SELECT id FROM history WHERE barcode = %s AND expiration_date = %s",
+            (item['barcode'], exp_date_str)
+        )
         if not cursor.fetchone():
-            # Добавляем в историю
-            cursor.execute("INSERT INTO history (barcode, product_name, expiration_date, removed_date) VALUES (%s, %s, %s, %s)",
-                          (item['barcode'], item['name'], item['expiration_date'], today))
-        
-        # Удаляем из активных
+            cursor.execute(
+                "INSERT INTO history (barcode, product_name, expiration_date, removed_date) VALUES (%s, %s, %s, %s)",
+                (item['barcode'], item['name'], exp_date_str, today)
+            )
+
+        # Удаляем из batches
         cursor.execute("DELETE FROM batches WHERE id = %s", (batch_id,))
         db.commit()
-    
+
     return redirect(url_for('index'))
 
 @app.route('/restore_from_history', methods=['POST'])
