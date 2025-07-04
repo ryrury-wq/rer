@@ -1961,192 +1961,193 @@ assortment_html = '''
     <title>Ассортимент - Вкусвилл</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
-        body { 
-            font-family: 'Roboto', sans-serif; 
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-        }
-        .header {
-            background-color: #00a046;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            position: relative;
-        }
-        .back-btn {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-            font-weight: bold;
-            z-index: 10;
-        }
-        .logo {
-            font-weight: 700;
-            font-size: 1.8em;
-            letter-spacing: 0.5px;
-            margin: 0;
-            color: white;
-        }
-        .container {
-            max-width: 100%;
-            padding: 20px 15px;
-        }
-        .search-container {
-            position: relative;
-            margin: 15px 0;
-        }
-        .search-input {
-            width: 100%;
-            padding: 12px 20px 12px 40px;
-            border-radius: 24px;
-            border: 1px solid #e0e0e0;
-            font-size: 1em;
-            box-sizing: border-box;
-            background-color: white;
-        }
-        .search-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #757575;
-        }
-        .items-container {
-            max-height: 65vh;
-            overflow-y: auto;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            background-color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        }
-        .product-item {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            background: #fafafa;
-            transition: all 0.2s;
-            position: relative;
-            display: flex;
-            align-items: center;
-            min-height: 100px;
-            max-height: 120px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+    
+    body { 
+        font-family: 'Roboto', sans-serif; 
+        margin: 0;
+        padding: 0;
+        background-color: #f8f9fa;
+    }
+    .header {
+        background-color: #00a046;
+        color: white;
+        padding: 15px 20px;
+        text-align: center;
+        position: relative;
+    }
+    .back-btn {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-size: 24px;
+        text-decoration: none;
+        font-weight: bold;
+        z-index: 10;
+    }
+    .logo {
+        font-weight: 700;
+        font-size: 1.8em;
+        letter-spacing: 0.5px;
+        margin: 0;
+        color: white;
+    }
+    .container {
+        max-width: 100%;
+        padding: 20px 15px;
+    }
+    .search-container {
+        position: relative;
+        margin: 15px 0;
+    }
+    .search-input {
+        width: 100%;
+        padding: 12px 20px 12px 40px;
+        border-radius: 24px;
+        border: 1px solid #e0e0e0;
+        font-size: 1em;
+        box-sizing: border-box;
+        background-color: white;
+    }
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #757575;
+    }
+    .items-container {
+        max-height: 65vh;
+        overflow-y: auto;
+        border-radius: 12px;
+        padding: 15px;
+        margin-top: 15px;
+        background-color: white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
 
-        .product-item:hover {
-            background: #f5f5f5;
-            transform: translateY(-2px);
-            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-        }
-        .item-info {
-            flex-grow: 1;
-            padding-right: 90px;
-            max-width: calc(100% - 100px);
-            overflow: hidden;
-        }
-        .product-actions {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .action-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #f0f0f0;
-            color: #333;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .add-btn { background: #00a046; color: white; }
-        
-        .edit-btn { background: #ffc107; color: #333; }
-        
-        .delete-btn { background: #f44336; color: white; }
-        
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            margin: 20px 0;
-            justify-content: center;
-        }
-        .nav-links a {
-            padding: 12px 20px;
-            background: #00a046;
-            border-radius: 24px;
-            text-decoration: none;
-            color: white;
-            font-weight: 500;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .nav-links a:hover {
-            background: #008c3a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        h1 {
-            text-align: center;
-            color: #00a046;
-            font-weight: 500;
-            margin: 0;
-        }
-        .footer {
-            text-align: center;
-            padding: 20px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
-            margin-top: 10px;
-        }
-        .empty-assortment {
-            text-align: center;
-            padding: 30px;
-            color: #9e9e9e;
-            font-style: italic;
-        }
-        .item-title {
-            font-weight: 500;
-            font-size: 1.1em;
-            margin-bottom: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .item-details {
-            font-size: 0.95em;
-            color: #616161;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .batch-count {
-            display: inline-block;
-            padding: 4px 10px;
-            background: #e0f7fa;
-            border-radius: 12px;
-            font-size: 0.85em;
-            margin-top: 5px;
-        }
-    </style>
+    .product-item {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        background: #fafafa;
+        transition: all 0.2s;
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .product-item:hover {
+        background: #f5f5f5;
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+
+    .item-info {
+        flex: 1 1 auto;
+        padding-right: 80px;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    .item-title {
+        font-weight: 500;
+        font-size: 1.1em;
+        margin-bottom: 5px;
+        white-space: normal;
+    }
+
+    .item-details {
+        font-size: 0.95em;
+        color: #616161;
+        white-space: normal;
+    }
+
+    .batch-count {
+        display: inline-block;
+        padding: 4px 10px;
+        background: #e0f7fa;
+        border-radius: 12px;
+        font-size: 0.85em;
+        margin-top: 5px;
+    }
+
+    .product-actions {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f0f0f0;
+        color: #333;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .add-btn { background: #00a046; color: white; }
+    .edit-btn { background: #ffc107; color: #333; }
+    .delete-btn { background: #f44336; color: white; }
+
+    .nav-links {
+        display: flex;
+        gap: 10px;
+        margin: 20px 0;
+        justify-content: center;
+    }
+    .nav-links a {
+        padding: 12px 20px;
+        background: #00a046;
+        border-radius: 24px;
+        text-decoration: none;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+        text-align: center;
+    }
+    .nav-links a:hover {
+        background: #008c3a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    h1 {
+        text-align: center;
+        color: #00a046;
+        font-weight: 500;
+        margin: 0;
+    }
+    .footer {
+        text-align: center;
+        padding: 20px 15px 10px;
+        color: #757575;
+        font-size: 0.85em;
+        margin-top: 10px;
+    }
+    .empty-assortment {
+        text-align: center;
+        padding: 30px;
+        color: #9e9e9e;
+        font-style: italic;
+    }
+</style>
+
 </head>
 <body>
     <div class="header">
