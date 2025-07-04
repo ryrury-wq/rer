@@ -398,7 +398,6 @@ index_html = '''
 </head>
 <body>
     <div class="header">
-        <button class="notification-btn" id="notification-btn">🔔</button>
         <h1 class="logo">Вкусвилл</h1>
         <button class="filter-btn" id="open-filter-modal">☰</button>
     </div>
