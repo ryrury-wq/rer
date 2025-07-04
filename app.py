@@ -30,6 +30,10 @@ def init_db():
     with app.app_context():
         db = get_db()
         cursor = db.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS notifications CASCADE")
+        cursor.execute("DROP TABLE IF EXISTS push_subscriptions CASCADE")
+        
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS products (
                 id SERIAL PRIMARY KEY,
