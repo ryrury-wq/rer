@@ -2027,28 +2027,31 @@ assortment_html = '''
             background-color: white;
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
-        .product-item { 
-            padding: 15px; 
-            border-bottom: 1px solid #eee;
+        .product-item {
+            padding: 15px;
             border-radius: 8px;
             margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             background: #fafafa;
             transition: all 0.2s;
             position: relative;
+            display: flex;
+            align-items: center;
+            min-height: 100px;
+            max-height: 120px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
+
         .product-item:hover {
             background: #f5f5f5;
             transform: translateY(-2px);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
         }
-        .item-info { 
+        .item-info {
             flex-grow: 1;
-            padding-right: 80px; /* Увеличено место для кнопок */
-            max-width: calc(100% - 100px); /* Увеличено место для кнопок */
-            word-wrap: break-word;
+            padding-right: 90px;
+            max-width: calc(100% - 100px);
+            overflow: hidden;
         }
         .product-actions {
             position: absolute;
@@ -2057,11 +2060,11 @@ assortment_html = '''
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 8px; /* Увеличено расстояние между кнопками */
+            gap: 8px;
         }
         .action-btn {
-            width: 40px; /* Увеличена ширина кнопок */
-            height: 40px; /* Увеличена высота кнопок */
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: #f0f0f0;
             color: #333;
@@ -2070,21 +2073,15 @@ assortment_html = '''
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px; /* Увеличен размер иконок */
+            font-size: 20px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .add-btn { 
-            background: #00a046;
-            color: white;
-        }
-        .edit-btn { 
-            background: #ffc107;
-            color: #333;
-        }
-        .delete-btn { 
-            background: #f44336;
-            color: white;
-        }
+        .add-btn { background: #00a046; color: white; }
+        
+        .edit-btn { background: #ffc107; color: #333; }
+        
+        .delete-btn { background: #f44336; color: white; }
+        
         .nav-links {
             display: flex;
             gap: 10px;
@@ -2128,20 +2125,26 @@ assortment_html = '''
         }
         .item-title {
             font-weight: 500;
+            font-size: 1.1em;
             margin-bottom: 5px;
-            font-size: 1.1em; /* Увеличен размер текста */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .item-details {
-            font-size: 0.95em; /* Увеличен размер текста */
+            font-size: 0.95em;
             color: #616161;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .batch-count {
             display: inline-block;
-            padding: 4px 10px; /* Увеличен размер бейджа */
+            padding: 4px 10px;
             background: #e0f7fa;
             border-radius: 12px;
             font-size: 0.85em;
-            margin-top: 8px; /* Увеличен отступ */
+            margin-top: 5px;
         }
     </style>
 </head>
