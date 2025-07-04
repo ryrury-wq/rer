@@ -1946,7 +1946,7 @@ assortment_html = '''
 <head>
     <title>Ассортимент - Вкусвилл</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
+   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
     
     body { 
@@ -2017,14 +2017,14 @@ assortment_html = '''
     .product-item {
         padding: 15px;
         border-radius: 8px;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
         background: #fafafa;
         transition: all 0.2s;
-        position: relative;
         display: flex;
-        align-items: flex-start;
         flex-wrap: wrap;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        position: relative;
+        min-height: 110px; /* Увеличим минимальную высоту */
     }
 
     .product-item:hover {
@@ -2034,8 +2034,9 @@ assortment_html = '''
     }
 
     .item-info {
-        flex: 1 1 auto;
-        padding-right: 80px;
+        flex: 1 1 70%; /* Займёт 70% ширины */
+        min-width: 200px; /* Минимальная ширина текстового блока */
+        padding-right: 15px;
         overflow-wrap: break-word;
         word-break: break-word;
     }
@@ -2045,12 +2046,14 @@ assortment_html = '''
         font-size: 1.1em;
         margin-bottom: 5px;
         white-space: normal;
+        line-height: 1.3;
     }
 
     .item-details {
         font-size: 0.95em;
         color: #616161;
         white-space: normal;
+        line-height: 1.4;
     }
 
     .batch-count {
@@ -2060,21 +2063,20 @@ assortment_html = '''
         border-radius: 12px;
         font-size: 0.85em;
         margin-top: 5px;
+        white-space: nowrap;
     }
 
     .product-actions {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
+        flex: 0 0 auto; /* Не будет растягиваться */
         display: flex;
-        flex-direction: column;
-        gap: 6px;
+        gap: 8px;
+        align-self: center; /* Выравниваем по центру вертикально */
+        margin-left: auto; /* Прижимаем к правому краю */
     }
 
     .action-btn {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         background: #f0f0f0;
         color: #333;
@@ -2085,6 +2087,7 @@ assortment_html = '''
         justify-content: center;
         font-size: 16px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        flex-shrink: 0; /* Предотвращаем сжатие */
     }
 
     .add-btn { background: #00a046; color: white; }
@@ -2096,6 +2099,7 @@ assortment_html = '''
         gap: 10px;
         margin: 20px 0;
         justify-content: center;
+        flex-wrap: wrap;
     }
     .nav-links a {
         padding: 12px 20px;
@@ -2107,6 +2111,9 @@ assortment_html = '''
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         transition: all 0.2s;
         text-align: center;
+        flex: 1;
+        min-width: 120px;
+        box-sizing: border-box;
     }
     .nav-links a:hover {
         background: #008c3a;
@@ -2118,6 +2125,7 @@ assortment_html = '''
         color: #00a046;
         font-weight: 500;
         margin: 0;
+        padding: 0 10px;
     }
     .footer {
         text-align: center;
@@ -2132,7 +2140,35 @@ assortment_html = '''
         color: #9e9e9e;
         font-style: italic;
     }
+    
+    /* Для очень длинных названий */
+    .long-name {
+        font-size: 0.95em;
+    }
+    
+    /* Адаптивность для мобильных */
+    @media (max-width: 480px) {
+        .product-item {
+            flex-direction: column;
+        }
+        .item-info {
+            width: 100%;
+            padding-right: 0;
+            margin-bottom: 15px;
+        }
+        .product-actions {
+            width: 100%;
+            justify-content: center;
+            margin-left: 0;
+        }
+        .nav-links a {
+            min-width: calc(50% - 5px);
+            padding: 10px 5px;
+            font-size: 0.9em;
+        }
+    }
 </style>
+
 
 </head>
 <body>
