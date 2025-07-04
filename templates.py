@@ -995,20 +995,19 @@ scan_html = '''
         // Элемент модального окна
         const soundPermissionModal = document.getElementById('sound-permission-modal');
         
-        // Проверка, было ли уже показано окно
-        const soundPermissionShown = localStorage.getItem('soundPermissionShown');
+        // Проверка сохраненных настроек звука
+        const soundSetting = localStorage.getItem('soundSetting');
         
-        // Показать модальное окно с запросом разрешения
-        function showSoundPermissionModal() {
-            if (!soundPermissionShown) {
-                soundPermissionModal.style.display = 'flex';
-            }
+        // Показать модальное окно только если настройка не сохранена
+        if (!soundSetting) {
+            soundPermissionModal.style.display = 'flex';
+        } else {
+            soundEnabled = soundSetting === 'enabled';
         }
         
         // Скрыть модальное окно
         function hideSoundPermissionModal() {
             soundPermissionModal.style.display = 'none';
-            localStorage.setItem('soundPermissionShown', 'true');
         }
         
         // Инициализация звуковой системы
@@ -1018,6 +1017,7 @@ scan_html = '''
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 soundEnabled = true;
                 hideSoundPermissionModal();
+                localStorage.setItem('soundSetting', 'enabled');
                 
                 // Воспроизводим тестовый звук для подтверждения
                 playSound('scan');
@@ -1087,13 +1087,7 @@ scan_html = '''
         document.getElementById('continue-without-sound').addEventListener('click', () => {
             hideSoundPermissionModal();
             soundEnabled = false;
-        });
-        
-        // Показываем модальное окно при загрузке (только если не было показано ранее)
-        window.addEventListener('load', () => {
-            if (!soundPermissionShown) {
-                setTimeout(showSoundPermissionModal, 500);
-            }
+            localStorage.setItem('soundSetting', 'disabled');
         });
 
         let currentStream = null;
