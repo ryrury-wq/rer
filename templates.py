@@ -35,29 +35,42 @@ index_html = '''
             justify-content: center;
             align-items: center;
             position: relative;
-            height: 45px; /* Фиксированная высота */
+            height: 60px; /* Увеличим высоту для кнопок */
         }
         .logo {
             font-weight: 700;
             font-size: 1.8em;
             color: white;
-            position: absolute; /* Абсолютное позиционирование */
-            left: 50%; /* Центрируем по горизонтали */
-            transform: translateX(-50%); /* Точное центрирование */
-            margin: 0;
+            margin: 0 auto; /* Центрирование по горизонтали */
+            max-width: 70%; /* Защита от переполнения */
             z-index: 1;
         }
         
+        /* Кнопка фильтра - исправленное позиционирование */
         .filter-btn {
-            background: none;
+            background: rgba(255,255,255,0.2);
             border: none;
             color: white;
             font-size: 1.5em;
             cursor: pointer;
-            padding: 5px 10px;
-            position: absolute; /* Абсолютное позиционирование */
-            right: 15px; /* Фиксируем справа */
+            padding: 8px 12px;
+            border-radius: 50%;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
         }
+        
+        .filter-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
         .container {
             max-width: 100%;
             padding: 15px;
@@ -215,34 +228,33 @@ index_html = '''
             font-size: 0.85em;
             margin-top: 10px;
         }
-        .notification-btn {
+
+        /* Кнопка установки - НОВЫЕ СТИЛИ */
+        #install-button {
             position: absolute;
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            background: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
             border: none;
-            color: white;
-            font-size: 1.5em;
+            border-radius: 24px;
+            padding: 8px 15px;
+            font-size: 0.9em;
             cursor: pointer;
-            padding: 5px 10px;
-            z-index: 2;
-        }
-
-/* Добавим индикатор новых уведомлений */
-        .notification-badge {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #ff5252;
-            color: white;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 0.7em;
             display: flex;
-            justify-content: center;
             align-items: center;
+            gap: 8px;
+            z-index: 2;
+            white-space: nowrap;
+        }
+        
+        #install-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        #install-button .install-icon {
+            font-size: 1.2em;
         }
 
         /* Модальное окно фильтров */
@@ -335,7 +347,6 @@ index_html = '''
         }
 
         .quick-btns {
-            /* Убираем нижний отступ, так как кнопки теперь в отдельном контейнере */
             margin-bottom: 0;
         }
         
@@ -403,71 +414,33 @@ index_html = '''
             background: #d0d0d0;
             transform: translateY(-2px);
         }
-/* Стиль для кнопки установки */
-        .install-button {
-            position: fixed;
-            bottom: 30px;
-            right: 20px;
-            z-index: 1000;
-            background: #00a046;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 14px 25px;
-            font-size: 1.1em;
-            font-weight: 500;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-            transform: translateY(100px); /* Начальное положение - скрыто */
-            animation: slideUp 0.5s forwards 1s; /* Появление через 1 секунду */
-        }
 
-        .install-button:hover {
-            background: #008c3a;
-            transform: translateY(-5px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-        }
-
-        .install-button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .install-icon {
-            font-size: 1.4em;
-        }
-
-/* Анимация появления */
-        @keyframes slideUp {
-            from { transform: translateY(100px); }
-            to { transform: translateY(0); }
-        }
-
-/* Для мобильных устройств */
-       @media (max-width: 768px) {
-            .install-button {
-               bottom: 20px;
-               right: 15px;
-               padding: 12px 20px;
-               font-size: 1em;
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1.5em;
+                max-width: 60%;
+            }
+            
+            #install-button span:not(.install-icon) {
+                display: none;
+            }
+            
+            #install-button {
+                padding: 8px;
             }
         }
     </style>
 </head>
 <body>
-     <div class="header">
-            <h1 class="logo">Вкусвилл</h1>
-            <div class="header-buttons">
-                <button id="install-button" class="install-btn" title="Установить приложение" style="display: none;">
-                    <span class="install-icon">⬇️</span> Установить
-                </button>
-                <button class="filter-btn" id="open-filter-modal">☰</button>
-            </div>
-        </div>
+    <div class="header">
+        <button id="install-button" title="Установить приложение" style="display: none;">
+            <span class="install-icon">⬇️</span> <span>Установить</span>
+        </button>
+        
+        <h1 class="logo">Вкусвилл</h1>
+        
+        <button class="filter-btn" id="open-filter-modal">☰</button>
+    </div>
 
     <div class="container">
         <h1>Товары с истекающим сроком</h1>
