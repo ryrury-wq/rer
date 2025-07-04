@@ -5,6 +5,14 @@ index_html = '''
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- Favicon и PWA мета-теги -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192x192.png') }}">
+    <meta name="apple-mobile-web-app-title" content="Вкусвилл">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#00a046">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>Контроль сроков - Вкусвилл</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
@@ -398,6 +406,7 @@ index_html = '''
 </head>
 <body>
     <div class="header">
+        <button id="install-button" style="display: none;">Установить приложение</button>
         <h1 class="logo">Вкусвилл</h1>
         <button class="filter-btn" id="open-filter-modal">☰</button>
     </div>
@@ -565,6 +574,38 @@ index_html = '''
         });
     });
     </script>
+<script>
+// Регистрация Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('{{ url_for('static', filename='sw.js') }}')
+      .then(reg => console.log('Service Worker зарегистрирован'))
+      .catch(err => console.error('Ошибка регистрации Service Worker:', err));
+  });
+}
+
+// Обработчик для кнопки "Установить"
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  // Показать кнопку установки (по желанию)
+  const installButton = document.getElementById('install-button');
+  if (installButton) {
+    installButton.style.display = 'block';
+    installButton.addEventListener('click', () => {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('Пользователь установил приложение');
+        }
+        deferredPrompt = null;
+      });
+    });
+  }
+});
+</script>
 </body>
 </html>
 '''
