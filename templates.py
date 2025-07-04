@@ -891,9 +891,9 @@ scan_html = '''
     </div>
 
     <!-- Скрытые аудио элементы для звуковых эффектов -->
-    <audio id="scan-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3"></audio>
-    <audio id="success-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3"></audio>
-    <audio id="warning-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
+    <audio id="scan-sound" preload="auto"></audio>
+    <audio id="cor-sound" preload="auto"></audio>
+    <audio id="incor-sound" preload="auto"></audio>
 
     <script type="module">
         import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
@@ -909,17 +909,67 @@ scan_html = '''
         
         // Аудио элементы
         const scanSound = document.getElementById('scan-sound');
-        const successSound = document.getElementById('success-sound');
-        const warningSound = document.getElementById('warning-sound');
+        const corSound = document.getElementById('cor-sound');
+        const incorSound = document.getElementById('incor-sound');
+        
+        // Загрузка звуков
+        function loadSounds() {
+            // Используем ваши звуковые файлы
+            scanSound.src = "{{ url_for('static', filename='sounds/scan.mp3') }}";
+            corSound.src = "{{ url_for('static', filename='sounds/cor.mp3') }}";
+            incorSound.src = "{{ url_for('static', filename='sounds/incor.mp3') }}";
+            
+            // Предзагрузка звуков
+            scanSound.load();
+            corSound.load();
+            incorSound.load();
+        }
         
         // Глобальная переменная для состояния звука
         let soundEnabled = true;
+        let soundsLoaded = false;
 
         let currentStream = null;
         let scannerActive = true;
         let torchOn = false;
         let lastScanTime = 0;
         const SCAN_COOLDOWN = 2000;
+        
+        // Функция воспроизведения звука
+        function playSound(type) {
+            if (!soundEnabled || !soundsLoaded) return;
+            
+            try {
+                let sound = null;
+                
+                switch (type) {
+                    case 'scan':
+                        sound = scanSound.cloneNode();
+                        break;
+                    case 'cor': // Для заполненного наименования
+                        sound = corSound.cloneNode();
+                        break;
+                    case 'incor': // Для незаполненного наименования
+                        sound = incorSound.cloneNode();
+                        break;
+                }
+                
+                if (sound) {
+                    sound.volume = 0.3;
+                    
+                    // Пытаемся воспроизвести звук
+                    const playPromise = sound.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log("Автовоспроизведение звука заблокировано:", error);
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Ошибка воспроизведения звука:", e);
+            }
+        }
         
         function stopCurrentStream() {
             if (currentStream) {
@@ -956,6 +1006,12 @@ scan_html = '''
                 
                 checkTorchSupport();
                 startScanner();
+                
+                // После получения доступа к камере загружаем звуки
+                if (!soundsLoaded) {
+                    loadSounds();
+                    soundsLoaded = true;
+                }
             } catch (err) {
                 console.error("Ошибка доступа к камере:", err);
                 showCameraError();
@@ -1012,45 +1068,19 @@ scan_html = '''
                         .then(data => {
                             if (data.found) {
                                 document.getElementById('name').value = data.name;
-                                // Успех - найден товар
-                                playSound('success');
+                                
+                                // Звук для заполненного наименования
+                                playSound('cor');
                             } else {
-                                // Предупреждение - товар не найден
-                                playSound('warning');
+                                // Звук для незаполненного наименования
+                                playSound('incor');
                             }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при получении названия товара:', error);
                         });
                 }
             });
-        }
-        
-        function playSound(type) {
-            if (!soundEnabled) return;
-            
-            try {
-                let sound = null;
-                
-                switch (type) {
-                    case 'scan':
-                        sound = scanSound.cloneNode();
-                        break;
-                    case 'success':
-                        sound = successSound.cloneNode();
-                        break;
-                    case 'warning':
-                        sound = warningSound.cloneNode();
-                        break;
-                }
-                
-                if (sound) {
-                    sound.volume = 0.3;
-                    sound.play().catch(e => {
-                        console.log("Автовоспроизведение звука заблокировано:", e);
-                        // При первом взаимодействии пользователя звук заработает
-                    });
-                }
-            } catch (e) {
-                console.error("Ошибка воспроизведения звука:", e);
-            }
         }
         
         function stopScanner() {
@@ -1228,130 +1258,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('select[name="duration_unit"]').addEventListener('change', calculateExpirationDate);
 });
     </script>
-</body>
-</html>
-'''
-# Стиль для новых страниц
-new_product_html = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Новый товар - Вкусвилл</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
-        body { 
-            font-family: 'Roboto', sans-serif; 
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-            min-height: 100vh;
-        }
-        .header {
-            background-color: #00a046;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-        }
-        .logo {
-            font-weight: 700;
-            font-size: 1.8em;
-            letter-spacing: 0.5px;
-            margin: 0;
-            color: white;
-        }
-        .container {
-            max-width: 500px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        .form-container {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h1 {
-            text-align: center;
-            color: #00a046;
-            font-weight: 500;
-            margin-top: 0;
-            margin-bottom: 25px;
-        }
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-weight: 500;
-            color: #424242;
-        }
-        input, button {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 14px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            font-family: 'Roboto', sans-serif;
-        }
-        input:focus {
-            outline: none;
-            border-color: #00a046;
-            box-shadow: 0 0 0 2px rgba(0, 160, 70, 0.2);
-        }
-        button { 
-            background: #00a046;
-            color: white;
-            border: none;
-            font-weight: 500;
-            font-size: 1.1em;
-            padding: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        button:hover {
-            background: #008c3a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .footer {
-            text-align: center;
-            padding: 30px 15px 10px;
-            color: #757575;
-            font-size: 0.85em;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1 class="logo">Вкусвилл</h1>
-    </div>
-    
-    <div class="container">
-        <div class="form-container">
-            <h1>Добавление нового товара</h1>
-            <form method="POST">
-                <div class="form-group">
-                    <label>Штрих-код:</label>
-                    <input type="text" name="barcode" value="{{ barcode }}" readonly>
-                </div>
-                <div class="form-group">
-                    <label>Название товара:</label>
-                    <input type="text" name="name" placeholder="Введите название" required>
-                </div>
-                <button type="submit">Сохранить</button>
-            </form>
-        </div>
-    </div>
-    
-    <div class="footer">
-        Сделано М2(Shevchenko) by Bekeshnyuk
-    </div>
 </body>
 </html>
 '''
