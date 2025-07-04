@@ -594,6 +594,21 @@ scan_html = '''
             color: white;
             padding: 15px 20px;
             text-align: center;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-btn {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 10;
         }
         .logo {
             font-weight: 700;
@@ -879,7 +894,13 @@ scan_html = '''
             <div class="sound-permission-icon">🔊</div>
             <div class="sound-permission-title">Разрешите воспроизведение звуков</div>
             <div class="sound-permission-text">
-                Для полной функциональности сканера необходимо разрешить воспроизведение звуков на этом сайте.
+                Для лучшего опыта использования сканера разрешите воспроизведение звуков на этом сайте.
+                Звуки помогут понять результат сканирования:
+                <ul style="text-align: left; margin-top: 10px;">
+                    <li>Короткий звук - штрих-код отсканирован</li>
+                    <li>Два коротких звука - товар найден в базе</li>
+                    <li>Длинный звук - товар не найден</li>
+                </ul>
             </div>
             <button class="sound-permission-btn" id="enable-sound-btn">Разрешить звуки</button>
             <button class="sound-permission-btn" style="background: #e0e0e0; color: #333;" id="continue-without-sound">
@@ -974,14 +995,20 @@ scan_html = '''
         // Элемент модального окна
         const soundPermissionModal = document.getElementById('sound-permission-modal');
         
+        // Проверка, было ли уже показано окно
+        const soundPermissionShown = localStorage.getItem('soundPermissionShown');
+        
         // Показать модальное окно с запросом разрешения
         function showSoundPermissionModal() {
-            soundPermissionModal.style.display = 'flex';
+            if (!soundPermissionShown) {
+                soundPermissionModal.style.display = 'flex';
+            }
         }
         
         // Скрыть модальное окно
         function hideSoundPermissionModal() {
             soundPermissionModal.style.display = 'none';
+            localStorage.setItem('soundPermissionShown', 'true');
         }
         
         // Инициализация звуковой системы
@@ -993,7 +1020,7 @@ scan_html = '''
                 hideSoundPermissionModal();
                 
                 // Воспроизводим тестовый звук для подтверждения
-                playSound('success');
+                playSound('scan');
                 return true;
             } catch (e) {
                 console.error("Ошибка инициализации звука:", e);
@@ -1015,23 +1042,36 @@ scan_html = '''
                 gainNode.connect(audioContext.destination);
                 
                 // Настраиваем звук в зависимости от типа
-                if (type === 'success') {
-                    // Высокий тон - успешное сканирование
-                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                if (type === 'scan') {
+                    // Короткий звук сканирования (кассовый бип)
+                    oscillator.frequency.setValueAtTime(1200, audioContext.currentTime);
                     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                } else if (type === 'success') {
+                    // Два коротких звука - товар найден
+                    oscillator.frequency.setValueAtTime(1500, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    
+                    setTimeout(() => {
+                        const oscillator2 = audioContext.createOscillator();
+                        const gainNode2 = audioContext.createGain();
+                        oscillator2.connect(gainNode2);
+                        gainNode2.connect(audioContext.destination);
+                        oscillator2.frequency.setValueAtTime(1500, audioContext.currentTime);
+                        gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        oscillator2.start();
+                        oscillator2.stop(audioContext.currentTime + 0.1);
+                    }, 150);
                 } else if (type === 'warning') {
-                    // Низкий тон - товар не найден
-                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                    // Длинный низкий звук - товар не найден
+                    oscillator.frequency.setValueAtTime(500, audioContext.currentTime);
                     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                } else if (type === 'scan') {
-                    // Стандартный звук сканирования
-                    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.5);
                 }
-                
-                // Запускаем и останавливаем звук
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.1);
             } catch (e) {
                 console.error("Ошибка воспроизведения звука:", e);
             }
@@ -1049,10 +1089,11 @@ scan_html = '''
             soundEnabled = false;
         });
         
-        // Показываем модальное окно при загрузке
+        // Показываем модальное окно при загрузке (только если не было показано ранее)
         window.addEventListener('load', () => {
-            // Даем браузеру немного времени на инициализацию
-            setTimeout(showSoundPermissionModal, 500);
+            if (!soundPermissionShown) {
+                setTimeout(showSoundPermissionModal, 500);
+            }
         });
 
         let currentStream = null;
