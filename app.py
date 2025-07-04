@@ -10,7 +10,6 @@ import json
 
 app = Flask(__name__)
 
-# VAPID Keys (замените своими ключами или используйте переменные окружения)
 VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', 'your_private_key')
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'your_public_key')
 VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'admin@example.com')
@@ -295,7 +294,7 @@ def index():
         removal_date = exp_date + timedelta(days=30)
         days_until_removal = max(0, (removal_date - today).days)
 
-        if days_since_expiry > 1:
+        if days_until_expiry <= 0:
             status = 'expired'
         elif days_until_expiry == 1:
             status = 'warning'
