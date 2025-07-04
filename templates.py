@@ -815,98 +815,12 @@ scan_html = '''
         .normal-date { color: #00a046; }
         .warning-date { color: #ff9800; }
         .expired-date { color: #f44336; }
-        
-        /* Стили для модального окна разрешения звука */
-        .sound-permission-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            backdrop-filter: blur(5px);
-        }
-        
-        .sound-permission-content {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .sound-permission-title {
-            font-size: 1.4em;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #00a046;
-        }
-        
-        .sound-permission-text {
-            font-size: 1.1em;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-        
-        .sound-permission-btn {
-            background: #00a046;
-            color: white;
-            border: none;
-            border-radius: 24px;
-            padding: 14px 30px;
-            font-size: 1.1em;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            margin: 10px 0;
-            width: 100%;
-        }
-        
-        .sound-permission-btn:hover {
-            background: #008c3a;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-        }
-        
-        .sound-permission-icon {
-            font-size: 3.5em;
-            margin-bottom: 20px;
-            color: #00a046;
-        }
     </style>
 </head>
 <body>
     <div class="header">
         <a href="/" class="back-btn">←</a>
         <h1 class="logo">Вкусвилл</h1>
-    </div>
-
-    <!-- Модальное окно разрешения звука -->
-    <div class="sound-permission-modal" id="sound-permission-modal">
-        <div class="sound-permission-content">
-            <div class="sound-permission-icon">🔊</div>
-            <div class="sound-permission-title">Разрешите воспроизведение звуков</div>
-            <div class="sound-permission-text">
-                Для лучшего опыта использования сканера разрешите воспроизведение звуков на этом сайте.
-                Звуки помогут понять результат сканирования:
-                <ul style="text-align: left; margin-top: 10px;">
-                    <li>Короткий звук - штрих-код отсканирован</li>
-                    <li>Два коротких звука - товар найден в базе</li>
-                    <li>Длинный звук - товар не найден</li>
-                </ul>
-            </div>
-            <button class="sound-permission-btn" id="enable-sound-btn">Разрешить звуки</button>
-            <button class="sound-permission-btn" style="background: #e0e0e0; color: #333;" id="continue-without-sound">
-                Продолжить без звука
-            </button>
-        </div>
     </div>
 
     <div class="container">
@@ -976,6 +890,11 @@ scan_html = '''
         Сделано М2(Shevchenko) by Bekeshnyuk
     </div>
 
+    <!-- Скрытые аудио элементы для звуковых эффектов -->
+    <audio id="scan-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3"></audio>
+    <audio id="success-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3"></audio>
+    <audio id="warning-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
+
     <script type="module">
         import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
 
@@ -988,107 +907,13 @@ scan_html = '''
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
         
-        // Переменные для работы со звуком
-        let audioContext = null;
-        let soundEnabled = false;
+        // Аудио элементы
+        const scanSound = document.getElementById('scan-sound');
+        const successSound = document.getElementById('success-sound');
+        const warningSound = document.getElementById('warning-sound');
         
-        // Элемент модального окна
-        const soundPermissionModal = document.getElementById('sound-permission-modal');
-        
-        // Проверка сохраненных настроек звука
-        const soundSetting = localStorage.getItem('soundSetting');
-        
-        // Показать модальное окно только если настройка не сохранена
-        if (!soundSetting) {
-            soundPermissionModal.style.display = 'flex';
-        } else {
-            soundEnabled = soundSetting === 'enabled';
-        }
-        
-        // Скрыть модальное окно
-        function hideSoundPermissionModal() {
-            soundPermissionModal.style.display = 'none';
-        }
-        
-        // Инициализация звуковой системы
-        function initSoundSystem() {
-            try {
-                // Создаем аудиоконтекст
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                soundEnabled = true;
-                hideSoundPermissionModal();
-                localStorage.setItem('soundSetting', 'enabled');
-                
-                // Воспроизводим тестовый звук для подтверждения
-                playSound('scan');
-                return true;
-            } catch (e) {
-                console.error("Ошибка инициализации звука:", e);
-                return false;
-            }
-        }
-        
-        // Функция для воспроизведения звука
-        function playSound(type) {
-            if (!soundEnabled || !audioContext) return;
-            
-            try {
-                // Создаем осциллятор и усилитель
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                // Подключаем компоненты
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                // Настраиваем звук в зависимости от типа
-                if (type === 'scan') {
-                    // Короткий звук сканирования (кассовый бип)
-                    oscillator.frequency.setValueAtTime(1200, audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.1);
-                } else if (type === 'success') {
-                    // Два коротких звука - товар найден
-                    oscillator.frequency.setValueAtTime(1500, audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.1);
-                    
-                    setTimeout(() => {
-                        const oscillator2 = audioContext.createOscillator();
-                        const gainNode2 = audioContext.createGain();
-                        oscillator2.connect(gainNode2);
-                        gainNode2.connect(audioContext.destination);
-                        oscillator2.frequency.setValueAtTime(1500, audioContext.currentTime);
-                        gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
-                        oscillator2.start();
-                        oscillator2.stop(audioContext.currentTime + 0.1);
-                    }, 150);
-                } else if (type === 'warning') {
-                    // Длинный низкий звук - товар не найден
-                    oscillator.frequency.setValueAtTime(500, audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.5);
-                }
-            } catch (e) {
-                console.error("Ошибка воспроизведения звука:", e);
-            }
-        }
-        
-        // Обработчики кнопок модального окна
-        document.getElementById('enable-sound-btn').addEventListener('click', () => {
-            if (initSoundSystem()) {
-                // Звук успешно активирован
-            }
-        });
-        
-        document.getElementById('continue-without-sound').addEventListener('click', () => {
-            hideSoundPermissionModal();
-            soundEnabled = false;
-            localStorage.setItem('soundSetting', 'disabled');
-        });
+        // Глобальная переменная для состояния звука
+        let soundEnabled = true;
 
         let currentStream = null;
         let scannerActive = true;
@@ -1196,6 +1021,36 @@ scan_html = '''
                         });
                 }
             });
+        }
+        
+        function playSound(type) {
+            if (!soundEnabled) return;
+            
+            try {
+                let sound = null;
+                
+                switch (type) {
+                    case 'scan':
+                        sound = scanSound.cloneNode();
+                        break;
+                    case 'success':
+                        sound = successSound.cloneNode();
+                        break;
+                    case 'warning':
+                        sound = warningSound.cloneNode();
+                        break;
+                }
+                
+                if (sound) {
+                    sound.volume = 0.3;
+                    sound.play().catch(e => {
+                        console.log("Автовоспроизведение звука заблокировано:", e);
+                        // При первом взаимодействии пользователя звук заработает
+                    });
+                }
+            } catch (e) {
+                console.error("Ошибка воспроизведения звука:", e);
+            }
         }
         
         function stopScanner() {
