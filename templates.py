@@ -733,7 +733,7 @@ scan_html = '''
             border-bottom: 1px dashed #00a046;
             padding-bottom: 2px;
         }
-         .date-input-group {
+        .date-input-group {
             position: relative;
         }
         .date-icon {
@@ -751,7 +751,6 @@ scan_html = '''
             width: calc(100% - 45px) !important;
             box-sizing: border-box;
         }
-        
         .footer {
             text-align: center;
             padding: 20px 15px 10px;
@@ -802,21 +801,69 @@ scan_html = '''
         .warning-date { color: #ff9800; }
         .expired-date { color: #f44336; }
         
-        /* Стили для уведомлений о звуке */
-        .sound-notification {
+        /* Стили для модального окна разрешения звука */
+        .sound-permission-modal {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 24px;
-            z-index: 1000;
-            display: none;
-            font-size: 0.9em;
-            max-width: 90%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .sound-permission-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
             text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .sound-permission-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #00a046;
+        }
+        
+        .sound-permission-text {
+            font-size: 1.1em;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        .sound-permission-btn {
+            background: #00a046;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 14px 30px;
+            font-size: 1.1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            margin: 10px 0;
+            width: 100%;
+        }
+        
+        .sound-permission-btn:hover {
+            background: #008c3a;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+        
+        .sound-permission-icon {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            color: #00a046;
         }
     </style>
 </head>
@@ -826,24 +873,21 @@ scan_html = '''
         <h1 class="logo">Вкусвилл</h1>
     </div>
 
-    <style>
-        .back-btn {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            text-decoration: none;
-            font-weight: bold;
-            z-index: 10;
-        }
-    
-        .header {
-            position: relative;
-        }
-    </style>
-    
+    <!-- Модальное окно разрешения звука -->
+    <div class="sound-permission-modal" id="sound-permission-modal">
+        <div class="sound-permission-content">
+            <div class="sound-permission-icon">🔊</div>
+            <div class="sound-permission-title">Разрешите воспроизведение звуков</div>
+            <div class="sound-permission-text">
+                Для полной функциональности сканера необходимо разрешить воспроизведение звуков на этом сайте.
+            </div>
+            <button class="sound-permission-btn" id="enable-sound-btn">Разрешить звуки</button>
+            <button class="sound-permission-btn" style="background: #e0e0e0; color: #333;" id="continue-without-sound">
+                Продолжить без звука
+            </button>
+        </div>
+    </div>
+
     <div class="container">
         <h1>Сканирование товара</h1>
 
@@ -862,21 +906,6 @@ scan_html = '''
 
         <div class="manual-input">
             <a href="#" id="manual-input-link">Ввести штрих-код вручную</a>
-        </div>
-
-        <!-- Аудио элементы для звуковых сигналов -->
-        <audio id="beep" class="beep" preload="auto"></audio>
-        <audio id="success-sound" preload="auto">
-            <source src="data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
-        </audio>
-        
-        <audio id="warning-sound" preload="auto">
-            <source src="data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
-        </audio>
-
-        <!-- Уведомление о необходимости разрешить звук -->
-        <div class="sound-notification" id="sound-notification">
-            Для полной функциональности разрешите воспроизведение звуков
         </div>
 
         <div class="form-container">
@@ -935,66 +964,102 @@ scan_html = '''
         const cameraError = document.getElementById('camera-error');
         const restartBtn = document.getElementById('restart-btn');
         const torchBtn = document.getElementById('torch-btn');
-        const beepSound = document.getElementById('beep');
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
         
-        // Звуковые элементы
-        const successSound = document.getElementById('success-sound');
-        const warningSound = document.getElementById('warning-sound');
-        const soundNotification = document.getElementById('sound-notification');
+        // Переменные для работы со звуком
+        let audioContext = null;
+        let soundEnabled = false;
         
+        // Элемент модального окна
+        const soundPermissionModal = document.getElementById('sound-permission-modal');
+        
+        // Показать модальное окно с запросом разрешения
+        function showSoundPermissionModal() {
+            soundPermissionModal.style.display = 'flex';
+        }
+        
+        // Скрыть модальное окно
+        function hideSoundPermissionModal() {
+            soundPermissionModal.style.display = 'none';
+        }
+        
+        // Инициализация звуковой системы
+        function initSoundSystem() {
+            try {
+                // Создаем аудиоконтекст
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                soundEnabled = true;
+                hideSoundPermissionModal();
+                
+                // Воспроизводим тестовый звук для подтверждения
+                playSound('success');
+                return true;
+            } catch (e) {
+                console.error("Ошибка инициализации звука:", e);
+                return false;
+            }
+        }
+        
+        // Функция для воспроизведения звука
+        function playSound(type) {
+            if (!soundEnabled || !audioContext) return;
+            
+            try {
+                // Создаем осциллятор и усилитель
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                // Подключаем компоненты
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Настраиваем звук в зависимости от типа
+                if (type === 'success') {
+                    // Высокий тон - успешное сканирование
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                } else if (type === 'warning') {
+                    // Низкий тон - товар не найден
+                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                } else if (type === 'scan') {
+                    // Стандартный звук сканирования
+                    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                }
+                
+                // Запускаем и останавливаем звук
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {
+                console.error("Ошибка воспроизведения звука:", e);
+            }
+        }
+        
+        // Обработчики кнопок модального окна
+        document.getElementById('enable-sound-btn').addEventListener('click', () => {
+            if (initSoundSystem()) {
+                // Звук успешно активирован
+            }
+        });
+        
+        document.getElementById('continue-without-sound').addEventListener('click', () => {
+            hideSoundPermissionModal();
+            soundEnabled = false;
+        });
+        
+        // Показываем модальное окно при загрузке
+        window.addEventListener('load', () => {
+            // Даем браузеру немного времени на инициализацию
+            setTimeout(showSoundPermissionModal, 500);
+        });
+
         let currentStream = null;
         let scannerActive = true;
         let torchOn = false;
         let lastScanTime = 0;
         const SCAN_COOLDOWN = 2000;
-        
-        // Флаг для воспроизведения звука
-        let soundEnabled = false;
-        
-        // Функция для включения звука
-        function enableSound() {
-            if (!soundEnabled) {
-                // Пробуем проиграть пустой звук
-                try {
-                    const context = new (window.AudioContext || window.webkitAudioContext)();
-                    const oscillator = context.createOscillator();
-                    oscillator.connect(context.destination);
-                    oscillator.start();
-                    oscillator.stop(context.currentTime + 0.001);
-                    
-                    soundEnabled = true;
-                    soundNotification.style.display = 'none';
-                } catch (e) {
-                    console.log("Не удалось активировать звук:", e);
-                }
-            }
-        }
-        
-        // Включаем звук при первом взаимодействии
-        document.addEventListener('click', enableSound);
-        document.addEventListener('touchstart', enableSound);
-        
-        // Функция для воспроизведения звука
-        function playSound(type) {
-            if (!soundEnabled) {
-                soundNotification.style.display = 'block';
-                return;
-            }
-            
-            try {
-                if (type === 'success') {
-                    successSound.currentTime = 0;
-                    successSound.play().catch(e => console.log("Не удалось воспроизвести звук успеха:", e));
-                } else if (type === 'warning') {
-                    warningSound.currentTime = 0;
-                    warningSound.play().catch(e => console.log("Не удалось воспроизвести звук предупреждения:", e));
-                }
-            } catch (e) {
-                console.error("Ошибка воспроизведения звука:", e);
-            }
-        }
         
         function stopCurrentStream() {
             if (currentStream) {
@@ -1077,10 +1142,7 @@ scan_html = '''
                     lastScanTime = now;
                     
                     // Звук сканирования
-                    if (beepSound) {
-                        beepSound.currentTime = 0;
-                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук сканирования:", e));
-                    }
+                    playSound('scan');
                     
                     barcodeInput.value = result.text;
                     document.getElementById('name').focus();
@@ -1155,6 +1217,7 @@ scan_html = '''
     document.addEventListener('DOMContentLoaded', function() {
         const dateField = document.getElementById('manufacture_date');
         const textField = document.getElementById('manufacture_date_text');
+        const scannerForm = document.getElementById('scanner-form');
         
         textField.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
@@ -1172,7 +1235,7 @@ scan_html = '''
                 if (parts.length === 3) {
                     const [day, month, year] = parts;
                     dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    calculateExpirationDate(); // обновить табличку
+                    calculateExpirationDate();
                 }
             }
         });
