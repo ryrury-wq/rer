@@ -230,6 +230,10 @@ def get_product_name():
     else:
         return jsonify({'found': False})
 
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json')
+
 @app.route('/get-all-products', methods=['GET'])
 def get_all_products():
     db = get_db()
