@@ -2,7 +2,7 @@ import os
 import psycopg2
 import subprocess
 from datetime import datetime, timedelta
-from flask import Flask, request, redirect, url_for, g, jsonify, render_template_string
+from flask import Flask, request, redirect, url_for, g, jsonify, render_template_string, send_from_directory
 from psycopg2.extras import DictCursor
 from dateutil.relativedelta import relativedelta
 import json
@@ -437,6 +437,10 @@ def edit_product():
     cursor.execute("SELECT id, name, barcode FROM products WHERE id = %s", (product_id,))
     product = cursor.fetchone()
     return render_template('edit_product.html', product=product)
+
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
 
 @app.route('/delete_product', methods=['POST'])
 def delete_product():
