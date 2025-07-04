@@ -492,92 +492,78 @@ index_html = '''
     </div>
 
     <script>
-        function setupDateInput(id) {
-            const input = document.getElementById(id);
-            input.addEventListener('input', function (e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 8) value = value.substr(0, 8);
-                let formatted = '';
-                for (let i = 0; i < value.length; i++) {
-                    if (i === 2 || i === 4) formatted += '.';
-                    formatted += value[i];
-                }
-                e.target.value = formatted;
-            });
-
-            input.addEventListener('keydown', function (e) {
-                if ([8, 9, 13, 27, 46, 37, 39].includes(e.keyCode) ||
-                    (e.keyCode >= 48 && e.keyCode <= 57) ||
-                    (e.keyCode >= 96 && e.keyCode <= 105)) return;
-                e.preventDefault();
-            });
-        }
-        document.getElementById('notification-btn').addEventListener('click', () => {
-            window.location.href = '/notifications';
+    function setupDateInput(id) {
+        const input = document.getElementById(id);
+        input.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.substr(0, 8);
+            let formatted = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i === 2 || i === 4) formatted += '.';
+                formatted += value[i];
+            }
+            e.target.value = formatted;
         });
-        // Проверка новых уведомлений
-        fetch('/check_new_notifications')
-            .then(res => res.json())
-            .then(data => {
-                if(data.count > 0) {
-                    const badge = document.createElement('div');
-                    badge.className = 'notification-badge';
-                    badge.textContent = data.count;
-                    document.getElementById('notification-btn').appendChild(badge);
-                }
+
+        input.addEventListener('keydown', function (e) {
+            if ([8, 9, 13, 27, 46, 37, 39].includes(e.keyCode) ||
+                (e.keyCode >= 48 && e.keyCode <= 57) ||
+                (e.keyCode >= 96 && e.keyCode <= 105)) return;
+            e.preventDefault();
+        });
+    }
+
+    // Управление модальным окном
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('filter-modal');
+        const openBtn = document.getElementById('open-filter-modal');
+        const closeBtn = document.getElementById('close-filter-modal');
+        
+        openBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
         });
         
-        // Управление модальным окном
-        document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.getElementById('filter-modal');
-            const openBtn = document.getElementById('open-filter-modal');
-            const closeBtn = document.getElementById('close-filter-modal');
-            
-            openBtn.addEventListener('click', () => {
-                modal.style.display = 'flex';
-            });
-            
-            closeBtn.addEventListener('click', () => {
-                modal.style.display = 'none';
-            });
-            
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-
-            // Настройка полей ввода дат
-            setupDateInput('from_date_text');
-            setupDateInput('to_date_text');
-
-            // Поиск по товарам
-            const searchInput = document.getElementById('search-input');
-            const itemsContainer = document.getElementById('items-container');
-            const originalHTML = itemsContainer.innerHTML;
-
-            searchInput.addEventListener('input', () => {
-                const term = searchInput.value.toLowerCase();
-                const items = itemsContainer.querySelectorAll('.item');
-                let found = false;
-
-                items.forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    if (text.includes(term)) {
-                        item.style.display = 'flex';
-                        found = true;
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-
-                if (!found && term.length > 0) {
-                    itemsContainer.innerHTML = `<div class="no-items">Ничего не найдено по запросу: "${term}"</div>`;
-                } else if (!term) {
-                    itemsContainer.innerHTML = originalHTML;
-                }
-            });
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
         });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Настройка полей ввода дат
+        setupDateInput('from_date_text');
+        setupDateInput('to_date_text');
+
+        // Поиск по товарам
+        const searchInput = document.getElementById('search-input');
+        const itemsContainer = document.getElementById('items-container');
+        const originalHTML = itemsContainer.innerHTML;
+
+        searchInput.addEventListener('input', () => {
+            const term = searchInput.value.toLowerCase();
+            const items = itemsContainer.querySelectorAll('.item');
+            let found = false;
+
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(term)) {
+                    item.style.display = 'flex';
+                    found = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            if (!found && term.length > 0) {
+                itemsContainer.innerHTML = `<div class="no-items">Ничего не найдено по запросу: "${term}"</div>`;
+            } else if (!term) {
+                itemsContainer.innerHTML = originalHTML;
+            }
+        });
+    });
     </script>
 </body>
 </html>
