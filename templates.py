@@ -615,6 +615,7 @@ scan_html = '''
             color: #00a046;
             font-weight: 500;
             margin-top: 0;
+            margin-bottom: 25px;
         }
         .scanner-container { 
             position: relative; 
@@ -743,11 +744,11 @@ scan_html = '''
             color: #757575;
             pointer-events: none;
             font-size: 1.2em;
-            z-index: 2; /* Убедимся, что иконка поверх других элементов */
+            z-index: 2;
         }
         .date-input {
-            padding-left: 45px !important; /* Увеличим отступ слева */
-            width: calc(100% - 45px) !important; /* Учтем отступ в ширине */
+            padding-left: 45px !important;
+            width: calc(100% - 45px) !important;
             box-sizing: border-box;
         }
         
@@ -800,6 +801,23 @@ scan_html = '''
         .normal-date { color: #00a046; }
         .warning-date { color: #ff9800; }
         .expired-date { color: #f44336; }
+        
+        /* Стили для уведомлений о звуке */
+        .sound-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 24px;
+            z-index: 1000;
+            display: none;
+            font-size: 0.9em;
+            max-width: 90%;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -846,7 +864,20 @@ scan_html = '''
             <a href="#" id="manual-input-link">Ввести штрих-код вручную</a>
         </div>
 
+        <!-- Аудио элементы для звуковых сигналов -->
         <audio id="beep" class="beep" preload="auto"></audio>
+        <audio id="success-sound" preload="auto">
+            <source src="data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
+        </audio>
+        
+        <audio id="warning-sound" preload="auto">
+            <source src="data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
+        </audio>
+
+        <!-- Уведомление о необходимости разрешить звук -->
+        <div class="sound-notification" id="sound-notification">
+            Для полной функциональности разрешите воспроизведение звуков
+        </div>
 
         <div class="form-container">
             <form method="POST" id="scanner-form">
@@ -908,11 +939,62 @@ scan_html = '''
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
         
+        // Звуковые элементы
+        const successSound = document.getElementById('success-sound');
+        const warningSound = document.getElementById('warning-sound');
+        const soundNotification = document.getElementById('sound-notification');
+        
         let currentStream = null;
         let scannerActive = true;
         let torchOn = false;
         let lastScanTime = 0;
         const SCAN_COOLDOWN = 2000;
+        
+        // Флаг для воспроизведения звука
+        let soundEnabled = false;
+        
+        // Функция для включения звука
+        function enableSound() {
+            if (!soundEnabled) {
+                // Пробуем проиграть пустой звук
+                try {
+                    const context = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = context.createOscillator();
+                    oscillator.connect(context.destination);
+                    oscillator.start();
+                    oscillator.stop(context.currentTime + 0.001);
+                    
+                    soundEnabled = true;
+                    soundNotification.style.display = 'none';
+                } catch (e) {
+                    console.log("Не удалось активировать звук:", e);
+                }
+            }
+        }
+        
+        // Включаем звук при первом взаимодействии
+        document.addEventListener('click', enableSound);
+        document.addEventListener('touchstart', enableSound);
+        
+        // Функция для воспроизведения звука
+        function playSound(type) {
+            if (!soundEnabled) {
+                soundNotification.style.display = 'block';
+                return;
+            }
+            
+            try {
+                if (type === 'success') {
+                    successSound.currentTime = 0;
+                    successSound.play().catch(e => console.log("Не удалось воспроизвести звук успеха:", e));
+                } else if (type === 'warning') {
+                    warningSound.currentTime = 0;
+                    warningSound.play().catch(e => console.log("Не удалось воспроизвести звук предупреждения:", e));
+                }
+            } catch (e) {
+                console.error("Ошибка воспроизведения звука:", e);
+            }
+        }
         
         function stopCurrentStream() {
             if (currentStream) {
@@ -994,9 +1076,10 @@ scan_html = '''
                 if (result) {
                     lastScanTime = now;
                     
+                    // Звук сканирования
                     if (beepSound) {
                         beepSound.currentTime = 0;
-                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук:", e));
+                        beepSound.play().catch(e => console.log("Не удалось воспроизвести звук сканирования:", e));
                     }
                     
                     barcodeInput.value = result.text;
@@ -1007,6 +1090,11 @@ scan_html = '''
                         .then(data => {
                             if (data.found) {
                                 document.getElementById('name').value = data.name;
+                                // Успех - найден товар
+                                playSound('success');
+                            } else {
+                                // Предупреждение - товар не найден
+                                playSound('warning');
                             }
                         });
                 }
@@ -1190,7 +1278,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </body>
 </html>
 '''
-
 # Стиль для новых страниц
 new_product_html = '''
 <!DOCTYPE html>
