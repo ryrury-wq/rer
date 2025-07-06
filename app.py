@@ -55,11 +55,6 @@ def init_db():
                 removed_date TEXT NOT NULL
             )
         ''')
-        # В функции init_db()
-        cursor.execute('''
-            CREATE UNIQUE INDEX IF NOT EXISTS unique_batch 
-            ON batches (product_id, expiration_date)
-        ''')
         db.commit()
 
 def clear_old_history():
@@ -175,12 +170,9 @@ def index():
                            from_date=from_date_raw, to_date=to_date_raw)
 
 
-@app.route('/scan', methods=['POST'])
+@app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
-        db = get_db()
-        cursor = db.cursor()
-        
         try:
             barcode = request.form['barcode']
             name = request.form['name']
@@ -190,6 +182,7 @@ def scan():
 
             m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
             
+            # Используем точный расчет с relativedelta
             if duration_unit == 'days':
                 exp_date = m_date + timedelta(days=duration_value)
             elif duration_unit == 'months':
@@ -203,40 +196,27 @@ def scan():
 
             exp_date_str = exp_date.strftime('%Y-%m-%d')
 
-            # Проверка на дубликат
+            db = get_db()
+            cursor = db.cursor()
+
             cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
             product = cursor.fetchone()
 
             if not product:
-                cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", 
-                              (barcode, name))
+                cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", (barcode, name))
                 product_id = cursor.fetchone()['id']
             else:
                 product_id = product['id']
 
-            # Проверка существующей партии
-            cursor.execute("""
-                SELECT 1 FROM batches 
-                WHERE product_id = %s AND expiration_date = %s
-            """, (product_id, exp_date_str))
-            
-            if cursor.fetchone():
-                db.rollback()
-                return "Такая партия уже существует", 400
-
-            # Добавление новой партии
-            cursor.execute("""
-                INSERT INTO batches (product_id, expiration_date) 
-                VALUES (%s, %s)
-            """, (product_id, exp_date_str))
-            
+            cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)",
+                           (product_id, exp_date_str))
             db.commit()
-            return redirect(url_for('index'))
 
+            return redirect(url_for('index'))
         except Exception as e:
-            db.rollback()
             app.logger.error(f"Scan POST Error: {str(e)}")
             return f"Server Error: {str(e)}", 500
+    return render_template('scan.html')
 
 @app.route('/get-product-name', methods=['GET'])
 def get_product_name():
@@ -275,7 +255,7 @@ def new_product():
         return redirect(url_for('add_batch', barcode=barcode))
     return render_template('new_product.html', barcode=barcode)
 
-@app.route('/add_batch', methods=['POST'])
+@app.route('/add_batch', methods=['GET', 'POST'])
 def add_batch():
     barcode = request.args.get('barcode')
     db = get_db()
@@ -284,18 +264,19 @@ def add_batch():
     if not barcode:
         return redirect(url_for('assortment'))
 
-    try:
-        cursor.execute("SELECT id, name FROM products WHERE barcode = %s", (barcode,))
-        product = cursor.fetchone()
+    cursor.execute("SELECT id, name FROM products WHERE barcode = %s", (barcode,))
+    product = cursor.fetchone()
 
-        if not product:
-            return redirect(url_for('assortment'))
+    if not product:
+        return redirect(url_for('assortment'))
 
+    if request.method == 'POST':
         manufacture_date = request.form.get('manufacture_date')
         duration_value = request.form.get('duration_value')
         duration_unit = request.form.get('duration_unit')
         expiration_date = request.form.get('expiration_date')
         
+        # Если указана дата изготовления и срок
         if manufacture_date and duration_value and duration_unit:
             m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
             
@@ -309,34 +290,23 @@ def add_batch():
                 exp_date = m_date + timedelta(days=30)
                 
             expiration_date = exp_date.strftime('%Y-%m-%d')
+        
+        # Если указана конкретная дата истечения
         elif expiration_date:
             expiration_date = expiration_date
         else:
             return "Не указаны данные о сроке годности", 400
 
-        # Проверка существующей партии
-        cursor.execute("""
-            SELECT 1 FROM batches 
-            WHERE product_id = %s AND expiration_date = %s
-        """, (product['id'], expiration_date))
-        
-        if cursor.fetchone():
-            db.rollback()
-            return "Такая партия уже существует", 400
-
-        # Добавление новой партии
         cursor.execute("""
             INSERT INTO batches (product_id, expiration_date) 
             VALUES (%s, %s)
         """, (product['id'], expiration_date))
-        
         db.commit()
         return redirect(url_for('assortment'))
 
-    except Exception as e:
-        db.rollback()
-        app.logger.error(f"Add batch error: {str(e)}")
-        return f"Server Error: {str(e)}", 500
+    return render_template('add_batch.html', 
+                           product_name=product['name'],
+                           barcode=barcode)
 
 @app.route('/assortment')
 def assortment():
@@ -475,44 +445,6 @@ def edit_product():
 @app.route('/static/<path:path>')
 def send_static(path):
     return send_from_directory('static', path)
-
-@app.route('/get-batches', methods=['GET'])
-def get_batches():
-    barcode = request.args.get('barcode')
-    if not barcode:
-        return jsonify({'error': 'Missing barcode'}), 400
-    
-    db = get_db()
-    cursor = db.cursor()
-    
-    try:
-        # Получаем все партии для товара
-        cursor.execute('''
-            SELECT b.expiration_date, 
-                   (DATE(b.expiration_date) - CURRENT_DATE AS days_left
-            FROM batches b
-            JOIN products p ON p.id = b.product_id
-            WHERE p.barcode = %s
-            ORDER BY b.expiration_date ASC
-        ''', (barcode,))
-        
-        batches = []
-        today = datetime.now().date()
-        
-        for row in cursor.fetchall():
-            exp_date = datetime.strptime(row['expiration_date'], "%Y-%m-%d").date()
-            days_left = (exp_date - today).days
-            
-            batches.append({
-                'expiration_date': exp_date.strftime('%d.%m.%Y'),
-                'days_left': days_left
-            })
-        
-        return jsonify({'batches': batches})
-    
-    except Exception as e:
-        app.logger.error(f"Error getting batches: {str(e)}")
-        return jsonify({'error': 'Server error'}), 500
 
 @app.route('/delete_product', methods=['POST'])
 def delete_product():
