@@ -182,14 +182,30 @@ def scan():
         cursor = db.cursor()
         
         try:
-            barcode = request.form['barcode']
-            name = request.form['name']
-            manufacture_date = request.form['manufacture_date']
-            duration_value = int(request.form['duration_value'])
-            duration_unit = request.form['duration_unit']
+            # Получаем данные из формы
+            barcode = request.form.get('barcode', '').strip()
+            name = request.form.get('name', '').strip()
+            manufacture_date = request.form.get('manufacture_date', '').strip()
+            duration_value = request.form.get('duration_value', '0').strip()
+            duration_unit = request.form.get('duration_unit', 'days').strip()
 
-            m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
-            
+            # Валидация данных
+            if not all([barcode, name, manufacture_date, duration_value]):
+                return "Не все обязательные поля заполнены", 400
+
+            try:
+                duration_value = int(duration_value)
+                if duration_value <= 0:
+                    return "Срок годности должен быть положительным числом", 400
+            except ValueError:
+                return "Некорректное значение срока годности", 400
+
+            try:
+                m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
+            except ValueError:
+                return "Неверный формат даты. Используйте YYYY-MM-DD", 400
+
+            # Вычисляем дату истечения срока
             if duration_unit == 'days':
                 exp_date = m_date + timedelta(days=duration_value)
             elif duration_unit == 'months':
@@ -203,18 +219,20 @@ def scan():
 
             exp_date_str = exp_date.strftime('%Y-%m-%d')
 
-            # Проверка на дубликат
+            # Проверяем/добавляем продукт
             cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
             product = cursor.fetchone()
 
             if not product:
-                cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", 
-                              (barcode, name))
+                cursor.execute(
+                    "INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", 
+                    (barcode, name)
+                )
                 product_id = cursor.fetchone()['id']
             else:
                 product_id = product['id']
 
-            # Проверка существующей партии
+            # Проверка на дубликат партии
             cursor.execute("""
                 SELECT 1 FROM batches 
                 WHERE product_id = %s AND expiration_date = %s
@@ -224,7 +242,7 @@ def scan():
                 db.rollback()
                 return "Такая партия уже существует", 400
 
-            # Добавление новой партии
+            # Добавляем новую партию
             cursor.execute("""
                 INSERT INTO batches (product_id, expiration_date) 
                 VALUES (%s, %s)
@@ -237,6 +255,9 @@ def scan():
             db.rollback()
             app.logger.error(f"Scan POST Error: {str(e)}")
             return f"Server Error: {str(e)}", 500
+    
+    # GET-запрос - отображаем форму сканирования
+    return render_template('scan.html')
 
 @app.route('/get-product-name', methods=['GET'])
 def get_product_name():
@@ -275,53 +296,84 @@ def new_product():
         return redirect(url_for('add_batch', barcode=barcode))
     return render_template('new_product.html', barcode=barcode)
 
-@app.route('/add_batch', methods=['POST'])
+@app.route('/add_batch', methods=['GET', 'POST'])
 def add_batch():
-    barcode = request.args.get('barcode')
+    if request.method == 'GET':
+        # Обработка GET-запроса (показ формы)
+        barcode = request.args.get('barcode')
+        if not barcode:
+            return redirect(url_for('assortment'))
+        
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT name FROM products WHERE barcode = %s", (barcode,))
+        product = cursor.fetchone()
+        
+        if not product:
+            return redirect(url_for('assortment'))
+            
+        return render_template('add_batch.html', 
+                             product_name=product['name'],
+                             barcode=barcode)
+
+    # Обработка POST-запроса (добавление данных)
     db = get_db()
     cursor = db.cursor()
     
-    if not barcode:
-        return redirect(url_for('assortment'))
-
     try:
-        cursor.execute("SELECT id, name FROM products WHERE barcode = %s", (barcode,))
+        # Получаем и валидируем данные
+        barcode = request.form.get('barcode', '').strip()
+        manufacture_date = request.form.get('manufacture_date', '').strip()
+        duration_value = request.form.get('duration_value', '').strip()
+        duration_unit = request.form.get('duration_unit', 'days').strip()
+        expiration_date = request.form.get('expiration_date', '').strip()
+
+        # Проверка обязательных полей
+        if not barcode:
+            return "Не указан штрих-код товара", 400
+
+        # Получаем информацию о продукте
+        cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
         product = cursor.fetchone()
-
         if not product:
-            return redirect(url_for('assortment'))
+            return "Товар с таким штрих-кодом не найден", 404
 
-        manufacture_date = request.form.get('manufacture_date')
-        duration_value = request.form.get('duration_value')
-        duration_unit = request.form.get('duration_unit')
-        expiration_date = request.form.get('expiration_date')
-        
-        if manufacture_date and duration_value and duration_unit:
-            m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
-            
-            if duration_unit == 'days':
-                exp_date = m_date + timedelta(days=int(duration_value))
-            elif duration_unit == 'months':
-                exp_date = m_date + relativedelta(months=int(duration_value))
-            elif duration_unit == 'years':
-                exp_date = m_date + relativedelta(years=int(duration_value))
-            else:
-                exp_date = m_date + timedelta(days=30)
-                
-            expiration_date = exp_date.strftime('%Y-%m-%d')
+        # Определяем дату истечения срока
+        if manufacture_date and duration_value:
+            try:
+                m_date = datetime.strptime(manufacture_date, '%Y-%m-%d').date()
+                duration = int(duration_value)
+                if duration <= 0:
+                    return "Срок годности должен быть положительным числом", 400
+
+                if duration_unit == 'days':
+                    exp_date = m_date + timedelta(days=duration)
+                elif duration_unit == 'months':
+                    exp_date = m_date + relativedelta(months=duration)
+                elif duration_unit == 'years':
+                    exp_date = m_date + relativedelta(years=duration)
+                else:
+                    exp_date = m_date + timedelta(days=30)
+
+                expiration_date = exp_date.strftime('%Y-%m-%d')
+            except ValueError as e:
+                return f"Некорректные данные: {str(e)}", 400
         elif expiration_date:
-            expiration_date = expiration_date
+            try:
+                # Проверяем формат даты, если указана напрямую
+                datetime.strptime(expiration_date, '%Y-%m-%d')
+            except ValueError:
+                return "Неверный формат даты. Используйте YYYY-MM-DD", 400
         else:
             return "Не указаны данные о сроке годности", 400
 
-        # Проверка существующей партии
+        # Проверка на дубликат
         cursor.execute("""
             SELECT 1 FROM batches 
             WHERE product_id = %s AND expiration_date = %s
         """, (product['id'], expiration_date))
         
         if cursor.fetchone():
-            db.rollback()
             return "Такая партия уже существует", 400
 
         # Добавление новой партии
@@ -336,8 +388,7 @@ def add_batch():
     except Exception as e:
         db.rollback()
         app.logger.error(f"Add batch error: {str(e)}")
-        return f"Server Error: {str(e)}", 500
-
+        return f"Ошибка сервера: {str(e)}", 500
 @app.route('/assortment')
 def assortment():
     db = get_db()
