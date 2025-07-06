@@ -175,7 +175,7 @@ def index():
                            from_date=from_date_raw, to_date=to_date_raw)
 
 
-@app.route('/scan', methods=['POST'])
+@app.route('/scan', methods=['GET', 'POST'])
 def scan():
     if request.method == 'POST':
         db = get_db()
