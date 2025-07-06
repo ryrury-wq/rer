@@ -963,6 +963,11 @@ scan_html = '''
                     </div>
                 </div>
                 <button type="submit">Сохранить товар</button>
+                <!-- После формы сканирования -->
+                <div id="batches-view" style="display: none; margin-top: 20px;">
+                    <h3 style="text-align: center; color: #00a046;">Текущие сроки годности</h3>
+                    <div id="batches-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px;"></div>
+                </div>
             </form>
         </div>
     </div>
@@ -1337,6 +1342,32 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('manufacture_date').addEventListener('change', calculateExpirationDate);
     document.querySelector('input[name="duration_value"]').addEventListener('input', calculateExpirationDate);
     document.querySelector('select[name="duration_unit"]').addEventListener('change', calculateExpirationDate);
+});
+// В конец скрипта scan.html
+document.getElementById('barcode').addEventListener('blur', async function() {
+    const barcode = this.value;
+    if (!barcode) return;
+    
+    try {
+        const response = await fetch(`/get-batches?barcode=${barcode}`);
+        const data = await response.json();
+        
+        const container = document.getElementById('batches-container');
+        const viewSection = document.getElementById('batches-view');
+        
+        if (data.batches.length > 0) {
+            container.innerHTML = data.batches.map(batch => `
+                <div style="padding: 8px; border-bottom: 1px solid #eee;">
+                    ${batch.expiration_date} (${batch.days_left} дн.)
+                </div>
+            `).join('');
+            viewSection.style.display = 'block';
+        } else {
+            viewSection.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error fetching batches:', error);
+    }
 });
     </script>
 </body>
