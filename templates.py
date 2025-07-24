@@ -1255,8 +1255,6 @@ scan_html = '''
         // Добавлено: Начальная настройка режима
             switchScannerMode(); // Активируем режим ТСД по умолчанию
         
-        // Добавлено: Обработчик событий ТСД
-            document.addEventListener('keypress', handleTsdScan);
         
         // Обработчики кнопок
             scannerModeBtn.addEventListener('click', switchScannerMode);
