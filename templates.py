@@ -740,6 +740,30 @@ scan_html = '''
             pointer-events: none; 
             box-sizing: border-box;
         }
+        .scanner-mode-btn {
+            padding: 12px 20px;
+            background: #2196F3;
+            border-radius: 24px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            min-width: 150px;
+            margin-bottom: 10px;
+        }
+
+        .scanner-mode-btn:hover {
+            background: #0b7dda;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .mode-active {
+            background: #0b7dda !important;
+            border: 2px solid white;
+        }
         .camera-error {
             color: #f44336;
             text-align: center;
@@ -916,8 +940,13 @@ scan_html = '''
         </div>
 
         <div class="camera-controls">
-            <button id="restart-btn" class="camera-btn">Перезапустить</button>
-            <button id="torch-btn" class="camera-btn">Фонарик</button>
+            <button id="scanner-mode-btn" class="scanner-mode-btn mode-active">Через ТСД</button>
+            <button id="torch-btn" class="camera-btn" style="display: none;">Фонарик</button>
+        </div>
+
+<!-- Добавляем скрытый контейнер для сообщений -->
+        <div id="tsd-message" style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 8px; margin-top: 10px; display: none;">
+            Используется сканер ТСД. Наведите на штрих-код.
         </div>
 
         <div class="manual-input">
@@ -983,10 +1012,11 @@ scan_html = '''
         const video = document.getElementById('video');
         const barcodeInput = document.getElementById('barcode');
         const cameraError = document.getElementById('camera-error');
-        const restartBtn = document.getElementById('restart-btn');
+        const scannerModeBtn = document.getElementById('scanner-mode-btn');
         const torchBtn = document.getElementById('torch-btn');
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
+        const tsdMessage = document.getElementById('tsd-message');
         
         // Аудио элементы
         const scanSound = document.getElementById('scan-sound');
@@ -1015,6 +1045,8 @@ scan_html = '''
         let torchOn = false;
         let lastScanTime = 0;
         const SCAN_COOLDOWN = 2000;
+        
+        let currentMode = 'tsd'; // 'tsd' или 'camera'
         
         // Функция воспроизведения звука
         function playSound(type) {
@@ -1100,7 +1132,7 @@ scan_html = '''
         }
         
         function checkTorchSupport() {
-            torchBtn.style.display = 'none';
+             torchBtn.style.display = currentMode === 'camera' ? 'block' : 'none';
             if (currentStream) {
                 const track = currentStream.getVideoTracks()[0];
                 if (track && track.getCapabilities().torch) {
@@ -1127,10 +1159,10 @@ scan_html = '''
         }
         
         function startScanner() {
-            if (!scannerActive) return;
+           if (!scannerActive || currentMode !== 'camera') return;
             
             codeReader.decodeFromVideoElement(video, (result, err) => {
-                if (!scannerActive) return;
+                if (!scannerActive || currentMode !== 'camera') return;
                 
                 const now = Date.now();
                 if (now - lastScanTime < SCAN_COOLDOWN) return;
@@ -1175,42 +1207,103 @@ scan_html = '''
             barcodeInput.removeAttribute('readonly');
             barcodeInput.placeholder = "Введите штрих-код вручную";
         }
+
+         // Добавлено: Обработка сканирования ТСД
+        function handleTsdScan(event) {
+            if (currentMode !== 'tsd') return;
         
-        restartBtn.addEventListener('click', () => {
-            startCamera();
-        });
-        
-        torchBtn.addEventListener('click', toggleTorch);
-        
-        manualInputLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            barcodeInput.removeAttribute('readonly');
-            barcodeInput.focus();
-            barcodeInput.placeholder = "Введите штрих-код вручную";
-        });
-        
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopScanner();
-            } else {
-                scannerActive = true;
-                startScanner();
+        // ТСД обычно отправляет данные + Enter (код 13)
+            if (event.key === 'Enter') {
+                const barcode = barcodeInput.value.trim();
+                if (barcode) {
+                    playSound('scan');
+                    handleBarcodeScanned(barcode);
+                }
+                barcodeInput.value = ''; // Очищаем поле для следующего сканирования
             }
-        });
+        }
+    
+    // Добавлено: Обработка штрих-кода (общая функция)
+        function handleBarcodeScanned(barcode) {
+            barcodeInput.value = barcode;
+            document.getElementById('name').focus();
         
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showCameraError();
-            cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
-        } else {
-            startCamera();
+            fetch(`/get-product-name?barcode=${barcode}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.found) {
+                        document.getElementById('name').value = data.name;
+                        playSound('cor');
+                    } else {
+                        playSound('incor');
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка при получении названия товара:', error);
+                });
+        }
+    
+    // Добавлено: Переключение режимов сканирования
+        function switchScannerMode() {
+            if (currentMode === 'tsd') {
+            // Переключаемся на камеру телефона
+                currentMode = 'camera';
+                scannerModeBtn.textContent = 'Через ТСД';
+                tsdMessage.style.display = 'none';
+                video.style.display = 'block';
+                startCamera();
+            } else {
+            // Переключаемся на ТСД
+                currentMode = 'tsd';
+                scannerModeBtn.textContent = 'Через телефон';
+                tsdMessage.style.display = 'block';
+                video.style.display = 'none';
+                stopCurrentStream();
+            }
         }
         
-        scannerForm.addEventListener('submit', (e) => {
-            if (!barcodeInput.value) {
+
+       document.addEventListener('DOMContentLoaded', () => {
+        // Добавлено: Начальная настройка режима
+            switchScannerMode(); // Активируем режим ТСД по умолчанию
+        
+        // Добавлено: Обработчик событий ТСД
+            document.addEventListener('keypress', handleTsdScan);
+        
+        // Обработчики кнопок
+            scannerModeBtn.addEventListener('click', switchScannerMode);
+            torchBtn.addEventListener('click', toggleTorch);
+            manualInputLink.addEventListener('click', (e) => {
                 e.preventDefault();
-                alert("Пожалуйста, введите или отсканируйте штрих-код");
+                barcodeInput.removeAttribute('readonly');
                 barcodeInput.focus();
+                barcodeInput.placeholder = "Введите штрих-код вручную";
+            });
+        
+        // Обработчик видимости страницы
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopScanner();
+                } else if (currentMode === 'camera') {
+                    scannerActive = true;
+                    startScanner();
+                }
+            });
+        
+        // Проверка поддержки камеры
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showCameraError();
+                cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
             }
+        
+        // Обработка отправки формы
+            scannerForm.addEventListener('submit', (e) => {
+                if (!barcodeInput.value) {
+                   e.preventDefault();
+                    alert("Пожалуйста, введите или отсканируйте штрих-код");
+                    barcodeInput.focus();
+                }
+            });
         });
     </script>
 
