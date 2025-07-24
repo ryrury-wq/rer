@@ -992,26 +992,23 @@ scan_html = '''
         const torchBtn = document.getElementById('torch-btn');
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
-        
-        // Аудио элементы
+    
+    // Аудио элементы
         const scanSound = document.getElementById('scan-sound');
         const corSound = document.getElementById('cor-sound');
         const incorSound = document.getElementById('incor-sound');
-        
-        // Загрузка звуков
+    
+    // Загрузка звуков
         function loadSounds() {
-            // Используем ваши звуковые файлы
             scanSound.src = "{{ url_for('static', filename='sounds/scan.mp3') }}";
             corSound.src = "{{ url_for('static', filename='sounds/cor.mp3') }}";
             incorSound.src = "{{ url_for('static', filename='sounds/incor.mp3') }}";
-            
-            // Предзагрузка звуков
+        
             scanSound.load();
             corSound.load();
             incorSound.load();
         }
-        
-        // Глобальная переменная для состояния звука
+    
         let soundEnabled = true;
         let soundsLoaded = false;
 
@@ -1020,32 +1017,30 @@ scan_html = '''
         let torchOn = false;
         let lastScanTime = 0;
         const SCAN_COOLDOWN = 2000;
-        
-        // Функция воспроизведения звука
+    
+    // Функция воспроизведения звука
         function playSound(type) {
             if (!soundEnabled || !soundsLoaded) return;
-            
+        
             try {
                 let sound = null;
-                
+            
                 switch (type) {
                     case 'scan':
                         sound = scanSound.cloneNode();
                         break;
-                    case 'cor': // Для заполненного наименования
+                    case 'cor':
                         sound = corSound.cloneNode();
                         break;
-                    case 'incor': // Для незаполненного наименования
+                    case 'incor':
                         sound = incorSound.cloneNode();
                         break;
                 }
-                
+            
                 if (sound) {
                     sound.volume = 0.3;
-                    
-                    // Пытаемся воспроизвести звук
                     const playPromise = sound.play();
-                    
+                
                     if (playPromise !== undefined) {
                         playPromise.catch(error => {
                             console.log("Автовоспроизведение звука заблокировано:", error);
@@ -1056,7 +1051,7 @@ scan_html = '''
                 console.error("Ошибка воспроизведения звука:", e);
             }
         }
-        
+    
         function stopCurrentStream() {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => {
@@ -1070,30 +1065,35 @@ scan_html = '''
                 torchBtn.textContent = 'Фонарик';
             }
         }
-        
+    
         async function startCamera() {
             try {
                 stopCurrentStream();
-                
+            
                 const constraints = {
                     video: {
                         facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        focusMode: 'continuous'
+                        width: { ideal: 800 },  // Пониженное разрешение
+                        height: { ideal: 600 },
+                        frameRate: { ideal: 15 } // Пониженный FPS
                     }
                 };
-                
+            
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = currentStream;
-                
+            
                 cameraError.style.display = 'none';
                 video.style.display = 'block';
-                
+            
+            // Автоматически делаем поле только для чтения при работе камеры
+                if (document.activeElement !== barcodeInput) {
+                    barcodeInput.setAttribute('readonly', 'true');
+                    barcodeInput.placeholder = "Отсканируйте штрих-код";
+                }
+            
                 checkTorchSupport();
                 startScanner();
-                
-                // После получения доступа к камере загружаем звуки
+            
                 if (!soundsLoaded) {
                     loadSounds();
                     soundsLoaded = true;
@@ -1103,7 +1103,7 @@ scan_html = '''
                 showCameraError();
             }
         }
-        
+    
         function checkTorchSupport() {
             torchBtn.style.display = 'none';
             if (currentStream) {
@@ -1113,13 +1113,13 @@ scan_html = '''
                 }
             }
         }
-        
+    
         async function toggleTorch() {
             if (!currentStream) return;
-            
+        
             const track = currentStream.getVideoTracks()[0];
             if (!track || !track.getCapabilities().torch) return;
-            
+        
             try {
                 await track.applyConstraints({
                     advanced: [{ torch: !torchOn }]
@@ -1130,70 +1130,84 @@ scan_html = '''
                 console.error("Ошибка переключения фонарика:", err);
             }
         }
-        
+    
         function startScanner() {
             if (!scannerActive) return;
-            
+        
             codeReader.decodeFromVideoElement(video, (result, err) => {
                 if (!scannerActive) return;
-                
+            
                 const now = Date.now();
                 if (now - lastScanTime < SCAN_COOLDOWN) return;
-                
+            
                 if (result) {
                     lastScanTime = now;
-                    
-                    // Звук сканирования
                     playSound('scan');
-                    
                     barcodeInput.value = result.text;
                     document.getElementById('name').focus();
-                    
+                
                     fetch(`/get-product-name?barcode=${result.text}`)
                         .then(res => res.json())
                         .then(data => {
                             if (data.found) {
                                 document.getElementById('name').value = data.name;
-                                
-                                // Звук для заполненного наименования
                                 playSound('cor');
                             } else {
-                                // Звук для незаполненного наименования
                                 playSound('incor');
                             }
                         })
-                        .catch(error => {
-                            console.error('Ошибка при получении названия товара:', error);
-                        });
+                        .catch(console.error);
                 }
             });
         }
-        
+    
         function stopScanner() {
             scannerActive = false;
             codeReader.reset();
         }
-        
+    
         function showCameraError() {
             cameraError.style.display = 'block';
             video.style.display = 'none';
             barcodeInput.removeAttribute('readonly');
             barcodeInput.placeholder = "Введите штрих-код вручную";
         }
-        
-        restartBtn.addEventListener('click', () => {
-            startCamera();
+    
+    // ===== КРИТИЧЕСКИЕ ИЗМЕНЕНИЯ ДЛЯ UROVO =====
+    // Остановка камеры при фокусе на поле ввода
+        barcodeInput.addEventListener('focus', () => {
+            stopScanner();
+            stopCurrentStream();
+            torchOn = false;
+            torchBtn.textContent = 'Фонарик';
+            barcodeInput.removeAttribute('readonly');
         });
-        
+    
+    // Автозапуск камеры при потере фокуса
+        barcodeInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (!document.hidden) startCamera();
+            }, 300);
+        });
+    
+    // Улучшенная обработка перезапуска
+        restartBtn.addEventListener('click', () => {
+            if (document.activeElement === barcodeInput) {
+                barcodeInput.blur();
+                setTimeout(startCamera, 500);
+            } else {
+                startCamera();
+            }
+        });
+    // ===== КОНЕЦ ИЗМЕНЕНИЙ ДЛЯ UROVO =====
+    
         torchBtn.addEventListener('click', toggleTorch);
-        
+    
         manualInputLink.addEventListener('click', (e) => {
             e.preventDefault();
-            barcodeInput.removeAttribute('readonly');
-            barcodeInput.focus();
-            barcodeInput.placeholder = "Введите штрих-код вручную";
+            barcodeInput.focus(); // Автоматически переводим фокус на ввод
         });
-        
+    
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 stopScanner();
@@ -1202,14 +1216,14 @@ scan_html = '''
                 startScanner();
             }
         });
-        
+    
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showCameraError();
             cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
         } else {
             startCamera();
         }
-        
+    
         scannerForm.addEventListener('submit', (e) => {
             if (!barcodeInput.value) {
                 e.preventDefault();
