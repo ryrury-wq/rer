@@ -1209,19 +1209,7 @@ scan_html = '''
         }
 
          // Добавлено: Обработка сканирования ТСД
-        function handleTsdScan(event) {
-            if (currentMode !== 'tsd') return;
         
-        // ТСД обычно отправляет данные + Enter (код 13)
-            if (event.key === 'Enter') {
-                const barcode = barcodeInput.value.trim();
-                if (barcode) {
-                    playSound('scan');
-                    handleBarcodeScanned(barcode);
-                }
-                barcodeInput.value = ''; // Очищаем поле для следующего сканирования
-            }
-        }
     
     // Добавлено: Обработка штрих-кода (общая функция)
         function handleBarcodeScanned(barcode) {
