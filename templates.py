@@ -658,6 +658,7 @@ scan_html = '''
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Сканирование - Вкусвилл</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
         
@@ -712,6 +713,7 @@ scan_html = '''
             font-weight: 500;
             margin-top: 0;
             margin-bottom: 25px;
+            font-size: 1.5em;
         }
         .scanner-container { 
             position: relative; 
@@ -753,6 +755,8 @@ scan_html = '''
             transition: all 0.2s;
             min-width: 150px;
             margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
         }
 
         .scanner-mode-btn:hover {
@@ -792,6 +796,7 @@ scan_html = '''
             transition: all 0.2s;
             min-width: 150px;
         }
+
         .camera-btn:hover {
             background: #008c3a;
             transform: translateY(-2px);
@@ -799,28 +804,24 @@ scan_html = '''
         }
         .form-container {
             background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             margin-top: 20px;
         }
         .form-group { 
-            margin-bottom: 20px; 
+            margin-bottom: 25px; 
         }
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-weight: 500;
-            color: #424242;
-        }
+        
         input, select, button {
             width: 100%;
             box-sizing: border-box;
             padding: 14px;
             border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1em;
             font-family: 'Roboto', sans-serif;
+            background: #fff;
         }
         input:focus, select:focus {
             outline: none;
@@ -836,12 +837,13 @@ scan_html = '''
             padding: 16px;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
+
         button[type="submit"]:hover {
             background: #008c3a;
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
         .manual-input {
             margin: 20px 0;
@@ -853,24 +855,6 @@ scan_html = '''
             font-weight: 500;
             border-bottom: 1px dashed #00a046;
             padding-bottom: 2px;
-        }
-        .date-input-group {
-            position: relative;
-        }
-        .date-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #757575;
-            pointer-events: none;
-            font-size: 1.2em;
-            z-index: 2;
-        }
-        .date-input {
-            padding-left: 45px !important;
-            width: calc(100% - 45px) !important;
-            box-sizing: border-box;
         }
         .footer {
             text-align: center;
@@ -922,34 +906,141 @@ scan_html = '''
         .warning-date { color: #ff9800; }
         .expired-date { color: #f44336; }
         
-        /* Стили для крутилок даты */
-        .date-selector-group {
+        /* Стили для барабанного селектора даты */
+        .date-picker-wheels {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .date-selector {
-            flex: 1;
-            text-align: center;
-        }
-        .date-selector label {
-            font-size: 0.9em;
-            color: #757575;
-            margin-bottom: 5px;
-        }
-        .date-selector select {
-            padding: 10px;
-            border-radius: 8px;
+            justify-content: space-between;
+            height: 200px;
+            position: relative;
+            margin-bottom: 20px;
+            background: #fff;
+            border-radius: 16px;
             border: 1px solid #e0e0e0;
+            overflow: hidden;
+            padding: 0 5px;
+        }
+        .wheel-column {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            padding: 10px 0;
+            margin: 0 3px;
+            border-radius: 12px;
+        }
+        .wheel-label {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+            position: relative;
+            z-index: 2;
+        }
+        .wheel {
+            height: 150px;
+            position: relative;
+            overflow: hidden;
+        }
+        .wheel-items {
+            position: absolute;
             width: 100%;
+            top: 50px;
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        .wheel-item {
+            height: 50px;
+            line-height: 50px;
+            font-size: 22px;
+            color: #333; /* Тёмный шрифт для лучшей видимости */
+            transition: all 0.4s;
+            user-select: none;
+            font-weight: 500;
+            opacity: 0.7;
+            transform: scale(0.9);
+        }
+        .wheel-item.selected {
+            color: #00a046;
+            font-weight: 700;
+            font-size: 26px;
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        .wheel-highlight {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 50px;
+            transform: translateY(-50%);
+            border-top: 1px solid #e0e0e0;
+            border-bottom: 1px solid #e0e0e0;
+            pointer-events: none;
+            z-index: 2;
+            border-radius: 8px;
         }
         .date-display {
             text-align: center;
+            font-size: 1.4em;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            font-weight: 600;
+            color: #00a046;
+            border: 2px dotted #00a046; /* Пунктирная рамка */
+        }
+        
+        .highlight-section {
+            position: absolute;
+            top: 50%;
+            height: 50px;
+            transform: translateY(-50%);
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        .highlight-day {
+            left: 5%;
+            width: 20%;
+        }
+        
+        .highlight-month {
+            left: 37.5%;
+            width: 25%;
+        }
+        
+        .highlight-year {
+            right: 5%;
+            width: 25%;
+        }
+        
+        /* Минималистичные стикеры */
+        .sticker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #555;
+            margin-bottom: 10px;
+            font-weight: 500;
+            font-size: 1em;
+        }
+        
+        .sticker i {
+            color: #00a046;
             font-size: 1.2em;
-            margin: 10px 0;
-            padding: 10px;
-            background: #f5f5f5;
-            border-radius: 8px;
+        }
+        
+        .scanner-sticker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+        }
+        
+        .tsd-sticker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
     </style>
 </head>
@@ -971,52 +1062,83 @@ scan_html = '''
         </div>
 
         <div class="camera-controls">
-            <button id="scanner-mode-btn" class="scanner-mode-btn">Отсканировать камерой</button>
-            <button id="torch-btn" class="camera-btn" style="display: none;">Фонарик</button>
+            <button id="scanner-mode-btn" class="scanner-mode-btn">
+                <span class="scanner-sticker">
+                    <i class="fas fa-camera"></i> Отсканировать камерой
+                </span>
+            </button>
+            <button id="torch-btn" class="camera-btn" style="display: none;">
+                <i class="fas fa-lightbulb"></i> Фонарик
+            </button>
         </div>
 
         <div id="tsd-message" style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 8px; margin-top: 10px;">
-            Используется сканер ТСД. Наведите на штрих-код.
+            <span class="tsd-sticker">
+                <i class="fas fa-barcode"></i> Используется сканер ТСД. Наведите на штрих-код.
+            </span>
         </div>
 
         <div class="manual-input">
-            <a href="#" id="manual-input-link">Ввести штрих-код вручную</a>
+            <a href="#" id="manual-input-link">
+                <i class="fas fa-keyboard"></i> Ввести штрих-код вручную
+            </a>
         </div>
 
         <div class="form-container">
             <form method="POST" id="scanner-form">
                 <div class="form-group">
-                    <label for="barcode">Штрих-код:</label>
+                    <div class="sticker">
+                        <i class="fas fa-barcode"></i> Штрих-код:
+                    </div>
                     <input type="text" name="barcode" id="barcode" placeholder="Отсканируйте или введите вручную" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="name">Наименование:</label>
+                    <div class="sticker">
+                        <i class="fas fa-tag"></i> Наименование:
+                    </div>
                     <input type="text" id="name" name="name" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Дата изготовления:</label>
-                    <div class="date-selector-group">
-                        <div class="date-selector">
-                            <label>День</label>
-                            <select id="day-selector">
-                                <!-- Дни будут заполнены скриптом -->
-                            </select>
+                    <div class="sticker">
+                        <i class="far fa-calendar-alt"></i> Дата изготовления:
+                    </div>
+                    
+                    <!-- Барабанный селектор даты -->
+                    <div class="date-picker-wheels">
+                        <div class="highlight-section highlight-day"></div>
+                        <div class="highlight-section highlight-month"></div>
+                        <div class="highlight-section highlight-year"></div>
+                        
+                        <!-- День -->
+                        <div class="wheel-column">
+                            <div class="wheel-label">День</div>
+                            <div class="wheel" id="day-wheel">
+                                <div class="wheel-items" id="day-items"></div>
+                                <div class="wheel-highlight"></div>
+                            </div>
                         </div>
-                        <div class="date-selector">
-                            <label>Месяц</label>
-                            <select id="month-selector">
-                                <!-- Месяцы будут заполнены скриптом -->
-                            </select>
+                        
+                        <!-- Месяц -->
+                        <div class="wheel-column">
+                            <div class="wheel-label">Месяц</div>
+                            <div class="wheel" id="month-wheel">
+                                <div class="wheel-items" id="month-items"></div>
+                                <div class="wheel-highlight"></div>
+                            </div>
                         </div>
-                        <div class="date-selector">
-                            <label>Год</label>
-                            <select id="year-selector">
-                                <!-- Годы будут заполнены скриптом -->
-                            </select>
+                        
+                        <!-- Год -->
+                        <div class="wheel-column">
+                            <div class="wheel-label">Год</div>
+                            <div class="wheel" id="year-wheel">
+                                <div class="wheel-items" id="year-items"></div>
+                                <div class="wheel-highlight"></div>
+                            </div>
                         </div>
                     </div>
+                    
                     <div class="date-display" id="date-display">
                         <!-- Здесь будет отображаться выбранная дата -->
                     </div>
@@ -1024,7 +1146,9 @@ scan_html = '''
                 </div>
 
                 <div class="form-group">
-                    <label>Срок годности:</label>
+                    <div class="sticker">
+                        <i class="far fa-clock"></i> Срок годности:
+                    </div>
                     <div class="duration-group">
                         <input type="number" name="duration_value" placeholder="Количество" required>
                         <select name="duration_unit">
@@ -1040,7 +1164,9 @@ scan_html = '''
                         <span class="days-count" id="days-count"></span>
                     </div>
                 </div>
-                <button type="submit">Сохранить товар</button>
+                <button type="submit">
+                    <i class="fas fa-save"></i> Сохранить товар
+                </button>
             </form>
         </div>
     </div>
@@ -1144,8 +1270,8 @@ scan_html = '''
                 });
                 currentStream = null;
                 torchOn = false;
-                torchBtn.textContent = 'Фонарик';
-                torchBtn.style.display = 'none';
+                if (torchBtn) torchBtn.textContent = 'Фонарик';
+                if (torchBtn) torchBtn.style.display = 'none';
             }
         }
         
@@ -1205,7 +1331,9 @@ scan_html = '''
                     advanced: [{ torch: !torchOn }]
                 });
                 torchOn = !torchOn;
-                torchBtn.textContent = torchOn ? 'Выкл. фонарик' : 'Фонарик';
+                torchBtn.innerHTML = torchOn ? 
+                    '<i class="fas fa-lightbulb"></i> Выкл. фонарик' : 
+                    '<i class="fas fa-lightbulb"></i> Фонарик';
             } catch (err) {
                 console.error("Ошибка переключения фонарика:", err);
             }
@@ -1284,7 +1412,7 @@ scan_html = '''
             if (currentMode === 'tsd') {
                 // Переключаемся на камеру телефона
                 currentMode = 'camera';
-                scannerModeBtn.textContent = 'Отключить камеру';
+                scannerModeBtn.innerHTML = '<span class="scanner-sticker"><i class="fas fa-video-slash"></i> Отключить камеру</span>';
                 tsdMessage.style.display = 'none';
                 scannerContainer.style.display = 'block';
                 scannerActive = true;
@@ -1292,7 +1420,7 @@ scan_html = '''
             } else {
                 // Переключаемся на ТСД
                 currentMode = 'tsd';
-                scannerModeBtn.textContent = 'Отсканировать камерой';
+                scannerModeBtn.innerHTML = '<span class="scanner-sticker"><i class="fas fa-camera"></i> Отсканировать камерой</span>';
                 tsdMessage.style.display = 'block';
                 scannerContainer.style.display = 'none';
                 scannerActive = false;
@@ -1301,68 +1429,219 @@ scan_html = '''
             }
         }
         
-        // Инициализация селекторов даты
-        function initDateSelectors() {
-            const daySelector = document.getElementById('day-selector');
-            const monthSelector = document.getElementById('month-selector');
-            const yearSelector = document.getElementById('year-selector');
+        // Инициализация барабанного селектора даты
+        function initDateWheels() {
+            const dayItems = document.getElementById('day-items');
+            const monthItems = document.getElementById('month-items');
+            const yearItems = document.getElementById('year-items');
             const dateDisplay = document.getElementById('date-display');
             const hiddenDateInput = document.getElementById('manufacture_date');
             
-            // Заполняем дни (1-31)
-            for (let i = 1; i <= 31; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = i;
-                daySelector.appendChild(option);
-            }
-            
-            // Заполняем месяцы
             const months = [
-                'Январь', 'Февраль', 'Март', 'Апрель', 
-                'Май', 'Июнь', 'Июль', 'Август', 
-                'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+                'Янв', 'Фев', 'Мар', 'Апр', 
+                'Май', 'Июн', 'Июл', 'Авг', 
+                'Сен', 'Окт', 'Ноя', 'Дек'
             ];
             
-            months.forEach((month, index) => {
-                const option = document.createElement('option');
-                option.value = index + 1;
-                option.textContent = month;
-                monthSelector.appendChild(option);
-            });
+            const today = new Date();
+            let selectedDay = today.getDate();
+            let selectedMonth = today.getMonth() + 1; // 1-12
+            let selectedYear = today.getFullYear();
             
-            // Заполняем годы (текущий и предыдущие 10 лет)
-            const currentYear = new Date().getFullYear();
-            for (let i = currentYear; i >= currentYear - 10; i--) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = i;
-                yearSelector.appendChild(option);
+            // Генерация дней (1-31)
+            for (let i = 1; i <= 31; i++) {
+                const item = document.createElement('div');
+                item.className = 'wheel-item';
+                item.dataset.value = i;
+                item.textContent = i;
+                dayItems.appendChild(item);
             }
             
-            // Устанавливаем текущую дату по умолчанию
-            const today = new Date();
-            daySelector.value = today.getDate();
-            monthSelector.value = today.getMonth() + 1;
-            yearSelector.value = today.getFullYear();
+            // Генерация месяцев
+            months.forEach((month, index) => {
+                const item = document.createElement('div');
+                item.className = 'wheel-item';
+                item.dataset.value = index + 1;
+                item.textContent = month;
+                monthItems.appendChild(item);
+            });
+            
+            // Генерация годов (от 2015 до текущего года)
+            const currentYear = today.getFullYear();
+            for (let i = 2015; i <= currentYear; i++) {
+                const item = document.createElement('div');
+                item.className = 'wheel-item';
+                item.dataset.value = i;
+                item.textContent = i;
+                yearItems.appendChild(item);
+            }
+            
+            // Установка начальных значений
+            setSelectedItem(dayItems, selectedDay);
+            setSelectedItem(monthItems, selectedMonth);
+            setSelectedItem(yearItems, selectedYear);
             updateDateDisplay();
             
-            // Обработчики изменений
-            daySelector.addEventListener('change', updateDateDisplay);
-            monthSelector.addEventListener('change', updateDateDisplay);
-            yearSelector.addEventListener('change', updateDateDisplay);
-            
-            function updateDateDisplay() {
-                const day = daySelector.value;
-                const month = monthSelector.value;
-                const year = yearSelector.value;
+            // Обработчики свайпов для мобильных устройств
+            document.querySelectorAll('.wheel-items').forEach(items => {
+                let startY;
+                let velocity = 0;
+                let animationId = null;
+                let lastTimestamp = 0;
                 
+                items.addEventListener('touchstart', function(e) {
+                    startY = e.touches[0].clientY;
+                    velocity = 0;
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+                });
+                
+                items.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                    const currentY = e.touches[0].clientY;
+                    const deltaY = startY - currentY;
+                    
+                    // Обновляем позицию
+                    const currentYPos = parseFloat(items.style.transform?.replace('translateY(', '')?.replace('px)', '')) || 0;
+                    items.style.transform = `translateY(${currentYPos - deltaY}px)`;
+                    
+                    // Рассчитываем скорость для инерции
+                    velocity = deltaY;
+                    startY = currentY;
+                });
+                
+                items.addEventListener('touchend', function() {
+                    // Применяем инерцию
+                    if (Math.abs(velocity) > 2) {
+                        applyInertia(items, velocity);
+                    } else {
+                        snapToNearest(items);
+                    }
+                });
+                
+                // Для десктопа - колесо мыши
+                items.addEventListener('wheel', function(e) {
+                    e.preventDefault();
+                    scrollWheel(this, e.deltaY * 0.5);
+                });
+            });
+            
+            // Функция инерции
+            function applyInertia(element, velocity) {
+                const friction = 0.95;
+                const minVelocity = 0.5;
+                
+                function animate(timestamp) {
+                    if (!lastTimestamp) lastTimestamp = timestamp;
+                    const deltaTime = timestamp - lastTimestamp;
+                    lastTimestamp = timestamp;
+                    
+                    if (Math.abs(velocity) > minVelocity) {
+                        velocity *= friction;
+                        const currentYPos = parseFloat(element.style.transform?.replace('translateY(', '')?.replace('px)', '')) || 0;
+                        element.style.transform = `translateY(${currentYPos - velocity}px)`;
+                        animationId = requestAnimationFrame(animate);
+                    } else {
+                        snapToNearest(element);
+                    }
+                }
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            // Притягивание к ближайшему элементу
+            function snapToNearest(items) {
+                const itemsContainer = items.parentElement;
+                const itemsHeight = itemsContainer.offsetHeight;
+                const itemHeight = 50; // Высота одного элемента
+                
+                // Получаем текущую позицию
+                let currentYPos = parseFloat(items.style.transform?.replace('translateY(', '')?.replace('px)', '')) || 0;
+                
+                // Вычисляем индекс ближайшего элемента
+                const itemCount = items.children.length;
+                const centerIndex = Math.round(-currentYPos / itemHeight);
+                let adjustedIndex = centerIndex;
+                
+                // Корректируем индекс для циклической прокрутки
+                if (adjustedIndex < 0) {
+                    adjustedIndex = itemCount - 1;
+                } else if (adjustedIndex >= itemCount) {
+                    adjustedIndex = 0;
+                }
+                
+                const snapPosition = -adjustedIndex * itemHeight;
+                
+                // Плавное притягивание
+                items.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+                items.style.transform = `translateY(${snapPosition}px)`;
+                
+                // После анимации обновляем выбранный элемент
+                setTimeout(() => {
+                    const selectedValue = parseInt(items.children[adjustedIndex].dataset.value);
+                    
+                    if (items === dayItems) selectedDay = selectedValue;
+                    if (items === monthItems) selectedMonth = selectedValue;
+                    if (items === yearItems) selectedYear = selectedValue;
+                    
+                    // Удаляем класс selected у всех элементов
+                    const allItems = items.querySelectorAll('.wheel-item');
+                    allItems.forEach(item => item.classList.remove('selected'));
+                    
+                    // Добавляем класс selected к выбранному элементу
+                    items.children[adjustedIndex].classList.add('selected');
+                    
+                    updateDateDisplay();
+                    
+                    // Сбрасываем transition для следующих взаимодействий
+                    items.style.transition = '';
+                }, 400);
+            }
+            
+            // Прокрутка колесом мыши
+            function scrollWheel(element, delta) {
+                const currentYPos = parseFloat(element.style.transform?.replace('translateY(', '')?.replace('px)', '')) || 0;
+                element.style.transform = `translateY(${currentYPos - delta}px)`;
+                
+                // Откладываем притягивание
+                clearTimeout(element.snapTimeout);
+                element.snapTimeout = setTimeout(() => snapToNearest(element), 200);
+            }
+            
+            // Установка выбранного элемента
+            function setSelectedItem(container, value) {
+                const items = container.querySelectorAll('.wheel-item');
+                let index = -1;
+                
+                // Находим индекс элемента с нужным значением
+                items.forEach((item, i) => {
+                    if (parseInt(item.dataset.value) === value) {
+                        index = i;
+                    }
+                });
+                
+                if (index !== -1) {
+                    // Центрируем выбранный элемент
+                    const itemHeight = 50;
+                    const centerPosition = -(index * itemHeight);
+                    container.style.transform = `translateY(${centerPosition}px)`;
+                    
+                    // Обновляем классы
+                    items.forEach(item => item.classList.remove('selected'));
+                    items[index].classList.add('selected');
+                }
+            }
+            
+            // Обновление отображения даты
+            function updateDateDisplay() {
                 // Форматируем дату для отображения
-                const formattedDate = `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
+                const formattedDate = `${selectedDay.toString().padStart(2, '0')}.${selectedMonth.toString().padStart(2, '0')}.${selectedYear}`;
                 dateDisplay.textContent = formattedDate;
                 
                 // Устанавливаем значение в скрытое поле в формате YYYY-MM-DD
-                hiddenDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                hiddenDateInput.value = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-${selectedDay.toString().padStart(2, '0')}`;
                 
                 // Пересчитываем срок годности
                 calculateExpirationDate();
@@ -1370,17 +1649,16 @@ scan_html = '''
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Инициализация селекторов даты
-            initDateSelectors();
+            // Инициализация барабанного селектора даты
+            initDateWheels();
             
             // Начальная настройка - режим ТСД
             tsdMessage.style.display = 'block';
             scannerContainer.style.display = 'none';
-            scannerModeBtn.textContent = 'Отсканировать камерой';
             
             // Обработчики кнопок
             scannerModeBtn.addEventListener('click', switchScannerMode);
-            torchBtn.addEventListener('click', toggleTorch);
+            if (torchBtn) torchBtn.addEventListener('click', toggleTorch);
             manualInputLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 barcodeInput.removeAttribute('readonly');
