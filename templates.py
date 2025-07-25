@@ -952,7 +952,7 @@ scan_html = '''
             line-height: 50px;
             font-size: 22px;
             color: #333; /* Тёмный шрифт для лучшей видимости */
-            transition: all 0.4s;
+            transition: all 0.2s; /* Ускорение изменения цвета */
             user-select: none;
             font-weight: 500;
             opacity: 0.7;
@@ -1551,7 +1551,7 @@ scan_html = '''
                 animationId = requestAnimationFrame(animate);
             }
             
-            // Притягивание к ближайшему элементу
+            // Притягивание к ближайшему элементу с циклической прокруткой
             function snapToNearest(items) {
                 const itemsContainer = items.parentElement;
                 const itemsHeight = itemsContainer.offsetHeight;
@@ -1562,10 +1562,10 @@ scan_html = '''
                 
                 // Вычисляем индекс ближайшего элемента
                 const itemCount = items.children.length;
-                const centerIndex = Math.round(-currentYPos / itemHeight);
+                let centerIndex = Math.round(-currentYPos / itemHeight);
                 let adjustedIndex = centerIndex;
                 
-                // Корректируем индекс для циклической прокрутки
+                // Циклическая прокрутка: если вышли за пределы, переходим на другой конец
                 if (adjustedIndex < 0) {
                     adjustedIndex = itemCount - 1;
                 } else if (adjustedIndex >= itemCount) {
@@ -1574,8 +1574,8 @@ scan_html = '''
                 
                 const snapPosition = -adjustedIndex * itemHeight;
                 
-                // Плавное притягивание
-                items.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+                // Уменьшаем время анимации притягивания
+                items.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
                 items.style.transform = `translateY(${snapPosition}px)`;
                 
                 // После анимации обновляем выбранный элемент
@@ -1597,17 +1597,17 @@ scan_html = '''
                     
                     // Сбрасываем transition для следующих взаимодействий
                     items.style.transition = '';
-                }, 400);
+                }, 300); // Уменьшили время ожидания
             }
             
-            // Прокрутка колесом мыши
+            // Прокрутка колесом мыши с уменьшенным таймаутом
             function scrollWheel(element, delta) {
                 const currentYPos = parseFloat(element.style.transform?.replace('translateY(', '')?.replace('px)', '')) || 0;
                 element.style.transform = `translateY(${currentYPos - delta}px)`;
                 
-                // Откладываем притягивание
+                // Уменьшаем время до притягивания
                 clearTimeout(element.snapTimeout);
-                element.snapTimeout = setTimeout(() => snapToNearest(element), 200);
+                element.snapTimeout = setTimeout(() => snapToNearest(element), 150);
             }
             
             // Установка выбранного элемента
