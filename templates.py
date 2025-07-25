@@ -722,6 +722,7 @@ scan_html = '''
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             background: black;
+            display: none; /* Скрываем по умолчанию */
         }
         video { 
             width: 100%; 
@@ -920,6 +921,36 @@ scan_html = '''
         .normal-date { color: #00a046; }
         .warning-date { color: #ff9800; }
         .expired-date { color: #f44336; }
+        
+        /* Стили для крутилок даты */
+        .date-selector-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .date-selector {
+            flex: 1;
+            text-align: center;
+        }
+        .date-selector label {
+            font-size: 0.9em;
+            color: #757575;
+            margin-bottom: 5px;
+        }
+        .date-selector select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            width: 100%;
+        }
+        .date-display {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -931,7 +962,7 @@ scan_html = '''
     <div class="container">
         <h1>Сканирование товара</h1>
 
-        <div class="scanner-container">
+        <div class="scanner-container" id="scanner-container">
             <video id="video" autoplay playsinline muted></video>
             <div class="overlay"></div>
             <div id="camera-error" class="camera-error" style="display: none;">
@@ -940,12 +971,11 @@ scan_html = '''
         </div>
 
         <div class="camera-controls">
-            <button id="scanner-mode-btn" class="scanner-mode-btn mode-active">Через ТСД</button>
+            <button id="scanner-mode-btn" class="scanner-mode-btn">Отсканировать камерой</button>
             <button id="torch-btn" class="camera-btn" style="display: none;">Фонарик</button>
         </div>
 
-<!-- Добавляем скрытый контейнер для сообщений -->
-        <div id="tsd-message" style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 8px; margin-top: 10px; display: none;">
+        <div id="tsd-message" style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 8px; margin-top: 10px;">
             Используется сканер ТСД. Наведите на штрих-код.
         </div>
 
@@ -966,12 +996,31 @@ scan_html = '''
                 </div>
 
                 <div class="form-group">
-                    <label for="manufacture_date_text">Дата изготовления (дд.мм.гггг):</label>
-                    <div class="date-input-group">
-                        <span class="date-icon">📅</span>
-                        <input type="hidden" name="manufacture_date" id="manufacture_date">
-                        <input type="text" id="manufacture_date_text" placeholder="дд.мм.гггг" required class="date-input">
+                    <label>Дата изготовления:</label>
+                    <div class="date-selector-group">
+                        <div class="date-selector">
+                            <label>День</label>
+                            <select id="day-selector">
+                                <!-- Дни будут заполнены скриптом -->
+                            </select>
+                        </div>
+                        <div class="date-selector">
+                            <label>Месяц</label>
+                            <select id="month-selector">
+                                <!-- Месяцы будут заполнены скриптом -->
+                            </select>
+                        </div>
+                        <div class="date-selector">
+                            <label>Год</label>
+                            <select id="year-selector">
+                                <!-- Годы будут заполнены скриптом -->
+                            </select>
+                        </div>
                     </div>
+                    <div class="date-display" id="date-display">
+                        <!-- Здесь будет отображаться выбранная дата -->
+                    </div>
+                    <input type="hidden" name="manufacture_date" id="manufacture_date">
                 </div>
 
                 <div class="form-group">
@@ -1017,6 +1066,7 @@ scan_html = '''
         const manualInputLink = document.getElementById('manual-input-link');
         const scannerForm = document.getElementById('scanner-form');
         const tsdMessage = document.getElementById('tsd-message');
+        const scannerContainer = document.getElementById('scanner-container');
         
         // Аудио элементы
         const scanSound = document.getElementById('scan-sound');
@@ -1041,7 +1091,7 @@ scan_html = '''
         let soundsLoaded = false;
 
         let currentStream = null;
-        let scannerActive = true;
+        let scannerActive = false; // По умолчанию сканер выключен
         let torchOn = false;
         let lastScanTime = 0;
         const SCAN_COOLDOWN = 2000;
@@ -1095,6 +1145,7 @@ scan_html = '''
                 currentStream = null;
                 torchOn = false;
                 torchBtn.textContent = 'Фонарик';
+                torchBtn.style.display = 'none';
             }
         }
         
@@ -1116,6 +1167,7 @@ scan_html = '''
                 
                 cameraError.style.display = 'none';
                 video.style.display = 'block';
+                scannerContainer.style.display = 'block';
                 
                 checkTorchSupport();
                 startScanner();
@@ -1132,11 +1184,12 @@ scan_html = '''
         }
         
         function checkTorchSupport() {
-             torchBtn.style.display = currentMode === 'camera' ? 'block' : 'none';
             if (currentStream) {
                 const track = currentStream.getVideoTracks()[0];
                 if (track && track.getCapabilities().torch) {
                     torchBtn.style.display = 'block';
+                } else {
+                    torchBtn.style.display = 'none';
                 }
             }
         }
@@ -1159,7 +1212,7 @@ scan_html = '''
         }
         
         function startScanner() {
-           if (!scannerActive || currentMode !== 'camera') return;
+            if (!scannerActive || currentMode !== 'camera') return;
             
             codeReader.decodeFromVideoElement(video, (result, err) => {
                 if (!scannerActive || currentMode !== 'camera') return;
@@ -1208,10 +1261,6 @@ scan_html = '''
             barcodeInput.placeholder = "Введите штрих-код вручную";
         }
 
-         // Добавлено: Обработка сканирования ТСД
-        
-    
-    // Добавлено: Обработка штрих-кода (общая функция)
         function handleBarcodeScanned(barcode) {
             barcodeInput.value = barcode;
             document.getElementById('name').focus();
@@ -1231,32 +1280,105 @@ scan_html = '''
                 });
         }
     
-    // Добавлено: Переключение режимов сканирования
         function switchScannerMode() {
             if (currentMode === 'tsd') {
-            // Переключаемся на камеру телефона
+                // Переключаемся на камеру телефона
                 currentMode = 'camera';
-                scannerModeBtn.textContent = 'Через ТСД';
+                scannerModeBtn.textContent = 'Отключить камеру';
                 tsdMessage.style.display = 'none';
-                video.style.display = 'block';
+                scannerContainer.style.display = 'block';
+                scannerActive = true;
                 startCamera();
             } else {
-            // Переключаемся на ТСД
+                // Переключаемся на ТСД
                 currentMode = 'tsd';
-                scannerModeBtn.textContent = 'Через телефон';
+                scannerModeBtn.textContent = 'Отсканировать камерой';
                 tsdMessage.style.display = 'block';
-                video.style.display = 'none';
+                scannerContainer.style.display = 'none';
+                scannerActive = false;
                 stopCurrentStream();
+                stopScanner();
             }
         }
         
+        // Инициализация селекторов даты
+        function initDateSelectors() {
+            const daySelector = document.getElementById('day-selector');
+            const monthSelector = document.getElementById('month-selector');
+            const yearSelector = document.getElementById('year-selector');
+            const dateDisplay = document.getElementById('date-display');
+            const hiddenDateInput = document.getElementById('manufacture_date');
+            
+            // Заполняем дни (1-31)
+            for (let i = 1; i <= 31; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                daySelector.appendChild(option);
+            }
+            
+            // Заполняем месяцы
+            const months = [
+                'Январь', 'Февраль', 'Март', 'Апрель', 
+                'Май', 'Июнь', 'Июль', 'Август', 
+                'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+            ];
+            
+            months.forEach((month, index) => {
+                const option = document.createElement('option');
+                option.value = index + 1;
+                option.textContent = month;
+                monthSelector.appendChild(option);
+            });
+            
+            // Заполняем годы (текущий и предыдущие 10 лет)
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear; i >= currentYear - 10; i--) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                yearSelector.appendChild(option);
+            }
+            
+            // Устанавливаем текущую дату по умолчанию
+            const today = new Date();
+            daySelector.value = today.getDate();
+            monthSelector.value = today.getMonth() + 1;
+            yearSelector.value = today.getFullYear();
+            updateDateDisplay();
+            
+            // Обработчики изменений
+            daySelector.addEventListener('change', updateDateDisplay);
+            monthSelector.addEventListener('change', updateDateDisplay);
+            yearSelector.addEventListener('change', updateDateDisplay);
+            
+            function updateDateDisplay() {
+                const day = daySelector.value;
+                const month = monthSelector.value;
+                const year = yearSelector.value;
+                
+                // Форматируем дату для отображения
+                const formattedDate = `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
+                dateDisplay.textContent = formattedDate;
+                
+                // Устанавливаем значение в скрытое поле в формате YYYY-MM-DD
+                hiddenDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                
+                // Пересчитываем срок годности
+                calculateExpirationDate();
+            }
+        }
 
-       document.addEventListener('DOMContentLoaded', () => {
-        // Добавлено: Начальная настройка режима
-            switchScannerMode(); // Активируем режим ТСД по умолчанию
-        
-        
-        // Обработчики кнопок
+        document.addEventListener('DOMContentLoaded', () => {
+            // Инициализация селекторов даты
+            initDateSelectors();
+            
+            // Начальная настройка - режим ТСД
+            tsdMessage.style.display = 'block';
+            scannerContainer.style.display = 'none';
+            scannerModeBtn.textContent = 'Отсканировать камерой';
+            
+            // Обработчики кнопок
             scannerModeBtn.addEventListener('click', switchScannerMode);
             torchBtn.addEventListener('click', toggleTorch);
             manualInputLink.addEventListener('click', (e) => {
@@ -1266,7 +1388,7 @@ scan_html = '''
                 barcodeInput.placeholder = "Введите штрих-код вручную";
             });
         
-        // Обработчик видимости страницы
+            // Обработчик видимости страницы
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
                     stopScanner();
@@ -1276,13 +1398,13 @@ scan_html = '''
                 }
             });
         
-        // Проверка поддержки камеры
+            // Проверка поддержки камеры
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 showCameraError();
                 cameraError.textContent = "Ваш браузер не поддерживает доступ к камере";
             }
         
-        // Обработка отправки формы
+            // Обработка отправки формы
             scannerForm.addEventListener('submit', (e) => {
                 if (!barcodeInput.value) {
                    e.preventDefault();
@@ -1293,71 +1415,6 @@ scan_html = '''
         });
     </script>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const dateField = document.getElementById('manufacture_date');
-        const textField = document.getElementById('manufacture_date_text');
-        const scannerForm = document.getElementById('scanner-form');
-        
-        textField.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 8) value = value.substr(0, 8);
-            
-            let formatted = '';
-            for (let i = 0; i < value.length; i++) {
-                if (i === 2 || i === 4) formatted += '.';
-                formatted += value[i];
-            }
-            e.target.value = formatted;
-            
-            if (formatted.length === 10) {
-                const parts = formatted.split('.');
-                if (parts.length === 3) {
-                    const [day, month, year] = parts;
-                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    calculateExpirationDate();
-                }
-            }
-        });
-            
-        textField.addEventListener('blur', function() {
-            const value = textField.value;
-            if (value.length > 0 && value.length < 10) {
-                alert('Пожалуйста, введите полную дату в формате дд.мм.гггг');
-                textField.focus();
-            } else if (value.length === 10) {
-                const parts = value.split('.');
-                if (parts.length === 3) {
-                    const [day, month, year] = parts;
-                    dateField.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                }
-            }
-        });
-            
-        textField.addEventListener('keydown', function(e) {
-            if ([46, 8, 9, 27, 13].includes(e.keyCode) || 
-                (e.keyCode === 65 && e.ctrlKey === true) || 
-                (e.keyCode === 67 && e.ctrlKey === true) || 
-                (e.keyCode === 86 && e.ctrlKey === true) || 
-                (e.keyCode === 88 && e.ctrlKey === true) || 
-                (e.keyCode >= 35 && e.keyCode <= 39)) {
-                return;
-            }
-            
-            if ((e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
-                e.preventDefault();
-            }
-        });
-            
-        scannerForm.addEventListener('submit', function(e) {
-            if (!dateField.value) {
-                e.preventDefault();
-                alert('Пожалуйста, введите корректную дату изготовления в формате дд.мм.гггг');
-                textField.focus();
-            }
-        });
-    });
-    </script>
     <script>
 function calculateExpirationDate() {
     const dateStr = document.getElementById('manufacture_date').value;
