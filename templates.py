@@ -854,6 +854,24 @@ scan_html = '''
             border-bottom: 1px dashed #00a046;
             padding-bottom: 2px;
         }
+        .date-input-group {
+            position: relative;
+        }
+        .date-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
+            pointer-events: none;
+            font-size: 1.2em;
+            z-index: 2;
+        }
+        .date-input {
+            padding-left: 45px !important;
+            width: calc(100% - 45px) !important;
+            box-sizing: border-box;
+        }
         .footer {
             text-align: center;
             padding: 20px 15px 10px;
@@ -904,95 +922,34 @@ scan_html = '''
         .warning-date { color: #ff9800; }
         .expired-date { color: #f44336; }
         
-        /* Новые стили для барабанов выбора даты */
-        .date-picker-container {
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .date-picker-header {
+        /* Стили для крутилок даты */
+        .date-selector-group {
             display: flex;
-            justify-content: space-between;
-            padding: 0 10px;
-            margin-bottom: 5px;
-            font-size: 14px;
-            color: #757575;
-            font-weight: 500;
+            gap: 10px;
+            margin-bottom: 10px;
         }
-        
-        .date-picker-wheels {
-            display: flex;
-            height: 150px;
-            position: relative;
-        }
-        
-        .date-wheel-container {
+        .date-selector {
             flex: 1;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .date-wheel {
-            position: absolute;
-            width: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            perspective: 1000px;
-        }
-        
-        .date-wheel-item {
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 500;
-            color: #333;
-            transition: all 0.2s;
-        }
-        
-        .date-wheel-item.selected {
-            color: #00a046;
-            font-size: 22px;
-            font-weight: 700;
-        }
-        
-        .date-wheel-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        
-        .date-wheel-highlight {
-            height: 40px;
-            background: rgba(0, 160, 70, 0.1);
-            border-radius: 8px;
-            border-top: 2px solid #00a046;
-            border-bottom: 2px solid #00a046;
-            z-index: 2;
-        }
-        
-        .selected-date-display {
             text-align: center;
-            font-size: 1.3em;
-            font-weight: 500;
-            margin: 15px 0 5px;
-            padding: 12px;
-            background: #f0f7ff;
+        }
+        .date-selector label {
+            font-size: 0.9em;
+            color: #757575;
+            margin-bottom: 5px;
+        }
+        .date-selector select {
+            padding: 10px;
             border-radius: 8px;
-            border: 1px dashed #00a046;
-            color: #00a046;
+            border: 1px solid #e0e0e0;
+            width: 100%;
+        }
+        .date-display {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -1040,39 +997,27 @@ scan_html = '''
 
                 <div class="form-group">
                     <label>Дата изготовления:</label>
-                    <div class="date-picker-container">
-                        <div class="date-picker-header">
-                            <span>День</span>
-                            <span>Месяц</span>
-                            <span>Год</span>
+                    <div class="date-selector-group">
+                        <div class="date-selector">
+                            <label>День</label>
+                            <select id="day-selector">
+                                <!-- Дни будут заполнены скриптом -->
+                            </select>
                         </div>
-                        <div class="date-picker-wheels">
-                            <!-- День -->
-                            <div class="date-wheel-container" id="day-wheel-container">
-                                <div class="date-wheel" id="day-wheel"></div>
-                                <div class="date-wheel-overlay">
-                                    <div class="date-wheel-highlight"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Месяц -->
-                            <div class="date-wheel-container" id="month-wheel-container">
-                                <div class="date-wheel" id="month-wheel"></div>
-                                <div class="date-wheel-overlay">
-                                    <div class="date-wheel-highlight"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Год -->
-                            <div class="date-wheel-container" id="year-wheel-container">
-                                <div class="date-wheel" id="year-wheel"></div>
-                                <div class="date-wheel-overlay">
-                                    <div class="date-wheel-highlight"></div>
-                                </div>
-                            </div>
+                        <div class="date-selector">
+                            <label>Месяц</label>
+                            <select id="month-selector">
+                                <!-- Месяцы будут заполнены скриптом -->
+                            </select>
+                        </div>
+                        <div class="date-selector">
+                            <label>Год</label>
+                            <select id="year-selector">
+                                <!-- Годы будут заполнены скриптом -->
+                            </select>
                         </div>
                     </div>
-                    <div class="selected-date-display" id="selected-date-display">
+                    <div class="date-display" id="date-display">
                         <!-- Здесь будет отображаться выбранная дата -->
                     </div>
                     <input type="hidden" name="manufacture_date" id="manufacture_date">
@@ -1356,222 +1301,77 @@ scan_html = '''
             }
         }
         
-        // Инициализация барабанов даты
-        function initDateWheels() {
-            const dayWheel = document.getElementById('day-wheel');
-            const monthWheel = document.getElementById('month-wheel');
-            const yearWheel = document.getElementById('year-wheel');
-            const dateDisplay = document.getElementById('selected-date-display');
+        // Инициализация селекторов даты
+        function initDateSelectors() {
+            const daySelector = document.getElementById('day-selector');
+            const monthSelector = document.getElementById('month-selector');
+            const yearSelector = document.getElementById('year-selector');
+            const dateDisplay = document.getElementById('date-display');
             const hiddenDateInput = document.getElementById('manufacture_date');
             
+            // Заполняем дни (1-31)
+            for (let i = 1; i <= 31; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                daySelector.appendChild(option);
+            }
+            
+            // Заполняем месяцы
             const months = [
                 'Январь', 'Февраль', 'Март', 'Апрель', 
                 'Май', 'Июнь', 'Июль', 'Август', 
                 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
             ];
             
-            // Создаем дни (1-31)
-            for (let i = 1; i <= 31; i++) {
-                const dayItem = document.createElement('div');
-                dayItem.className = 'date-wheel-item';
-                dayItem.dataset.value = i;
-                dayItem.textContent = i;
-                dayWheel.appendChild(dayItem);
-            }
-            
-            // Создаем месяцы
             months.forEach((month, index) => {
-                const monthItem = document.createElement('div');
-                monthItem.className = 'date-wheel-item';
-                monthItem.dataset.value = index + 1;
-                monthItem.textContent = month.substring(0, 3); // Сокращенное название
-                monthWheel.appendChild(monthItem);
+                const option = document.createElement('option');
+                option.value = index + 1;
+                option.textContent = month;
+                monthSelector.appendChild(option);
             });
             
-            // Создаем годы (текущий и предыдущие 10 лет)
+            // Заполняем годы (текущий и предыдущие 10 лет)
             const currentYear = new Date().getFullYear();
             for (let i = currentYear; i >= currentYear - 10; i--) {
-                const yearItem = document.createElement('div');
-                yearItem.className = 'date-wheel-item';
-                yearItem.dataset.value = i;
-                yearItem.textContent = i;
-                yearWheel.appendChild(yearItem);
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                yearSelector.appendChild(option);
             }
             
             // Устанавливаем текущую дату по умолчанию
             const today = new Date();
-            setSelectedDate(today.getDate(), today.getMonth() + 1, today.getFullYear());
+            daySelector.value = today.getDate();
+            monthSelector.value = today.getMonth() + 1;
+            yearSelector.value = today.getFullYear();
             updateDateDisplay();
             
-            // Добавляем обработчики прокрутки
-            setupWheelScrolling(dayWheel, 'day');
-            setupWheelScrolling(monthWheel, 'month');
-            setupWheelScrolling(yearWheel, 'year');
-        }
-        
-        function setupWheelScrolling(wheel, type) {
-            let isDragging = false;
-            let startY = 0;
-            let startScrollTop = 0;
-            let velocity = 0;
-            let animationFrame;
+            // Обработчики изменений
+            daySelector.addEventListener('change', updateDateDisplay);
+            monthSelector.addEventListener('change', updateDateDisplay);
+            yearSelector.addEventListener('change', updateDateDisplay);
             
-            // Функция для анимации инерции
-            function animateInertia() {
-                velocity *= 0.95; // замедление
+            function updateDateDisplay() {
+                const day = daySelector.value;
+                const month = monthSelector.value;
+                const year = yearSelector.value;
                 
-                if (Math.abs(velocity) < 0.1) {
-                    cancelAnimationFrame(animationFrame);
-                    snapToNearestItem(wheel);
-                    return;
-                }
+                // Форматируем дату для отображения
+                const formattedDate = `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
+                dateDisplay.textContent = formattedDate;
                 
-                wheel.scrollTop += velocity;
-                animationFrame = requestAnimationFrame(animateInertia);
-            }
-            
-            // События мыши
-            wheel.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                startY = e.clientY;
-                startScrollTop = wheel.scrollTop;
-                velocity = 0;
-                cancelAnimationFrame(animationFrame);
-            });
-            
-            document.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                const deltaY = e.clientY - startY;
-                wheel.scrollTop = startScrollTop - deltaY;
-                velocity = startY - e.clientY; // для инерции
-            });
-            
-            document.addEventListener('mouseup', () => {
-                if (!isDragging) return;
-                isDragging = false;
-                animateInertia();
-                snapToNearestItem(wheel);
-                updateDateDisplay();
-            });
-            
-            // События касания для мобильных устройств
-            wheel.addEventListener('touchstart', (e) => {
-                isDragging = true;
-                startY = e.touches[0].clientY;
-                startScrollTop = wheel.scrollTop;
-                velocity = 0;
-                cancelAnimationFrame(animationFrame);
-                e.preventDefault();
-            });
-            
-            document.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                const deltaY = e.touches[0].clientY - startY;
-                wheel.scrollTop = startScrollTop - deltaY;
-                velocity = startY - e.touches[0].clientY;
-                e.preventDefault();
-            });
-            
-            document.addEventListener('touchend', () => {
-                if (!isDragging) return;
-                isDragging = false;
-                animateInertia();
-                snapToNearestItem(wheel);
-                updateDateDisplay();
-            });
-            
-            // Обработчик колеса мыши
-            wheel.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                wheel.scrollTop += e.deltaY;
-                snapToNearestItem(wheel);
-                updateDateDisplay();
-            });
-        }
-        
-        function snapToNearestItem(wheel) {
-            const items = wheel.querySelectorAll('.date-wheel-item');
-            const wheelRect = wheel.getBoundingClientRect();
-            const wheelCenter = wheelRect.top + wheelRect.height / 2;
-            
-            let closestItem = null;
-            let minDistance = Infinity;
-            
-            items.forEach(item => {
-                const itemRect = item.getBoundingClientRect();
-                const itemCenter = itemRect.top + itemRect.height / 2;
-                const distance = Math.abs(itemCenter - wheelCenter);
+                // Устанавливаем значение в скрытое поле в формате YYYY-MM-DD
+                hiddenDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                 
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestItem = item;
-                }
-            });
-            
-            if (closestItem) {
-                const itemRect = closestItem.getBoundingClientRect();
-                const wheelRect = wheel.getBoundingClientRect();
-                const offset = itemRect.top - wheelRect.top - (wheelRect.height / 2) + (itemRect.height / 2);
-                
-                wheel.scrollTop += offset;
-                
-                // Обновляем классы
-                items.forEach(item => item.classList.remove('selected'));
-                closestItem.classList.add('selected');
-            }
-        }
-        
-        function setSelectedDate(day, month, year) {
-            const dayItems = document.querySelectorAll('#day-wheel .date-wheel-item');
-            const monthItems = document.querySelectorAll('#month-wheel .date-wheel-item');
-            const yearItems = document.querySelectorAll('#year-wheel .date-wheel-item');
-            
-            // Снимаем выделение со всех элементов
-            dayItems.forEach(item => item.classList.remove('selected'));
-            monthItems.forEach(item => item.classList.remove('selected'));
-            yearItems.forEach(item => item.classList.remove('selected'));
-            
-            // Находим и выделяем нужные элементы
-            const selectedDay = [...dayItems].find(item => parseInt(item.dataset.value) === day);
-            const selectedMonth = [...monthItems].find(item => parseInt(item.dataset.value) === month);
-            const selectedYear = [...yearItems].find(item => parseInt(item.dataset.value) === year);
-            
-            if (selectedDay) selectedDay.classList.add('selected');
-            if (selectedMonth) selectedMonth.classList.add('selected');
-            if (selectedYear) selectedYear.classList.add('selected');
-            
-            // Прокручиваем к выбранным элементам
-            if (selectedDay) selectedDay.scrollIntoView({block: 'center'});
-            if (selectedMonth) selectedMonth.scrollIntoView({block: 'center'});
-            if (selectedYear) selectedYear.scrollIntoView({block: 'center'});
-        }
-        
-        function getSelectedDate() {
-            const selectedDay = document.querySelector('#day-wheel .date-wheel-item.selected');
-            const selectedMonth = document.querySelector('#month-wheel .date-wheel-item.selected');
-            const selectedYear = document.querySelector('#year-wheel .date-wheel-item.selected');
-            
-            return {
-                day: selectedDay ? parseInt(selectedDay.dataset.value) : null,
-                month: selectedMonth ? parseInt(selectedMonth.dataset.value) : null,
-                year: selectedYear ? parseInt(selectedYear.dataset.value) : null
-            };
-        }
-        
-        function updateDateDisplay() {
-            const {day, month, year} = getSelectedDate();
-            
-            if (day && month && year) {
-                const formattedDate = `${day.toString().padStart(2, '0')}.${month.toString().padStart(2, '0')}.${year}`;
-                document.getElementById('selected-date-display').textContent = formattedDate;
-                document.getElementById('manufacture_date').value = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                // Пересчитываем срок годности
                 calculateExpirationDate();
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Инициализация барабанов даты
-            initDateWheels();
+            // Инициализация селекторов даты
+            initDateSelectors();
             
             // Начальная настройка - режим ТСД
             tsdMessage.style.display = 'block';
