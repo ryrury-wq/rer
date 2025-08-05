@@ -72,7 +72,862 @@ def select_store():
     stores = cursor.fetchall()
     
     # Возвращаем HTML напрямую
-     return render_template('rus.html', store=store)
+     return f'''
+     <!DOCTYPE html>
+<html>
+<head>
+    <title>Вкусвилл - Выбор магазина</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9f5e9 100%);
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 2px solid #4CAF50;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #388E3C;
+            margin-bottom: 20px;
+        }
+        
+        .store-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .store-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        
+        .store-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+            border-color: #4CAF50;
+        }
+        
+        .store-icon {
+            width: 50px;
+            height: 50px;
+            background: #E8F5E9;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 1.5rem;
+        }
+        
+        .store-info {
+            flex: 1;
+        }
+        
+        .store-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #2E7D32;
+            margin-bottom: 5px;
+        }
+        
+        .store-address {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        
+        .store-radio {
+            display: none;
+        }
+        
+        .store-radio:checked + .store-card {
+            border-color: #4CAF50;
+            background-color: #F1F8E9;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+        }
+        
+        .submit-btn {
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 30px;
+            width: 100%;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(76, 175, 80, 0.4);
+            background: linear-gradient(to bottom, #43A047, #2E7D32);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">ВКУСВИЛЛ</div>
+        <div class="subtitle">Система контроля сроков годности</div>
+        <h1>Выберите ваш магазин</h1>
+    </div>
+    
+    <form method="post" action="/select_store">
+        <div class="store-container">
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m1" required>
+                <div class="store-card">
+                    <div class="store-icon">M1</div>
+                    <div class="store-info">
+                        <div class="store-name">Розыбакиева</div>
+                        <div class="store-address">ул. Розыбакиева, 247/1</div>
+                    </div>
+                </div>
+            </label>
+            
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m2">
+                <div class="store-card">
+                    <div class="store-icon">M2</div>
+                    <div class="store-info">
+                        <div class="store-name">Шевченко</div>
+                        <div class="store-address">ул. Шевченко, 124</div>
+                    </div>
+                </div>
+            </label>
+            
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m3">
+                <div class="store-card">
+                    <div class="store-icon">M3</div>
+                    <div class="store-info">
+                        <div class="store-name">Желтоксан</div>
+                        <div class="store-address">ул. Желтоксан, 75</div>
+                    </div>
+                </div>
+            </label>
+            
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m5">
+                <div class="store-card">
+                    <div class="store-icon">M5</div>
+                    <div class="store-info">
+                        <div class="store-name">Сейфулина</div>
+                        <div class="store-address">ул. Сейфулина, 483</div>
+                    </div>
+                </div>
+            </label>
+            
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m6">
+                <div class="store-card">
+                    <div class="store-icon">M6</div>
+                    <div class="store-info">
+                        <div class="store-name">Гоголя</div>
+                        <div class="store-address">ул. Гоголя, 58</div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <button type="submit" class="submit-btn">Продолжить в магазин</button>
+    </form>
+    
+    <div class="footer">
+        Вкусвилл &copy; 2023 | Система контроля сроков годности
+    </div>
+</body>
+</html>
+'''
+
+index_html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Favicon и PWA мета-теги -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192x192.png') }}">
+    <meta name="apple-mobile-web-app-title" content="Вкусвилл">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#00a046">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <title>Контроль сроков - Вкусвилл</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .header {
+            background-color: #00a046;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            height: 60px; /* Увеличим высоту для кнопок */
+        }
+        .logo {
+            font-weight: 700;
+            font-size: 1.8em;
+            color: white;
+            margin: 0 auto; /* Центрирование по горизонтали */
+            max-width: 70%; /* Защита от переполнения */
+            z-index: 1;
+        }
+        
+        /* Кнопка фильтра - исправленное позиционирование */
+        .filter-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 50%;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+        
+        .filter-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 15px;
+        }
+
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #00a046;
+        }
+
+        .search-container {
+            position: relative;
+            margin: 15px 0;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 40px;
+            border-radius: 24px;
+            border: 1px solid #e0e0e0;
+            font-size: 1em;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #757575;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+
+        .nav-links a {
+            padding: 12px 20px;
+            background: #00a046;
+            border-radius: 24px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: calc(50% - 10px);
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .items-container {
+            max-height: 55vh;
+            overflow-y: auto;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            position: relative;
+            padding-right: 50px;
+        }
+
+        /* Цветовые статусы для товаров */
+        .item.expired { 
+            background-color: #ffebee; 
+            border-left: 4px solid #f44336; 
+        }
+        .item.warning { 
+            background-color: #fff3e0; 
+            border-left: 4px solid #ff9800; 
+        }
+        .item.soon { 
+            background-color: #fff8e1; 
+            border-left: 4px solid #ffc107; 
+        }
+        .item.normal { 
+            background-color: #e8f5e9; 
+            border-left: 4px solid #4caf50; 
+        }
+
+        .item-info {
+            flex-grow: 1;
+            max-width: calc(100% - 50px);
+        }
+
+        .item-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .move-btn { background: #00a046; color: white; }
+        .edit-btn { background: #ffc107; color: #333; }
+        .delete-btn { background: #f44336; color: white; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            margin-top: 5px;
+        }
+
+        .expired-badge { background: #ffcdd2; color: #c62828; }
+        .warning-badge { background: #ffe0b2; color: #e65100; }
+        .soon-badge { background: #fff59d; color: #f57f17; }
+        .normal-badge { background: #c8e6c9; color: #2e7d32; }
+
+        .no-items {
+            text-align: center;
+            padding: 30px;
+            color: #9e9e9e;
+            font-style: italic;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px 15px 10px;
+            color: #757575;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        /* Кнопка установки - НОВЫЕ СТИЛИ */
+        #install-button {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 8px 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 2;
+            white-space: nowrap;
+        }
+        
+        #install-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        #install-button .install-icon {
+            font-size: 1.2em;
+        }
+
+        /* Модальное окно фильтров */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 1.3em;
+            font-weight: 500;
+            color: #00a046;
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #757575;
+        }
+
+        .filter-block {
+            margin-bottom: 20px;
+        }
+
+        .date-filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .date-input {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 0.95em;
+            text-align: center;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .filter-buttons .apply-btn,
+        .filter-buttons .reset-btn {
+            flex: 1;
+            margin: 0;
+            padding: 12px;
+            font-size: 0.95em;
+        }
+
+        .quick-btns {
+            margin-bottom: 0;
+        }
+        
+        .apply-btn, .reset-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 1em;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .apply-btn {
+            background: #00a046;
+            color: white;
+        }
+
+        .reset-btn {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .quick-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .quick-btn {
+            padding: 10px 15px;
+            font-size: 0.9em;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 8px;
+            text-decoration: none;
+            border: 1px solid #c8e6c9;
+            flex: 1;
+            min-width: calc(50% - 10px);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #c8e6c9;
+        }
+
+        .quick-btn.active {
+            background: #00a046;
+            color: white;
+            border-color: #00a046;
+        }
+        .apply-btn:hover {
+            background: #008c3a;
+            transform: translateY(-2px);
+        }
+
+        .reset-btn:hover {
+            background: #d0d0d0;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1.5em;
+                max-width: 60%;
+            }
+            
+            #install-button span:not(.install-icon) {
+                display: none;
+            }
+            
+            #install-button {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button id="install-button" title="Установить приложение" style="display: none;">
+            <span class="install-icon">⬇️</span> <span>Установить</span>
+        </button>
+        
+        <h1 class="logo">Вкусвилл</h1>
+        
+        <button class="filter-btn" id="open-filter-modal">☰</button>
+    </div>
+
+    <div class="container">
+        <h1>Товары с истекающим сроком</h1>
+
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или штрих-коду...">
+        </div>
+
+        <div class="nav-links">
+            <a href="/scan">Сканировать</a>
+            <a href="/history">История</a>
+            <a href="/assortment">Ассортимент</a>
+        </div>
+
+        <div class="items-container" id="items-container">
+            {% for item in items %}
+                <div class="item {{ item.status }}">
+                    <div class="item-info">
+                        <strong>{{ item.name }}</strong>
+                        <div style="font-size:0.9em; color:#666; margin-top:3px">{{ item.barcode }}</div>
+                        <div>Годен до: {{ item.expiration_date }}</div>
+
+                        {% if item.status == "expired" %}
+                            <div class="badge expired-badge">Просрочено: {{ item.days_since_expiry }} дн.</div>
+                        {% elif item.status == "warning" %}
+                            <div class="badge warning-badge">Истекает сегодня!</div>
+                        {% elif item.status == "soon" %}
+                            <div class="badge soon-badge">Истекает через: {{ item.days_until_expiry }} дн.</div>
+                        {% else %}
+                            <div class="badge normal-badge">До истечения: {{ item.days_until_expiry }} дн.</div>
+                        {% endif %}
+
+                        <div style="font-size:0.85em; margin-top:5px; color:#757575">
+                            Удаление: {{ item.removal_date }} (через {{ item.days_until_removal }} дн.)
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <form action="/move_to_history" method="POST">
+                            <input type="hidden" name="batch_id" value="{{ item.id }}">
+                            <button type="submit" class="action-btn move-btn">→</button>
+                        </form>
+                        <a href="/edit_batch?batch_id={{ item.id }}" class="action-btn edit-btn">✎</a>
+                        <form action="/delete_batch" method="POST">
+                            <input type="hidden" name="batch_id" value="{{ item.id }}">
+                            <button type="submit" class="action-btn delete-btn">🗑</button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="no-items">Нет товаров с истекающим сроком</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="footer">
+        Сделано М2(Shevchenko) by Bekeshnyuk
+    </div>
+
+    <!-- Модальное окно фильтров -->
+    <div class="modal-overlay" id="filter-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Фильтры</h3>
+                <button class="close-modal" id="close-filter-modal">×</button>
+            </div>
+            
+            <form id="filter-form" method="get">
+                <div class="filter-block">
+                    <div class="date-filter-group">
+                        <input type="text" id="from_date_text" name="from_date" placeholder="От (дд.мм.гггг)" value="{{ from_date or '' }}" class="date-input">
+                        <input type="text" id="to_date_text" name="to_date" placeholder="До (дд.мм.гггг)" value="{{ to_date or '' }}" class="date-input">
+                    </div>
+                    
+                    <div class="quick-btns">
+                        <a href="/?days_left=1" class="quick-btn {% if request.args.get('days_left') == '1' %}active{% endif %}">1 день</a>
+                        <a href="/?days_left=2" class="quick-btn {% if request.args.get('days_left') == '2' %}active{% endif %}">1-2 дня</a>
+                        <a href="/?days_left=5" class="quick-btn {% if request.args.get('days_left') == '5' %}active{% endif %}">1-5 дней</a>
+                        <a href="/" class="quick-btn">Все</a>
+                    </div>
+                    
+                    <div class="filter-buttons">
+                        <button type="submit" class="apply-btn">Применить</button>
+                        <a href="/" class="reset-btn">Сбросить фильтры</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function setupDateInput(id) {
+        const input = document.getElementById(id);
+        input.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.substr(0, 8);
+            let formatted = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i === 2 || i === 4) formatted += '.';
+                formatted += value[i];
+            }
+            e.target.value = formatted;
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if ([8, 9, 13, 27, 46, 37, 39].includes(e.keyCode) ||
+                (e.keyCode >= 48 && e.keyCode <= 57) ||
+                (e.keyCode >= 96 && e.keyCode <= 105)) return;
+            e.preventDefault();
+        });
+    }
+
+    // Управление модальным окном
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('filter-modal');
+        const openBtn = document.getElementById('open-filter-modal');
+        const closeBtn = document.getElementById('close-filter-modal');
+        
+        openBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Настройка полей ввода дат
+        setupDateInput('from_date_text');
+        setupDateInput('to_date_text');
+
+        // Поиск по товарам
+        const searchInput = document.getElementById('search-input');
+        const itemsContainer = document.getElementById('items-container');
+        const originalHTML = itemsContainer.innerHTML;
+
+        searchInput.addEventListener('input', () => {
+            const term = searchInput.value.toLowerCase();
+            const items = itemsContainer.querySelectorAll('.item');
+            let found = false;
+
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(term)) {
+                    item.style.display = 'flex';
+                    found = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            if (!found && term.length > 0) {
+                itemsContainer.innerHTML = `<div class="no-items">Ничего не найдено по запросу: "${term}"</div>`;
+            } else if (!term) {
+                itemsContainer.innerHTML = originalHTML;
+            }
+        });
+    });
+    </script>
+<script>
+let deferredPrompt;
+
+// Показываем кнопку при возможности установки
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    const installButton = document.getElementById('install-button');
+    if (installButton) {
+        installButton.style.display = 'flex';
+        
+        installButton.addEventListener('click', () => {
+            // Скрыть кнопку после нажатия
+            installButton.style.display = 'none';
+            
+            // Показать подсказку установки
+            deferredPrompt.prompt();
+            
+            // Ждем, пока пользователь решит
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Пользователь установил приложение');
+                } else {
+                    console.log('Пользователь отказался от установки');
+                }
+                deferredPrompt = null;
+            });
+        });
+    }
+});
+
+// Скрываем кнопку после установки
+window.addEventListener('appinstalled', () => {
+    console.log('Приложение успешно установлено');
+    const installButton = document.getElementById('install-button');
+    if (installButton) {
+        installButton.style.display = 'none';
+    }
+});
+</script>
+</body>
+</html>
+     '''
 
 # Маршрут для установки магазина (API)
 @app.route('/set_store', methods=['POST'])
