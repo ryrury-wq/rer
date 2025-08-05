@@ -1,496 +1,209 @@
 from flask import render_template_string
 
 # Главная страница с новым стилем Вкусвилл
-select_store_html = '''
+rus_html = '''
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Выберите магазин ВкусВилл</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Вкусвилл - Выбор магазина</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'Open Sans', Arial, sans-serif;
-            background: linear-gradient(135deg, #f8fff0 0%, #e8f5e9 100%);
-            color: #2c3e50;
-            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9f5e9 100%);
+            max-width: 700px;
+            margin: 0 auto;
             padding: 20px;
-            position: relative;
-            overflow-x: hidden;
-        }
-        
-        body::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 8px;
-            background: linear-gradient(90deg, #8bc34a 0%, #ff9800 100%);
-            z-index: 10;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 40px auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(139, 195, 74, 0.15);
-            overflow: hidden;
-            position: relative;
-            z-index: 1;
+            color: #333;
         }
         
         .header {
-            background: #8bc34a;
-            padding: 30px 40px;
-            color: white;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .header::after {
-            content: "";
-            position: absolute;
-            bottom: -20px;
-            left: 0;
-            right: 0;
-            height: 40px;
-            background: #f8fff0;
-            border-radius: 50%;
-            z-index: 1;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 2px solid #4CAF50;
         }
         
         .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 15px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
         
-        .logo-icon {
-            font-size: 36px;
-            color: #ff9800;
+        .subtitle {
+            font-size: 1.2rem;
+            color: #388E3C;
+            margin-bottom: 20px;
+        }
+        
+        .store-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .store-card {
             background: white;
-            width: 60px;
-            height: 60px;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        
+        .store-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+            border-color: #4CAF50;
+        }
+        
+        .store-icon {
+            width: 50px;
+            height: 50px;
+            background: #E8F5E9;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-right: 20px;
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 1.5rem;
         }
         
-        .logo-text {
-            font-size: 32px;
-            font-weight: 700;
-            letter-spacing: 1px;
+        .store-info {
+            flex: 1;
         }
         
-        .subtitle {
-            font-size: 18px;
-            font-weight: 400;
-            max-width: 500px;
-            margin: 0 auto;
-            line-height: 1.5;
+        .store-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #2E7D32;
+            margin-bottom: 5px;
         }
         
-        .content {
-            padding: 40px;
-        }
-        
-        .title {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #2c3e50;
-            position: relative;
-            padding-bottom: 15px;
-        }
-        
-        .title::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 4px;
-            background: linear-gradient(90deg, #8bc34a 0%, #ff9800 100%);
-            border-radius: 2px;
-        }
-        
-        .radio-group {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 30px;
+        .store-address {
+            color: #666;
+            font-size: 0.95rem;
         }
         
         .store-radio {
             display: none;
         }
         
-        .store-card {
-            border: 2px solid #e0e0e0;
-            padding: 25px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            background: white;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .store-card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 6px;
-            height: 100%;
-            background: #e0e0e0;
-            transition: all 0.3s ease;
-        }
-        
-        .store-icon {
-            width: 50px;
-            height: 50px;
-            background: #f1f8e9;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #8bc34a;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-        
-        .store-info {
-            flex-grow: 1;
-        }
-        
-        .store-name {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #2c3e50;
-        }
-        
-        .store-address {
-            font-size: 16px;
-            color: #7f8c8d;
-            line-height: 1.4;
-        }
-        
-        .store-hours {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-top: 8px;
-        }
-        
-        .store-distance {
-            background: #e8f5e9;
-            color: #388e3c;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .store-card:hover {
-            border-color: #ff9800;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(139, 195, 74, 0.2);
-        }
-        
-        .store-card:hover::before {
-            background: #ff9800;
-        }
-        
-        .store-card:hover .store-icon {
-            background: #fff3e0;
-            color: #ff9800;
-        }
-        
         .store-radio:checked + .store-card {
-            border-color: #8bc34a;
-            background: #f1f8e9;
+            border-color: #4CAF50;
+            background-color: #F1F8E9;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
         }
         
-        .store-radio:checked + .store-card::before {
-            background: #8bc34a;
-        }
-        
-        .store-radio:checked + .store-card .store-icon {
-            background: #8bc34a;
-            color: white;
-        }
-        
-        .store-radio:checked + .store-card .store-name {
-            color: #388e3c;
-        }
-        
-        .button-container {
-            text-align: center;
-            margin-top: 20px;
-        }
-        
-        button {
-            background: linear-gradient(90deg, #8bc34a 0%, #689f38 100%);
+        .submit-btn {
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
             color: white;
             border: none;
-            padding: 16px 40px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
             border-radius: 50px;
             cursor: pointer;
-            font-size: 18px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(139, 195, 74, 0.4);
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
+            margin-top: 30px;
+            width: 100%;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s;
         }
         
-        button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(139, 195, 74, 0.6);
-            background: linear-gradient(90deg, #7cb342 0%, #558b2f 100%);
-        }
-        
-        button:active {
-            transform: translateY(1px);
-        }
-        
-        .features {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 40px;
-            padding: 20px;
-            background: #f1f8e9;
-            border-radius: 12px;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        
-        .feature {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            color: #388e3c;
-            font-weight: 600;
-        }
-        
-        .feature i {
-            font-size: 18px;
-            background: #8bc34a;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(76, 175, 80, 0.4);
+            background: linear-gradient(to bottom, #43A047, #2E7D32);
         }
         
         .footer {
             text-align: center;
-            margin-top: 30px;
-            color: #7f8c8d;
-            font-size: 14px;
-            padding: 20px;
-            border-top: 1px solid #e0e0e0;
-        }
-        
-        @media (max-width: 600px) {
-            .container {
-                margin: 20px auto;
-                border-radius: 12px;
-            }
-            
-            .header {
-                padding: 20px;
-            }
-            
-            .content {
-                padding: 20px;
-            }
-            
-            .store-card {
-                padding: 20px;
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .store-card::before {
-                width: 100%;
-                height: 6px;
-                top: 0;
-                left: 0;
-            }
-            
-            .features {
-                flex-direction: column;
-                align-items: center;
-            }
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-store"></i>
+    <div class="header">
+        <div class="logo">ВКУСВИЛЛ</div>
+        <div class="subtitle">Система контроля сроков годности</div>
+        <h1>Выберите ваш магазин</h1>
+    </div>
+    
+    <form method="post" action="/select_store">
+        <div class="store-container">
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m1" required>
+                <div class="store-card">
+                    <div class="store-icon">M1</div>
+                    <div class="store-info">
+                        <div class="store-name">Розыбакиева</div>
+                        <div class="store-address">ул. Розыбакиева, 247/1</div>
+                    </div>
                 </div>
-                <div class="logo-text">ВкусВилл</div>
-            </div>
-            <p class="subtitle">Выберите ваш любимый магазин для продолжения</p>
+            </label>
+            
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m2">
+                <div class="store-card">
+                    <div class="store-icon">M2</div>
+                    <div class="store-info">
+                        <div class="store-name">Шевченко</div>
+                        <div class="store-address">ул. Шевченко, 124</div>
+                    </div>
+                </div>
+            </label>
+            
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m3">
+                <div class="store-card">
+                    <div class="store-icon">M3</div>
+                    <div class="store-info">
+                        <div class="store-name">Желтоксан</div>
+                        <div class="store-address">ул. Желтоксан, 75</div>
+                    </div>
+                </div>
+            </label>
+            
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m5">
+                <div class="store-card">
+                    <div class="store-icon">M5</div>
+                    <div class="store-info">
+                        <div class="store-name">Сейфулина</div>
+                        <div class="store-address">ул. Сейфулина, 483</div>
+                    </div>
+                </div>
+            </label>
+            
+            <label>
+                <input class="store-radio" type="radio" name="store_code" value="m6">
+                <div class="store-card">
+                    <div class="store-icon">M6</div>
+                    <div class="store-info">
+                        <div class="store-name">Гоголя</div>
+                        <div class="store-address">ул. Гоголя, 58</div>
+                    </div>
+                </div>
+            </label>
         </div>
         
-        <div class="content">
-            <h1 class="title">Выберите магазин</h1>
-            
-            <form method="post" action="/select_store">
-                <div class="radio-group">
-                    <!-- Магазин 1 -->
-                    <label>
-                        <input class="store-radio" type="radio" name="store_code" value="store1">
-                        <div class="store-card">
-                            <div class="store-icon">
-                                <i class="fas fa-shopping-basket"></i>
-                            </div>
-                            <div class="store-info">
-                                <div class="store-name">ВкусВилл на Тверской</div>
-                                <div class="store-address">ул. Тверская, 14, Москва</div>
-                                <div class="store-hours">
-                                    <i class="fas fa-clock"></i>
-                                    <span>08:00 - 23:00</span>
-                                </div>
-                            </div>
-                            <div class="store-distance">
-                                <i class="fas fa-location-dot"></i>
-                                <span>1.2 км</span>
-                            </div>
-                        </div>
-                    </label>
-                    
-                    <!-- Магазин 2 -->
-                    <label>
-                        <input class="store-radio" type="radio" name="store_code" value="store2">
-                        <div class="store-card">
-                            <div class="store-icon">
-                                <i class="fas fa-leaf"></i>
-                            </div>
-                            <div class="store-info">
-                                <div class="store-name">ВкусВилл Organic</div>
-                                <div class="store-address">Ленинский пр-т, 72, Москва</div>
-                                <div class="store-hours">
-                                    <i class="fas fa-clock"></i>
-                                    <span>07:00 - 22:00</span>
-                                </div>
-                            </div>
-                            <div class="store-distance">
-                                <i class="fas fa-location-dot"></i>
-                                <span>0.8 км</span>
-                            </div>
-                        </div>
-                    </label>
-                    
-                    <!-- Магазин 3 -->
-                    <label>
-                        <input class="store-radio" type="radio" name="store_code" value="store3">
-                        <div class="store-card">
-                            <div class="store-icon">
-                                <i class="fas fa-coffee"></i>
-                            </div>
-                            <div class="store-info">
-                                <div class="store-name">ВкусВилл Кафе</div>
-                                <div class="store-address">ул. Арбат, 35, Москва</div>
-                                <div class="store-hours">
-                                    <i class="fas fa-clock"></i>
-                                    <span>09:00 - 21:00</span>
-                                </div>
-                            </div>
-                            <div class="store-distance">
-                                <i class="fas fa-location-dot"></i>
-                                <span>2.5 км</span>
-                            </div>
-                        </div>
-                    </label>
-                    
-                    <!-- Магазин 4 -->
-                    <label>
-                        <input class="store-radio" type="radio" name="store_code" value="store4">
-                        <div class="store-card">
-                            <div class="store-icon">
-                                <i class="fas fa-seedling"></i>
-                            </div>
-                            <div class="store-info">
-                                <div class="store-name">ВкусВилл Фермерский</div>
-                                <div class="store-address">пр-т Мира, 102, Москва</div>
-                                <div class="store-hours">
-                                    <i class="fas fa-clock"></i>
-                                    <span>08:00 - 22:30</span>
-                                </div>
-                            </div>
-                            <div class="store-distance">
-                                <i class="fas fa-location-dot"></i>
-                                <span>3.1 км</span>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-                
-                <div class="button-container">
-                    <button type="submit">
-                        <i class="fas fa-arrow-right"></i>
-                        Продолжить
-                    </button>
-                </div>
-            </form>
-            
-            <div class="features">
-                <div class="feature">
-                    <i class="fas fa-apple-alt"></i>
-                    <span>Свежие фермерские продукты</span>
-                </div>
-                <div class="feature">
-                    <i class="fas fa-recycle"></i>
-                    <span>Экологичная упаковка</span>
-                </div>
-                <div class="feature">
-                    <i class="fas fa-truck"></i>
-                    <span>Быстрая доставка</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>© 2023 ВкусВилл — фермерские продукты с любовью</p>
-            <p>Телефон поддержки: 8 (800) 555-35-35</p>
-        </div>
+        <button type="submit" class="submit-btn">Продолжить в магазин</button>
+    </form>
+    
+    <div class="footer">
+        Вкусвилл &copy; 2023 | Система контроля сроков годности
     </div>
 </body>
 </html>
@@ -3696,7 +3409,7 @@ edit_product_html = '''
 
 # Создаем словарь шаблонов
 templates = {
-    'select_store.html' : select_store_html,
+    'rus.html' : rus_html,
     'index.html': index_html,
     'scan.html': scan_html,
     'new_product.html': new_product_html,
