@@ -72,7 +72,7 @@ def select_store():
     stores = cursor.fetchall()
     
     # Возвращаем HTML напрямую
-     return render_template('select_store.html', store=store)
+     return render_template('rus.html', store=store)
 
 # Маршрут для установки магазина (API)
 @app.route('/set_store', methods=['POST'])
