@@ -2,17 +2,24 @@ import os
 import psycopg2
 import subprocess
 from datetime import datetime, timedelta
-from flask import Flask, request, redirect, url_for, g, jsonify, render_template_string, send_from_directory
+from flask import Flask, request, redirect, url_for, g, jsonify, render_template, send_from_directory, make_response
 from psycopg2.extras import DictCursor
 from dateutil.relativedelta import relativedelta
 import json
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
 
-# Добавляем поддержку мультимагазинности через суффиксы таблиц
-STORE_SUFFIX = os.environ.get('STORE_SUFFIX', '')  # Например: '_m1', '_m2'
+# Словарь для преобразования кода магазина в суффикс таблиц
+STORE_SUFFIX_MAP = {
+    'm1': '_m1',
+    'm2': '',  # Для основного магазина (М2 Шевченко) суффикс пустой
+    'm3': '_m3',
+    'm5': '_m5',
+    'm6': '_m6'
+}
 
-# Подключение к PostgreSQL
+# Подключение к PostgreSQL (общее для всех магазинов)
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -28,76 +35,55 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-# Инициализация БД с учетом суффикса магазина
-def init_db():
-    with app.app_context():
-        db = get_db()
-        cursor = db.cursor()
+# Middleware для установки магазина
+@app.before_request
+def set_store_suffix():
+    # Для статики и выбора магазина не нужен суффикс
+    if request.endpoint in ['static', 'select_store', 'set_store']:
+        return
+    
+    store_code = request.cookies.get('store_code')
+    
+    if not store_code:
+        return redirect(url_for('select_store'))
+    
+    suffix = STORE_SUFFIX_MAP.get(store_code)
+    if suffix is None:
+        return redirect(url_for('select_store'))
+    
+    g.store_suffix = suffix
 
-        cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS products{STORE_SUFFIX} (
-                id SERIAL PRIMARY KEY,
-                barcode TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL
-            )
-        ''')
-        cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS batches{STORE_SUFFIX} (
-                id SERIAL PRIMARY KEY,
-                product_id INTEGER REFERENCES products{STORE_SUFFIX}(id),
-                expiration_date TEXT NOT NULL,
-                added_date TEXT DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')
-            )
-        ''')
-        cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS history{STORE_SUFFIX} (
-                id SERIAL PRIMARY KEY,
-                barcode TEXT NOT NULL,
-                product_name TEXT NOT NULL,
-                expiration_date TEXT NOT NULL,
-                removed_date TEXT NOT NULL
-            )
-        ''')
-        # Создаем уникальный индекс с суффиксом
-        cursor.execute(f'''
-            CREATE UNIQUE INDEX IF NOT EXISTS unique_batch{STORE_SUFFIX} 
-            ON batches{STORE_SUFFIX} (product_id, expiration_date)
-        ''')
-        db.commit()
-
-def clear_old_history():
-    with app.app_context():
-        db = get_db()
-        cursor = db.cursor()
-        three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
-        cursor.execute(f"DELETE FROM history{STORE_SUFFIX} WHERE removed_date < %s", (three_months_ago,))
-        db.commit()
-
-def remove_expired():
+# Маршрут для выбора магазина
+@app.route('/select_store', methods=['GET', 'POST'])
+def select_store():
+    if request.method == 'POST':
+        store_code = request.form['store_code']
+        if store_code not in STORE_SUFFIX_MAP:
+            return "Неверный код магазина", 400
+        
+        response = make_response(redirect(url_for('index')))
+        response.set_cookie('store_code', store_code, max_age=60*60*24*30)  # 30 дней
+        return response
+    
+    # GET запрос - показать форму выбора
     db = get_db()
     cursor = db.cursor()
-    today = datetime.now().date()
-    one_month_ago = today - timedelta(days=30)
+    cursor.execute("SELECT store_code, store_name FROM store_settings WHERE is_active = TRUE")
+    stores = cursor.fetchall()
+    return render_template('select_store.html', stores=stores)
 
-    cursor.execute(f'''
-        SELECT b.id, p.barcode, p.name, b.expiration_date
-        FROM batches{STORE_SUFFIX} b
-        JOIN products{STORE_SUFFIX} p ON b.product_id = p.id
-        WHERE b.expiration_date <= %s
-    ''', (one_month_ago.strftime('%Y-%m-%d'),))
-    expired = cursor.fetchall()
+# Маршрут для установки магазина (API)
+@app.route('/set_store', methods=['POST'])
+def set_store():
+    store_code = request.json.get('store_code')
+    if not store_code or store_code not in STORE_SUFFIX_MAP:
+        return jsonify({"error": "Invalid store code"}), 400
+    
+    response = jsonify({"success": True})
+    response.set_cookie('store_code', store_code, max_age=60*60*24*30)
+    return response
 
-    for item in expired:
-        cursor.execute(f"SELECT id FROM history{STORE_SUFFIX} WHERE barcode = %s AND expiration_date = %s",
-                       (item['barcode'], item['expiration_date']))
-        if not cursor.fetchone():
-            cursor.execute(f"""
-                INSERT INTO history{STORE_SUFFIX} (barcode, product_name, expiration_date, removed_date) 
-                VALUES (%s, %s, %s, %s)
-            """, (item['barcode'], item['name'], item['expiration_date'], today.strftime('%Y-%m-%d')))
-        cursor.execute(f"DELETE FROM batches{STORE_SUFFIX} WHERE id = %s", (item['id'],))
-    db.commit()
-
+# Главная страница
 @app.route('/')
 def index():
     db = get_db()
@@ -119,8 +105,8 @@ def index():
 
     query = f'''
         SELECT b.id, p.name, p.barcode, b.expiration_date, b.added_date
-        FROM batches{STORE_SUFFIX} b
-        JOIN products{STORE_SUFFIX} p ON p.id = b.product_id
+        FROM batches{g.store_suffix} b
+        JOIN products{g.store_suffix} p ON p.id = b.product_id
     '''
     filters = []
     params = []
@@ -223,12 +209,12 @@ def scan():
             exp_date_str = exp_date.strftime('%Y-%m-%d')
 
             # Проверяем/добавляем продукт
-            cursor.execute(f"SELECT id FROM products{STORE_SUFFIX} WHERE barcode = %s", (barcode,))
+            cursor.execute(f"SELECT id FROM products{g.store_suffix} WHERE barcode = %s", (barcode,))
             product = cursor.fetchone()
 
             if not product:
                 cursor.execute(
-                    f"INSERT INTO products{STORE_SUFFIX} (barcode, name) VALUES (%s, %s) RETURNING id", 
+                    f"INSERT INTO products{g.store_suffix} (barcode, name) VALUES (%s, %s) RETURNING id", 
                     (barcode, name)
                 )
                 product_id = cursor.fetchone()['id']
@@ -237,7 +223,7 @@ def scan():
 
             # Проверка на дубликат партии
             cursor.execute(f"""
-                SELECT 1 FROM batches{STORE_SUFFIX} 
+                SELECT 1 FROM batches{g.store_suffix} 
                 WHERE product_id = %s AND expiration_date = %s
             """, (product_id, exp_date_str))
             
@@ -247,7 +233,7 @@ def scan():
 
             # Добавляем новую партию
             cursor.execute(f"""
-                INSERT INTO batches{STORE_SUFFIX} (product_id, expiration_date) 
+                INSERT INTO batches{g.store_suffix} (product_id, expiration_date) 
                 VALUES (%s, %s)
             """, (product_id, exp_date_str))
             
@@ -267,7 +253,7 @@ def get_product_name():
     barcode = request.args.get('barcode')
     db = get_db()
     cursor = db.cursor()
-    cursor.execute(f'SELECT name FROM products{STORE_SUFFIX} WHERE barcode = %s', (barcode,))
+    cursor.execute(f'SELECT name FROM products{g.store_suffix} WHERE barcode = %s', (barcode,))
     result = cursor.fetchone()
     if result:
         return jsonify({'found': True, 'name': result['name']})
@@ -282,7 +268,7 @@ def manifest():
 def get_all_products():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute(f'SELECT barcode, name FROM products{STORE_SUFFIX}')
+    cursor.execute(f'SELECT barcode, name FROM products{g.store_suffix}')
     products = [dict(row) for row in cursor.fetchall()]
     return jsonify({'products': products})
 
@@ -294,7 +280,7 @@ def new_product():
         barcode = request.form['barcode']
         db = get_db()
         cursor = db.cursor()
-        cursor.execute(f"INSERT INTO products{STORE_SUFFIX} (barcode, name) VALUES (?, ?)", (barcode, name))
+        cursor.execute(f"INSERT INTO products{g.store_suffix} (barcode, name) VALUES (?, ?)", (barcode, name))
         db.commit()
         return redirect(url_for('add_batch', barcode=barcode))
     return render_template('new_product.html', barcode=barcode)
@@ -309,7 +295,7 @@ def add_batch():
         
         db = get_db()
         cursor = db.cursor()
-        cursor.execute(f"SELECT name FROM products{STORE_SUFFIX} WHERE barcode = %s", (barcode,))
+        cursor.execute(f"SELECT name FROM products{g.store_suffix} WHERE barcode = %s", (barcode,))
         product = cursor.fetchone()
         
         if not product:
@@ -336,7 +322,7 @@ def add_batch():
             return "Не указан штрих-код товара", 400
 
         # Получаем информацию о продукте
-        cursor.execute(f"SELECT id FROM products{STORE_SUFFIX} WHERE barcode = %s", (barcode,))
+        cursor.execute(f"SELECT id FROM products{g.store_suffix} WHERE barcode = %s", (barcode,))
         product = cursor.fetchone()
         if not product:
             return "Товар с таким штрих-кодом не найден", 404
@@ -372,7 +358,7 @@ def add_batch():
 
         # Проверка на дубликат
         cursor.execute(f"""
-            SELECT 1 FROM batches{STORE_SUFFIX} 
+            SELECT 1 FROM batches{g.store_suffix} 
             WHERE product_id = %s AND expiration_date = %s
         """, (product['id'], expiration_date))
         
@@ -381,7 +367,7 @@ def add_batch():
 
         # Добавление новой партии
         cursor.execute(f"""
-            INSERT INTO batches{STORE_SUFFIX} (product_id, expiration_date) 
+            INSERT INTO batches{g.store_suffix} (product_id, expiration_date) 
             VALUES (%s, %s)
         """, (product['id'], expiration_date))
         
@@ -399,8 +385,8 @@ def assortment():
     cursor = db.cursor()
     cursor.execute(f'''
         SELECT p.id, p.barcode, p.name, 
-               (SELECT COUNT(*) FROM batches{STORE_SUFFIX} b WHERE b.product_id = p.id) AS batch_count
-        FROM products{STORE_SUFFIX} p
+               (SELECT COUNT(*) FROM batches{g.store_suffix} b WHERE b.product_id = p.id) AS batch_count
+        FROM products{g.store_suffix} p
         ORDER BY p.name
     ''')
     products = cursor.fetchall()
@@ -410,7 +396,7 @@ def assortment():
 def history():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute(f"SELECT * FROM history{STORE_SUFFIX} ORDER BY removed_date DESC")
+    cursor.execute(f"SELECT * FROM history{g.store_suffix} ORDER BY removed_date DESC")
     history_items = cursor.fetchall()
     return render_template('history.html', history_items=history_items)
 
@@ -424,23 +410,23 @@ def move_to_history():
     # Получаем информацию о товаре
     cursor.execute(f'''
     SELECT p.barcode, p.name, b.expiration_date
-    FROM batches{STORE_SUFFIX} b
-    JOIN products{STORE_SUFFIX} p ON b.product_id = p.id
+    FROM batches{g.store_suffix} b
+    JOIN products{g.store_suffix} p ON b.product_id = p.id
     WHERE b.id = %s
 ''', (batch_id,)) 
     item = cursor.fetchone()
 
     if item:
         # Проверяем, нет ли уже такой записи в истории
-        cursor.execute(f"SELECT id FROM history{STORE_SUFFIX} WHERE barcode = %s AND expiration_date = %s",
+        cursor.execute(f"SELECT id FROM history{g.store_suffix} WHERE barcode = %s AND expiration_date = %s",
                      (item['barcode'], item['expiration_date']))
         if not cursor.fetchone():
             # Добавляем в историю
-            cursor.execute(f"INSERT INTO history{STORE_SUFFIX} (barcode, product_name, expiration_date, removed_date) VALUES (%s, %s, %s, %s)",
+            cursor.execute(f"INSERT INTO history{g.store_suffix} (barcode, product_name, expiration_date, removed_date) VALUES (%s, %s, %s, %s)",
                           (item['barcode'], item['name'], item['expiration_date'], today))
 
         # Удаляем из активных
-        cursor.execute(f"DELETE FROM batches{STORE_SUFFIX} WHERE id = %s", (batch_id,))
+        cursor.execute(f"DELETE FROM batches{g.store_suffix} WHERE id = %s", (batch_id,))
         db.commit()
 
     return redirect(url_for('index'))
@@ -452,28 +438,28 @@ def restore_from_history():
     cursor = db.cursor()
     
     # Получаем информацию из истории
-    cursor.execute(f"SELECT * FROM history{STORE_SUFFIX} WHERE id = %s", (history_id,))
+    cursor.execute(f"SELECT * FROM history{g.store_suffix} WHERE id = %s", (history_id,))
     item = cursor.fetchone()
     
     if item:
         # Проверяем существование товара
-        cursor.execute(f"SELECT id FROM products{STORE_SUFFIX} WHERE barcode = %s", (item['barcode'],))
+        cursor.execute(f"SELECT id FROM products{g.store_suffix} WHERE barcode = %s", (item['barcode'],))
         product = cursor.fetchone()
         
         if not product:
             # Если товара нет, создаем новый
-            cursor.execute(f"INSERT INTO products{STORE_SUFFIX} (barcode, name) VALUES (%s, %s)", 
+            cursor.execute(f"INSERT INTO products{g.store_suffix} (barcode, name) VALUES (%s, %s)", 
                           (item['barcode'], item['product_name']))
             product_id = cursor.lastrowid
         else:
             product_id = product['id']
         
         # Добавляем обратно в активные
-        cursor.execute(f"INSERT INTO batches{STORE_SUFFIX} (product_id, expiration_date) VALUES (%s, %s)", 
+        cursor.execute(f"INSERT INTO batches{g.store_suffix} (product_id, expiration_date) VALUES (%s, %s)", 
                       (product_id, item['expiration_date']))
         
         # Удаляем из истории
-        cursor.execute(f"DELETE FROM history{STORE_SUFFIX} WHERE id = %s", (history_id,))
+        cursor.execute(f"DELETE FROM history{g.store_suffix} WHERE id = %s", (history_id,))
         db.commit()
     
     return redirect(url_for('history'))
@@ -486,14 +472,14 @@ def edit_batch():
     
     if request.method == 'POST':
         new_date = request.form['expiration_date']
-        cursor.execute(f"UPDATE batches{STORE_SUFFIX} SET expiration_date = %s WHERE id = %s", (new_date, batch_id))
+        cursor.execute(f"UPDATE batches{g.store_suffix} SET expiration_date = %s WHERE id = %s", (new_date, batch_id))
         db.commit()
         return redirect(url_for('index'))
     
     cursor.execute(f"""
         SELECT b.id, b.expiration_date, p.name, p.barcode 
-        FROM batches{STORE_SUFFIX} b
-        JOIN products{STORE_SUFFIX} p ON b.product_id = p.id
+        FROM batches{g.store_suffix} b
+        JOIN products{g.store_suffix} p ON b.product_id = p.id
         WHERE b.id = %s
     """, (batch_id,))
     batch = cursor.fetchone()
@@ -505,7 +491,7 @@ def delete_batch():
     batch_id = request.form['batch_id']
     db = get_db()
     cursor = db.cursor()
-    cursor.execute(f"DELETE FROM batches{STORE_SUFFIX} WHERE id = %s", (batch_id,))
+    cursor.execute(f"DELETE FROM batches{g.store_suffix} WHERE id = %s", (batch_id,))
     db.commit()
     return redirect(url_for('index'))
 
@@ -518,12 +504,12 @@ def edit_product():
     if request.method == 'POST':
         new_name = request.form['name']
         new_barcode = request.form['barcode']
-        cursor.execute(f"UPDATE products{STORE_SUFFIX} SET name = %s, barcode = %s WHERE id = %s", 
+        cursor.execute(f"UPDATE products{g.store_suffix} SET name = %s, barcode = %s WHERE id = %s", 
                       (new_name, new_barcode, product_id))
         db.commit()
         return redirect(url_for('assortment'))
     
-    cursor.execute(f"SELECT id, name, barcode FROM products{STORE_SUFFIX} WHERE id = %s", (product_id,))
+    cursor.execute(f"SELECT id, name, barcode FROM products{g.store_suffix} WHERE id = %s", (product_id,))
     product = cursor.fetchone()
     return render_template('edit_product.html', product=product)
 
@@ -545,8 +531,8 @@ def get_batches():
         cursor.execute(f'''
             SELECT b.expiration_date, 
                    (DATE(b.expiration_date) - CURRENT_DATE AS days_left
-            FROM batches{STORE_SUFFIX} b
-            JOIN products{STORE_SUFFIX} p ON p.id = b.product_id
+            FROM batches{g.store_suffix} b
+            JOIN products{g.store_suffix} p ON p.id = b.product_id
             WHERE p.barcode = %s
             ORDER BY b.expiration_date ASC
         ''', (barcode,))
@@ -574,18 +560,12 @@ def delete_product():
     product_id = request.form['product_id']
     db = get_db()
     cursor = db.cursor()
-    cursor.execute(f"DELETE FROM batches{STORE_SUFFIX} WHERE product_id = %s", (product_id,))
-    cursor.execute(f"DELETE FROM products{STORE_SUFFIX} WHERE id = %s", (product_id,))
+    cursor.execute(f"DELETE FROM batches{g.store_suffix} WHERE product_id = %s", (product_id,))
+    cursor.execute(f"DELETE FROM products{g.store_suffix} WHERE id = %s", (product_id,))
     db.commit()
     return redirect(url_for('assortment'))
 
-from templates import render_template
-
 def run_app():
-    with app.app_context():
-        init_db()
-        remove_expired()
-        clear_old_history()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
 
