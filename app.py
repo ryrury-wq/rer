@@ -9,6 +9,9 @@ import json
 
 app = Flask(__name__)
 
+# Добавляем поддержку мультимагазинности через суффиксы таблиц
+STORE_SUFFIX = os.environ.get('STORE_SUFFIX', '')  # Например: '_m1', '_m2'
+
 # Подключение к PostgreSQL
 def get_db():
     db = getattr(g, '_database', None)
@@ -25,29 +28,29 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-# Инициализация БД
+# Инициализация БД с учетом суффикса магазина
 def init_db():
     with app.app_context():
         db = get_db()
         cursor = db.cursor()
 
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS products (
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS products{STORE_SUFFIX} (
                 id SERIAL PRIMARY KEY,
                 barcode TEXT NOT NULL UNIQUE,
                 name TEXT NOT NULL
             )
         ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS batches (
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS batches{STORE_SUFFIX} (
                 id SERIAL PRIMARY KEY,
-                product_id INTEGER REFERENCES products(id),
+                product_id INTEGER REFERENCES products{STORE_SUFFIX}(id),
                 expiration_date TEXT NOT NULL,
                 added_date TEXT DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')
             )
         ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS history (
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS history{STORE_SUFFIX} (
                 id SERIAL PRIMARY KEY,
                 barcode TEXT NOT NULL,
                 product_name TEXT NOT NULL,
@@ -55,10 +58,10 @@ def init_db():
                 removed_date TEXT NOT NULL
             )
         ''')
-        # В функции init_db()
-        cursor.execute('''
-            CREATE UNIQUE INDEX IF NOT EXISTS unique_batch 
-            ON batches (product_id, expiration_date)
+        # Создаем уникальный индекс с суффиксом
+        cursor.execute(f'''
+            CREATE UNIQUE INDEX IF NOT EXISTS unique_batch{STORE_SUFFIX} 
+            ON batches{STORE_SUFFIX} (product_id, expiration_date)
         ''')
         db.commit()
 
@@ -67,7 +70,7 @@ def clear_old_history():
         db = get_db()
         cursor = db.cursor()
         three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
-        cursor.execute("DELETE FROM history WHERE removed_date < %s", (three_months_ago,))
+        cursor.execute(f"DELETE FROM history{STORE_SUFFIX} WHERE removed_date < %s", (three_months_ago,))
         db.commit()
 
 def remove_expired():
@@ -76,23 +79,23 @@ def remove_expired():
     today = datetime.now().date()
     one_month_ago = today - timedelta(days=30)
 
-    cursor.execute('''
+    cursor.execute(f'''
         SELECT b.id, p.barcode, p.name, b.expiration_date
-        FROM batches b
-        JOIN products p ON b.product_id = p.id
+        FROM batches{STORE_SUFFIX} b
+        JOIN products{STORE_SUFFIX} p ON b.product_id = p.id
         WHERE b.expiration_date <= %s
     ''', (one_month_ago.strftime('%Y-%m-%d'),))
     expired = cursor.fetchall()
 
     for item in expired:
-        cursor.execute("SELECT id FROM history WHERE barcode = %s AND expiration_date = %s",
+        cursor.execute(f"SELECT id FROM history{STORE_SUFFIX} WHERE barcode = %s AND expiration_date = %s",
                        (item['barcode'], item['expiration_date']))
         if not cursor.fetchone():
-            cursor.execute("""
-                INSERT INTO history (barcode, product_name, expiration_date, removed_date) 
+            cursor.execute(f"""
+                INSERT INTO history{STORE_SUFFIX} (barcode, product_name, expiration_date, removed_date) 
                 VALUES (%s, %s, %s, %s)
             """, (item['barcode'], item['name'], item['expiration_date'], today.strftime('%Y-%m-%d')))
-        cursor.execute("DELETE FROM batches WHERE id = %s", (item['id'],))
+        cursor.execute(f"DELETE FROM batches{STORE_SUFFIX} WHERE id = %s", (item['id'],))
     db.commit()
 
 @app.route('/')
@@ -114,10 +117,10 @@ def index():
     from_date = parse_date_russian(from_date_raw)
     to_date = parse_date_russian(to_date_raw)
 
-    query = '''
+    query = f'''
         SELECT b.id, p.name, p.barcode, b.expiration_date, b.added_date
-        FROM batches b
-        JOIN products p ON p.id = b.product_id
+        FROM batches{STORE_SUFFIX} b
+        JOIN products{STORE_SUFFIX} p ON p.id = b.product_id
     '''
     filters = []
     params = []
@@ -220,12 +223,12 @@ def scan():
             exp_date_str = exp_date.strftime('%Y-%m-%d')
 
             # Проверяем/добавляем продукт
-            cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
+            cursor.execute(f"SELECT id FROM products{STORE_SUFFIX} WHERE barcode = %s", (barcode,))
             product = cursor.fetchone()
 
             if not product:
                 cursor.execute(
-                    "INSERT INTO products (barcode, name) VALUES (%s, %s) RETURNING id", 
+                    f"INSERT INTO products{STORE_SUFFIX} (barcode, name) VALUES (%s, %s) RETURNING id", 
                     (barcode, name)
                 )
                 product_id = cursor.fetchone()['id']
@@ -233,8 +236,8 @@ def scan():
                 product_id = product['id']
 
             # Проверка на дубликат партии
-            cursor.execute("""
-                SELECT 1 FROM batches 
+            cursor.execute(f"""
+                SELECT 1 FROM batches{STORE_SUFFIX} 
                 WHERE product_id = %s AND expiration_date = %s
             """, (product_id, exp_date_str))
             
@@ -243,8 +246,8 @@ def scan():
                 return "Такая партия уже существует", 400
 
             # Добавляем новую партию
-            cursor.execute("""
-                INSERT INTO batches (product_id, expiration_date) 
+            cursor.execute(f"""
+                INSERT INTO batches{STORE_SUFFIX} (product_id, expiration_date) 
                 VALUES (%s, %s)
             """, (product_id, exp_date_str))
             
@@ -264,7 +267,7 @@ def get_product_name():
     barcode = request.args.get('barcode')
     db = get_db()
     cursor = db.cursor()
-    cursor.execute('SELECT name FROM products WHERE barcode = %s', (barcode,))
+    cursor.execute(f'SELECT name FROM products{STORE_SUFFIX} WHERE barcode = %s', (barcode,))
     result = cursor.fetchone()
     if result:
         return jsonify({'found': True, 'name': result['name']})
@@ -279,7 +282,7 @@ def manifest():
 def get_all_products():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute('SELECT barcode, name FROM products')
+    cursor.execute(f'SELECT barcode, name FROM products{STORE_SUFFIX}')
     products = [dict(row) for row in cursor.fetchall()]
     return jsonify({'products': products})
 
@@ -291,7 +294,7 @@ def new_product():
         barcode = request.form['barcode']
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("INSERT INTO products (barcode, name) VALUES (?, ?)", (barcode, name))
+        cursor.execute(f"INSERT INTO products{STORE_SUFFIX} (barcode, name) VALUES (?, ?)", (barcode, name))
         db.commit()
         return redirect(url_for('add_batch', barcode=barcode))
     return render_template('new_product.html', barcode=barcode)
@@ -306,7 +309,7 @@ def add_batch():
         
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("SELECT name FROM products WHERE barcode = %s", (barcode,))
+        cursor.execute(f"SELECT name FROM products{STORE_SUFFIX} WHERE barcode = %s", (barcode,))
         product = cursor.fetchone()
         
         if not product:
@@ -333,7 +336,7 @@ def add_batch():
             return "Не указан штрих-код товара", 400
 
         # Получаем информацию о продукте
-        cursor.execute("SELECT id FROM products WHERE barcode = %s", (barcode,))
+        cursor.execute(f"SELECT id FROM products{STORE_SUFFIX} WHERE barcode = %s", (barcode,))
         product = cursor.fetchone()
         if not product:
             return "Товар с таким штрих-кодом не найден", 404
@@ -368,8 +371,8 @@ def add_batch():
             return "Не указаны данные о сроке годности", 400
 
         # Проверка на дубликат
-        cursor.execute("""
-            SELECT 1 FROM batches 
+        cursor.execute(f"""
+            SELECT 1 FROM batches{STORE_SUFFIX} 
             WHERE product_id = %s AND expiration_date = %s
         """, (product['id'], expiration_date))
         
@@ -377,8 +380,8 @@ def add_batch():
             return "Такая партия уже существует", 400
 
         # Добавление новой партии
-        cursor.execute("""
-            INSERT INTO batches (product_id, expiration_date) 
+        cursor.execute(f"""
+            INSERT INTO batches{STORE_SUFFIX} (product_id, expiration_date) 
             VALUES (%s, %s)
         """, (product['id'], expiration_date))
         
@@ -389,14 +392,15 @@ def add_batch():
         db.rollback()
         app.logger.error(f"Add batch error: {str(e)}")
         return f"Ошибка сервера: {str(e)}", 500
+
 @app.route('/assortment')
 def assortment():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute('''
+    cursor.execute(f'''
         SELECT p.id, p.barcode, p.name, 
-               (SELECT COUNT(*) FROM batches b WHERE b.product_id = p.id) AS batch_count
-        FROM products p
+               (SELECT COUNT(*) FROM batches{STORE_SUFFIX} b WHERE b.product_id = p.id) AS batch_count
+        FROM products{STORE_SUFFIX} p
         ORDER BY p.name
     ''')
     products = cursor.fetchall()
@@ -406,7 +410,7 @@ def assortment():
 def history():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM history ORDER BY removed_date DESC")
+    cursor.execute(f"SELECT * FROM history{STORE_SUFFIX} ORDER BY removed_date DESC")
     history_items = cursor.fetchall()
     return render_template('history.html', history_items=history_items)
 
@@ -418,25 +422,25 @@ def move_to_history():
     today = datetime.now().date().strftime('%Y-%m-%d')
 
     # Получаем информацию о товаре
-    cursor.execute('''
+    cursor.execute(f'''
     SELECT p.barcode, p.name, b.expiration_date
-    FROM batches b
-    JOIN products p ON b.product_id = p.id
+    FROM batches{STORE_SUFFIX} b
+    JOIN products{STORE_SUFFIX} p ON b.product_id = p.id
     WHERE b.id = %s
 ''', (batch_id,)) 
     item = cursor.fetchone()
 
     if item:
         # Проверяем, нет ли уже такой записи в истории
-        cursor.execute("SELECT id FROM history WHERE barcode = %s AND expiration_date = %s",
+        cursor.execute(f"SELECT id FROM history{STORE_SUFFIX} WHERE barcode = %s AND expiration_date = %s",
                      (item['barcode'], item['expiration_date']))
         if not cursor.fetchone():
             # Добавляем в историю
-            cursor.execute("INSERT INTO history (barcode, product_name, expiration_date, removed_date) VALUES (%s, %s, %s, %s)",
+            cursor.execute(f"INSERT INTO history{STORE_SUFFIX} (barcode, product_name, expiration_date, removed_date) VALUES (%s, %s, %s, %s)",
                           (item['barcode'], item['name'], item['expiration_date'], today))
 
         # Удаляем из активных
-        cursor.execute("DELETE FROM batches WHERE id = %s", (batch_id,))
+        cursor.execute(f"DELETE FROM batches{STORE_SUFFIX} WHERE id = %s", (batch_id,))
         db.commit()
 
     return redirect(url_for('index'))
@@ -448,28 +452,28 @@ def restore_from_history():
     cursor = db.cursor()
     
     # Получаем информацию из истории
-    cursor.execute("SELECT * FROM history WHERE id = %s", (history_id,))
+    cursor.execute(f"SELECT * FROM history{STORE_SUFFIX} WHERE id = %s", (history_id,))
     item = cursor.fetchone()
     
     if item:
         # Проверяем существование товара
-        cursor.execute("SELECT id FROM products WHERE barcode = %s", (item['barcode'],))
+        cursor.execute(f"SELECT id FROM products{STORE_SUFFIX} WHERE barcode = %s", (item['barcode'],))
         product = cursor.fetchone()
         
         if not product:
             # Если товара нет, создаем новый
-            cursor.execute("INSERT INTO products (barcode, name) VALUES (%s, %s)", 
+            cursor.execute(f"INSERT INTO products{STORE_SUFFIX} (barcode, name) VALUES (%s, %s)", 
                           (item['barcode'], item['product_name']))
             product_id = cursor.lastrowid
         else:
             product_id = product['id']
         
         # Добавляем обратно в активные
-        cursor.execute("INSERT INTO batches (product_id, expiration_date) VALUES (%s, %s)", 
+        cursor.execute(f"INSERT INTO batches{STORE_SUFFIX} (product_id, expiration_date) VALUES (%s, %s)", 
                       (product_id, item['expiration_date']))
         
         # Удаляем из истории
-        cursor.execute("DELETE FROM history WHERE id = %s", (history_id,))
+        cursor.execute(f"DELETE FROM history{STORE_SUFFIX} WHERE id = %s", (history_id,))
         db.commit()
     
     return redirect(url_for('history'))
@@ -482,14 +486,14 @@ def edit_batch():
     
     if request.method == 'POST':
         new_date = request.form['expiration_date']
-        cursor.execute("UPDATE batches SET expiration_date = %s WHERE id = %s", (new_date, batch_id))
+        cursor.execute(f"UPDATE batches{STORE_SUFFIX} SET expiration_date = %s WHERE id = %s", (new_date, batch_id))
         db.commit()
         return redirect(url_for('index'))
     
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT b.id, b.expiration_date, p.name, p.barcode 
-        FROM batches b
-        JOIN products p ON b.product_id = p.id
+        FROM batches{STORE_SUFFIX} b
+        JOIN products{STORE_SUFFIX} p ON b.product_id = p.id
         WHERE b.id = %s
     """, (batch_id,))
     batch = cursor.fetchone()
@@ -501,7 +505,7 @@ def delete_batch():
     batch_id = request.form['batch_id']
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM batches WHERE id = %s", (batch_id,))
+    cursor.execute(f"DELETE FROM batches{STORE_SUFFIX} WHERE id = %s", (batch_id,))
     db.commit()
     return redirect(url_for('index'))
 
@@ -514,12 +518,12 @@ def edit_product():
     if request.method == 'POST':
         new_name = request.form['name']
         new_barcode = request.form['barcode']
-        cursor.execute("UPDATE products SET name = %s, barcode = %s WHERE id = %s", 
+        cursor.execute(f"UPDATE products{STORE_SUFFIX} SET name = %s, barcode = %s WHERE id = %s", 
                       (new_name, new_barcode, product_id))
         db.commit()
         return redirect(url_for('assortment'))
     
-    cursor.execute("SELECT id, name, barcode FROM products WHERE id = %s", (product_id,))
+    cursor.execute(f"SELECT id, name, barcode FROM products{STORE_SUFFIX} WHERE id = %s", (product_id,))
     product = cursor.fetchone()
     return render_template('edit_product.html', product=product)
 
@@ -538,11 +542,11 @@ def get_batches():
     
     try:
         # Получаем все партии для товара
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT b.expiration_date, 
                    (DATE(b.expiration_date) - CURRENT_DATE AS days_left
-            FROM batches b
-            JOIN products p ON p.id = b.product_id
+            FROM batches{STORE_SUFFIX} b
+            JOIN products{STORE_SUFFIX} p ON p.id = b.product_id
             WHERE p.barcode = %s
             ORDER BY b.expiration_date ASC
         ''', (barcode,))
@@ -570,8 +574,8 @@ def delete_product():
     product_id = request.form['product_id']
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM batches WHERE product_id = %s", (product_id,))
-    cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
+    cursor.execute(f"DELETE FROM batches{STORE_SUFFIX} WHERE product_id = %s", (product_id,))
+    cursor.execute(f"DELETE FROM products{STORE_SUFFIX} WHERE id = %s", (product_id,))
     db.commit()
     return redirect(url_for('assortment'))
 
