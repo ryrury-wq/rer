@@ -28,41 +28,96 @@ def close_connection(exception):
         db.close()
 
 # Инициализация БД
+# Новая функция инициализации БД
 def init_db():
-    table_suffix = session.get('table_suffix', '')
-    with app.app_context():
-        db = get_db()
-        cursor = db.cursor()
-
-        cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS products{table_suffix} (
-                id SERIAL PRIMARY KEY,
-                barcode TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL
-            )
-        ''')
-        cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS batches{table_suffix} (
-                id SERIAL PRIMARY KEY,
-                product_id INTEGER REFERENCES products{table_suffix}(id),
-                expiration_date TEXT NOT NULL,
-                added_date TEXT DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')
-            )
-        ''')
-        cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS history{table_suffix} (
-                id SERIAL PRIMARY KEY,
-                barcode TEXT NOT NULL,
-                product_name TEXT NOT NULL,
-                expiration_date TEXT NOT NULL,
-                removed_date TEXT NOT NULL
-            )
-        ''')
-        cursor.execute(f'''
-            CREATE UNIQUE INDEX IF NOT EXISTS unique_batch{table_suffix} 
-            ON batches{table_suffix} (product_id, expiration_date)
-        ''')
-        db.commit()
+    # Создаем отдельное подключение вне контекста приложения
+    conn = psycopg2.connect(
+        os.environ['DATABASE_URL'],
+        cursor_factory=DictCursor
+    )
+    
+    try:
+        # Создаем таблицу настроек магазинов
+        with conn.cursor() as cursor:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS store_settings (
+                    id SERIAL PRIMARY KEY,
+                    store_name TEXT NOT NULL UNIQUE,
+                    store_code TEXT NOT NULL UNIQUE,
+                    is_active BOOLEAN DEFAULT TRUE
+                )
+            ''')
+            
+            # Добавляем магазины, если их еще нет
+            stores = [
+                ("М1 Розыбакиева", "m1"),
+                ("М2 Шевченко", "m2"),
+                ("М3 Желтоксан", "m3"),
+                ("М5 Сейфулина", "m5"),
+                ("М6 Гоголя", "m6")
+            ]
+            
+            for name, code in stores:
+                cursor.execute('''
+                    INSERT INTO store_settings (store_name, store_code)
+                    VALUES (%s, %s)
+                    ON CONFLICT (store_code) DO NOTHING
+                ''', (name, code))
+        
+        # Создаем таблицы для каждого магазина
+        def create_store_tables(suffix):
+            with conn.cursor() as cursor:
+                # Таблица продуктов
+                cursor.execute(f'''
+                    CREATE TABLE IF NOT EXISTS products{suffix} (
+                        id SERIAL PRIMARY KEY,
+                        barcode TEXT NOT NULL UNIQUE,
+                        name TEXT NOT NULL
+                    )
+                ''')
+                
+                # Таблица партий
+                cursor.execute(f'''
+                    CREATE TABLE IF NOT EXISTS batches{suffix} (
+                        id SERIAL PRIMARY KEY,
+                        product_id INTEGER REFERENCES products{suffix}(id),
+                        expiration_date TEXT NOT NULL,
+                        added_date TEXT DEFAULT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')
+                    )
+                ''')
+                
+                # Таблица истории
+                cursor.execute(f'''
+                    CREATE TABLE IF NOT EXISTS history{suffix} (
+                        id SERIAL PRIMARY KEY,
+                        barcode TEXT NOT NULL,
+                        product_name TEXT NOT NULL,
+                        expiration_date TEXT NOT NULL,
+                        removed_date TEXT NOT NULL
+                    )
+                ''')
+                
+                # Уникальный индекс для партий
+                cursor.execute(f'''
+                    CREATE UNIQUE INDEX IF NOT EXISTS unique_batch{suffix} 
+                    ON batches{suffix} (product_id, expiration_date)
+                ''')
+        
+        # Создаем таблицы для всех магазинов
+        create_store_tables("")       # Для m2 без суффикса
+        create_store_tables("_m1")    # Для m1
+        create_store_tables("_m3")    # Для m3
+        create_store_tables("_m5")    # Для m5
+        create_store_tables("_m6")    # Для m6
+        
+        conn.commit()
+        print("База данных успешно инициализирована для всех магазинов")
+        
+    except Exception as e:
+        print(f"Ошибка при инициализации базы данных: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
 
 def clear_old_history():
     table_suffix = session.get('table_suffix', '')
@@ -585,12 +640,12 @@ def delete_product():
     return redirect(url_for('assortment'))
 
 def run_app():
-    with app.app_context():
-        init_db()
-        remove_expired()
-        clear_old_history()
+    # Инициализируем БД перед запуском приложения
+    init_db()
+    
+    # Запускаем Flask приложение
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
+    
 if __name__ == '__main__':
     run_app()
