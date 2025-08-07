@@ -3198,6 +3198,287 @@ edit_product_html = '''
 </html>
 '''
 
+select_store_html = '''
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Выбор магазина - Вкусвилл</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e8f5e9 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 100%;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #00a046;
+            margin-bottom: 40px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        
+        .title {
+            font-size: 1.8rem;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            max-width: 500px;
+            margin: 0 auto 30px;
+            line-height: 1.5;
+        }
+        
+        .stores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        .store-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .store-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+            border-color: #00a046;
+        }
+        
+        .store-image {
+            height: 180px;
+            background-color: #00a046;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .store-image::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0,160,70,0.8) 0%, rgba(0,160,70,0.95) 100%);
+        }
+        
+        .store-image .store-icon {
+            font-size: 4rem;
+            color: white;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .store-info {
+            padding: 25px 20px;
+        }
+        
+        .store-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .store-address {
+            font-size: 1rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .store-code {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #00a046;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            color: #757575;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .logo {
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .title {
+            animation: fadeIn 0.8s ease-out 0.2s both;
+        }
+        
+        .subtitle {
+            animation: fadeIn 0.8s ease-out 0.4s both;
+        }
+        
+        .store-card:nth-child(1) { animation: fadeIn 0.8s ease-out 0.6s both; }
+        .store-card:nth-child(2) { animation: fadeIn 0.8s ease-out 0.7s both; }
+        .store-card:nth-child(3) { animation: fadeIn 0.8s ease-out 0.8s both; }
+        .store-card:nth-child(4) { animation: fadeIn 0.8s ease-out 0.9s both; }
+        .store-card:nth-child(5) { animation: fadeIn 0.8s ease-out 1.0s both; }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .stores-grid {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Вкусвилл</div>
+            <h1 class="title">Выбери свой магазин</h1>
+            <p class="subtitle">Для работы с системой контроля сроков годности выберите магазин, в котором вы работаете</p>
+        </div>
+        
+        <div class="stores-grid">
+            <!-- Магазин М1 Розыбакиева -->
+            <div class="store-card" onclick="location.href='/set_store/m1'">
+                <div class="store-image">
+                    <div class="store-icon">🛒</div>
+                </div>
+                <div class="store-info">
+                    <div class="store-name">М1 Розыбакиева</div>
+                    <div class="store-address">г. Алматы, ул. Розыбакиева, 247А</div>
+                    <div class="store-code">Код: M1</div>
+                </div>
+            </div>
+            
+            <!-- Магазин М2 Шевченко -->
+            <div class="store-card" onclick="location.href='/set_store/m2'">
+                <div class="store-image">
+                    <div class="store-icon">🏪</div>
+                </div>
+                <div class="store-info">
+                    <div class="store-name">М2 Шевченко</div>
+                    <div class="store-address">г. Алматы, ул. Шевченко, 165</div>
+                    <div class="store-code">Код: M2</div>
+                </div>
+            </div>
+            
+            <!-- Магазин М3 Желтоксан -->
+            <div class="store-card" onclick="location.href='/set_store/m3'">
+                <div class="store-image">
+                    <div class="store-icon">🛍️</div>
+                </div>
+                <div class="store-info">
+                    <div class="store-name">М3 Желтоксан</div>
+                    <div class="store-address">г. Алматы, ул. Желтоксан, 85</div>
+                    <div class="store-code">Код: M3</div>
+                </div>
+            </div>
+            
+            <!-- Магазин М5 Сейфулина -->
+            <div class="store-card" onclick="location.href='/set_store/m5'">
+                <div class="store-image">
+                    <div class="store-icon">🏬</div>
+                </div>
+                <div class="store-info">
+                    <div class="store-name">М5 Сейфулина</div>
+                    <div class="store-address">г. Алматы, ул. Сейфулина, 483</div>
+                    <div class="store-code">Код: M5</div>
+                </div>
+            </div>
+            
+            <!-- Магазин М6 Гоголя -->
+            <div class="store-card" onclick="location.href='/set_store/m6'">
+                <div class="store-image">
+                    <div class="store-icon">🛒</div>
+                </div>
+                <div class="store-info">
+                    <div class="store-name">М6 Гоголя</div>
+                    <div class="store-address">г. Алматы, ул. Гоголя, 111Б</div>
+                    <div class="store-code">Код: M6</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Система контроля сроков годности &copy; 2023<br>
+            Сделано М2(Shevchenko) by Bekeshnyuk
+        </div>
+    </div>
+
+    <script>
+        // Добавляем плавную анимацию при наведении
+        document.querySelectorAll('.store-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-10px)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>
+'''
+
 
 # Создаем словарь шаблонов
 templates = {
@@ -3210,6 +3491,8 @@ templates = {
     'edit_batch.html' : edit_batch_html,
     'edit_product.html' : edit_product_html
 }
+
+templates['select_store.html'] = select_store_html
 
 def render_template(template_name, **context):
     """Кастомная функция рендеринга шаблонов"""
